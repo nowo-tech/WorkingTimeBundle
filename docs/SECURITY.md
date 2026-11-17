@@ -21,10 +21,12 @@ a segment opened or closed without a link, a head older than the newest segment,
 earlier heads are given (`--heads`, the `chain_heads` stored with every export, or heads published to the audit sink
 with `--publish-heads`). `triggers:check` verifies that every trigger exists, is enabled and has the shipped body.
 
-A published head carries its link's `seq` and time (`{hash, seq, at}`). A head that is no longer a link is accepted
-only when a purge anchor of that chain has a `first_kept_seq` past its `seq` (or the anchor's hash is the head): a
-removed tail is found even after the chain's purges (audit ST-D1). An anchor past the chain's first link is reported as
-`anchor_after_start`, since a purge only removes a prefix. Still out of reach: a whole chain removed together with a
+A published head carries its link's `seq` (`{hash, seq, at}`; exports `{hash, seq}`). A head that is no longer a link
+is accepted only when its `seq` is below the chain's start (the first link, or the last anchor's `first_kept_seq` for a
+chain the purge emptied): a removed tail is found even after the chain's purges, and an anchor carrying the head's hash
+does not excuse it (audit ST-D1, ST-D1b). An anchor past the chain's first link is reported as `anchor_after_start`,
+and one keeping less than `seq` 2 as `anchor_seq_invalid`, since a purge only removes a non-empty prefix. Heads without
+a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Still out of reach: a whole chain removed together with a
 forged anchor past its published head, by a role that can delete with the purge flag (the residual risk below).
 
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.

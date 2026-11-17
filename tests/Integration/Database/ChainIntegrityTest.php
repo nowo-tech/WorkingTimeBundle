@@ -24,6 +24,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 use function bin2hex;
 use function file_put_contents;
+use function json_decode;
 use function json_encode;
 use function microtime;
 use function random_bytes;
@@ -154,6 +155,8 @@ final class ChainIntegrityTest extends RegisterTestCase
         $file   = sys_get_temp_dir() . '/wt-heads-' . bin2hex(random_bytes(4)) . '.json';
         $tester = new CommandTester((new Application($this->kernel))->find('nowo:working-time:verify'));
         self::assertSame(0, $tester->execute(['--heads-out' => $file, '--publish-heads' => true]));
+        $recorded = json_decode($this->text('SELECT chain_heads FROM nowo_working_time_export'), true);
+        self::assertEquals(['ana' => ['hash' => $this->text('SELECT hash FROM nowo_working_time_revision ORDER BY seq DESC'), 'seq' => 4]], $recorded, 'the export records the head with its seq (ST-D1b)');
 
         // The whole register removed with the purge flag (or TRUNCATE): nothing left but published heads to compare.
         $this->installer()->uninstall($this->connection());
@@ -161,6 +164,8 @@ final class ChainIntegrityTest extends RegisterTestCase
         $this->connection()->executeStatement('DELETE FROM nowo_working_time_segment');
         $this->connection()->executeStatement('DELETE FROM nowo_working_time_workday');
         self::assertSame('published_head_missing', $verifier->verify()->broken[0]['reason'] ?? null, 'the export\'s chain head is gone');
+        $this->connection()->executeStatement('UPDATE nowo_working_time_export SET chain_heads = ?', [json_encode(['ana' => str_repeat('c', 64)])]);
+        self::assertSame('published_head_missing', $verifier->verify()->broken[0]['reason'] ?? null, 'a 0.1.0 export row (bare hash) still counts');
         self::assertSame(1, $tester->execute(['--heads' => $file]));
         file_put_contents($file, 'nope');
         self::assertSame(2, $tester->execute(['--heads' => $file]));

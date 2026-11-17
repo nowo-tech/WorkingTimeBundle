@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle\Tests\Integration\Database;
 
 use DateTimeImmutable;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterPurger;
+use Nowo\WorkingTimeBundle\Domain\Register\Chain\ChainCodecs;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\CorrectionOperation;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType;
@@ -18,6 +19,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\RegisterTriggerInstal
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
+use function array_intersect_key;
 use function bin2hex;
 use function file_get_contents;
 use function getenv;
@@ -106,13 +108,8 @@ final class PurgeTest extends RegisterTestCase
         self::assertSame(['acme' . "\x1F" . 'ana' => ['hash' => $this->text('SELECT hash FROM nowo_working_time_revision ORDER BY seq DESC'), 'seq' => 12, 'at' => '2026-11-17T16:30:00Z']], $written);
         self::assertSame(0, $tester->execute(['--heads' => $file]), 'nothing removed yet');
 
-        $workday = $this->text("SELECT id FROM nowo_working_time_workday WHERE local_date = '2026-11-17'");
-        $this->withPurgeFlag([
-            'DELETE FROM nowo_working_time_revision WHERE workday_id = ?',
-            'DELETE FROM nowo_working_time_segment WHERE workday_id = ?',
-            'DELETE FROM nowo_working_time_workday WHERE id = ?',
-        ], $workday);
-        self::assertSame(0, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday WHERE id = ?', [$workday]));
+        $this->removeLastDay();
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'), 'only 16 November is left');
 
         $report = $this->service(ChainVerifierInterface::class)->verify(null, null, ['acme' . "\x1F" . 'ana' => ['hash' => (string) $written['acme' . "\x1F" . 'ana']['hash'], 'seq' => 12]]);
         self::assertFalse($report->isIntact(), 'verify --heads reports NOT intact');
@@ -177,6 +174,80 @@ final class PurgeTest extends RegisterTestCase
         $url = getenv('NOWO_TEST_DATABASE_URL');
 
         return is_string($url) && $url !== '';
+    }
+
+    /**
+     * Audit ST-D1b, probe c: after a real purge and a removed last day, a forged anchor carrying the published head's
+     * hash does not excuse it (only a `seq` below the chain start does), and an anchor keeping `seq` 1 is invalid.
+     */
+    public function testAForgedAnchorCarryingThePublishedHeadDoesNotExcuseIt(): void
+    {
+        $this->bootForPurge();
+        $this->dayAt('2021-03-01 08:00:00');
+        $this->dayAt('2026-11-16 08:00:00');
+        $this->dayAt('2026-11-17 08:00:00');
+        $this->clock()->modify('2026-11-18 10:00:00');
+        $this->service(RegisterPurger::class)->purge();
+        $heads = $this->service(ChainVerifierInterface::class)->verify()->headLinks;
+        $head  = $heads['acme' . "\x1F" . 'ana'];
+        $this->removeLastDay();
+        $this->forgeAnchor(3, $head['hash'], 'c1');
+
+        $report = $this->service(ChainVerifierInterface::class)->verify(null, null, $heads);
+        self::assertSame('published_head_missing', $report->broken[0]['reason'] ?? null, 'seq 12 is not below the chain start (5)');
+        self::assertTrue($this->service(ChainVerifierInterface::class)->verify(null, null, ['acme' . "\x1F" . 'ana' => $head['hash']])->isIntact(), 'the 0.1.0 bare-hash rule is weaker (UPGRADING)');
+
+        $this->forgeAnchor(1, $head['hash'], 'c2');
+        self::assertSame(['seq' => 1, 'reason' => 'anchor_seq_invalid'], array_intersect_key($this->service(ChainVerifierInterface::class)->verify(null, null, $heads)->broken[0] ?? [], ['seq' => 0, 'reason' => '']));
+    }
+
+    /**
+     * Audit ST-D1b, probe c2: the same on a chain that was never purged (it starts at `seq` 1).
+     */
+    public function testAForgedAnchorOnANeverPurgedChainDoesNotExcuseARemovedTail(): void
+    {
+        $this->bootForPurge();
+        $this->dayAt('2026-11-16 08:00:00');
+        $this->dayAt('2026-11-17 08:00:00');
+        $heads = $this->service(ChainVerifierInterface::class)->verify()->headLinks;
+        $head  = $heads['acme' . "\x1F" . 'ana'];
+        $this->removeLastDay();
+        $verifier = $this->service(ChainVerifierInterface::class);
+        self::assertSame('published_head_missing', $verifier->verify(null, null, $heads)->broken[0]['reason'] ?? null);
+
+        $this->forgeAnchor(2, $head['hash'], 'c3');
+        self::assertSame('anchor_after_start', $verifier->verify(null, null, $heads)->broken[0]['reason'] ?? null);
+        $this->forgeAnchor(1, $head['hash'], 'c4');
+        self::assertSame('anchor_seq_invalid', $verifier->verify(null, null, $heads)->broken[0]['reason'] ?? null);
+    }
+
+    public function testTheGenesisIsAHeadOnlyWithSeqZero(): void
+    {
+        $this->bootForPurge();
+        $this->dayAt('2026-11-17 08:00:00');
+        $verifier = $this->service(ChainVerifierInterface::class);
+
+        self::assertTrue($verifier->verify(null, null, ['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0]])->isIntact());
+        self::assertSame('published_head_missing', $verifier->verify(null, null, ['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 99]])->broken[0]['reason'] ?? null);
+        self::assertSame('published_head_missing', $verifier->verify(null, null, ['acme' . "\x1F" . 'ana' => ChainCodecs::GENESIS])->broken[0]['reason'] ?? null, 'a bare genesis has no seq');
+    }
+
+    private function removeLastDay(): void
+    {
+        $workday = $this->text("SELECT id FROM nowo_working_time_workday WHERE local_date = '2026-11-17'");
+        $this->withPurgeFlag([
+            'DELETE FROM nowo_working_time_revision WHERE workday_id = ?',
+            'DELETE FROM nowo_working_time_segment WHERE workday_id = ?',
+            'DELETE FROM nowo_working_time_workday WHERE id = ?',
+        ], $workday);
+    }
+
+    /**
+     * An anchor written by hand (INSERT is what the append-only triggers allow), with a plausible retention boundary.
+     */
+    private function forgeAnchor(int $firstKept, string $hash, string $suffix): void
+    {
+        $this->connection()->insert('nowo_working_time_chain_anchor', ['id' => '01900000-0000-7000-8000-0000000000' . $suffix, 'tenant_id' => 'acme', 'worker_id' => 'ana', 'first_kept_seq' => $firstKept, 'anchor_hash' => $hash, 'purged_links' => 1, 'purged_at' => '2026-11-17 09:00:00', 'purge_run_id' => '01900000-0000-7000-8000-0000000001' . $suffix, 'first_kept_date' => '2022-11-01']);
     }
 
     /**
