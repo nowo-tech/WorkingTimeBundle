@@ -1,0 +1,7 @@
+# Demo configuration (S0): the three parts as in the defaults (register on, holidays on, leave off). The demo keeps
+# the single default Doctrine connection and uses the default entity manager (explicit transactions, contract Q-O3a).
+nowo_working_time:
+    doctrine:
+        entity_manager: ~
+    ui:
+        enabled: false

@@ -1,0 +1,9 @@
+Nowo Working Time Bundle installed.
+
+The package is being built slice by slice; see docs/ROADMAP.md for what is available in your version.
+
+The recipe declares the private entity manager "nowo_working_time" (config/packages/nowo_working_time_doctrine.yaml).
+DoctrineBundle needs the multi-entity-manager form (doctrine.orm.entity_managers.default ...); a host that must keep a
+single entity manager sets nowo_working_time.doctrine.entity_manager: null.
+
+Docs: https://github.com/nowo-tech/WorkingTimeBundle/tree/main/docs

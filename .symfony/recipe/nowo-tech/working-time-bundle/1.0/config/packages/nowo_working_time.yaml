@@ -1,0 +1,12 @@
+# Working Time Bundle: see https://github.com/nowo-tech/WorkingTimeBundle/blob/main/docs/CONFIGURATION.md
+nowo_working_time:
+    doctrine:
+        entity_manager: nowo_working_time   # declared in nowo_working_time_doctrine.yaml; null = the default entity manager
+    register:
+        enabled: true
+    holidays:
+        enabled: true
+    leave:
+        enabled: false                      # needs register and holidays
+    ui:
+        enabled: false
