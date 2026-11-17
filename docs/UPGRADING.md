@@ -3,8 +3,17 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 0.1.0](#to-010)
 
 ## Unreleased
+
+## To 0.1.0
+
+From **0.0.0**:
+
+```bash
+composer update nowo-tech/working-time-bundle
+```
 
 First release (0.1.0, the register). After installing: create the tables on the bundle's entity manager, run
 `bin/console nowo:working-time:triggers:install` (the database user needs the TRIGGER privilege; with MySQL binary
