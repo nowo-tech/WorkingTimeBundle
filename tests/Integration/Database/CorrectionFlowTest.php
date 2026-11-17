@@ -27,6 +27,13 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Throwable;
 
+use function array_is_list;
+use function get_debug_type;
+use function is_array;
+use function is_bool;
+use function is_int;
+use function is_string;
+
 use const DATE_ATOM;
 
 /**
@@ -52,6 +59,10 @@ final class CorrectionFlowTest extends RegisterTestCase
         self::assertSame('2026-11-18T07:30:00+00:00', $day->segments[0]->start->format(DATE_ATOM));
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
         self::assertContains('working_time.correction_approved', $this->recorder()->auditKeys());
+        $this->em()->clear();
+        foreach ($this->em()->getRepository(WorkdayRevision::class)->findAll() as $revision) {
+            $this->assertHashSafe($revision->getPayload(), $revision->getKind()->value);
+        }
     }
 
     public function testAStaleDecisionStoresNothingAndNotifiesNobody(): void
@@ -204,6 +215,25 @@ final class CorrectionFlowTest extends RegisterTestCase
         $day = $this->day('ana');
         $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $day->segments[1]->id, null, null, null, 'Long enough reason')), CorrectionRefusedException::class, 'correction.error.live_segment');
         $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $day->segments[0]->id, null, null, null, 'Long enough reason')), CorrectionRefusedException::class, 'correction.error.times');
+    }
+
+    /**
+     * Audit ST: canonical JSON depends on `serialize_precision` for floats, and an empty or numeric-key map turns into a
+     * list on a JSON round trip, so a hashed payload holds strings, integers, booleans, nulls and non-empty lists or
+     * string-keyed maps only.
+     */
+    private function assertHashSafe(mixed $value, string $path): void
+    {
+        if (is_array($value)) {
+            self::assertNotSame([], $value, $path . ': an empty array may be an object');
+            foreach ($value as $key => $item) {
+                self::assertTrue(array_is_list($value) || is_string($key), $path . ': numeric map key');
+                $this->assertHashSafe($item, $path . '.' . $key);
+            }
+
+            return;
+        }
+        self::assertTrue($value === null || is_string($value) || is_int($value) || is_bool($value), $path . ': ' . get_debug_type($value));
     }
 
     private function requestOnFirstSegment(): CorrectionRequest

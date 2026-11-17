@@ -29,6 +29,7 @@ use function array_map;
 use function array_values;
 use function in_array;
 use function is_string;
+use function ksort;
 
 /**
  * The register's persistence on the bundle's entity manager. Protected rows only get `persist()` (no update or delete
@@ -290,24 +291,61 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
      */
     public function chains(?TenantRef $tenant = null, ?WorkerRef $worker = null): array
     {
-        $qb = $this->em()->createQueryBuilder()->select('DISTINCT r.tenantId AS tenant, r.workerId AS worker')->from(WorkdayRevision::class, 'r')
-            ->orderBy('r.tenantId')->addOrderBy('r.workerId');
-        if ($tenant instanceof TenantRef) {
-            $qb->andWhere('r.tenantId = :tenant')->setParameter('tenant', $tenant->value);
-        }
-        if ($worker instanceof WorkerRef) {
-            $qb->andWhere('r.workerId = :worker')->setParameter('worker', $worker->value);
-        }
-        $chains = [];
-        /** @var list<array{tenant: mixed, worker: mixed}> $rows */
-        $rows = $qb->getQuery()->getArrayResult();
-        foreach ($rows as $row) {
-            if (is_string($row['tenant']) && is_string($row['worker']) && (!$tenant instanceof TenantRef || $row['tenant'] === $tenant->value) && (!$worker instanceof WorkerRef || $row['worker'] === $worker->value)) {
-                $chains[] = [new TenantRef($row['tenant']), new WorkerRef($row['worker'])];
+        // Every (tenant, worker) with links, workdays or anchors: a register whose links were all removed is a chain too.
+        $rows = [];
+        foreach ([WorkdayRevision::class, Workday::class, ChainAnchor::class] as $class) {
+            $qb = $this->em()->createQueryBuilder()->select('DISTINCT r.tenantId AS tenant, r.workerId AS worker')->from($class, 'r');
+            if ($tenant instanceof TenantRef) {
+                $qb->andWhere('r.tenantId = :tenant')->setParameter('tenant', $tenant->value);
             }
+            if ($worker instanceof WorkerRef) {
+                $qb->andWhere('r.workerId = :worker')->setParameter('worker', $worker->value);
+            }
+            /** @var list<array{tenant: mixed, worker: mixed}> $found */
+            $found = $qb->getQuery()->getArrayResult();
+            foreach ($found as $row) {
+                if (is_string($row['tenant']) && is_string($row['worker']) && (!$tenant instanceof TenantRef || $row['tenant'] === $tenant->value) && (!$worker instanceof WorkerRef || $row['worker'] === $worker->value)) {
+                    $rows[$row['tenant'] . "\x1F" . $row['worker']] = [$row['tenant'], $row['worker']];
+                }
+            }
+        }
+        ksort($rows);
+        $chains = [];
+        foreach ($rows as [$chainTenant, $chainWorker]) {
+            $chains[] = [new TenantRef($chainTenant), new WorkerRef($chainWorker)];
         }
 
         return $chains;
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function segmentTimes(TenantRef $tenant, WorkerRef $worker): array
+    {
+        /** @var list<array{id: string, start: DateTimeImmutable, end: ?DateTimeImmutable, tenant: string, worker: string}> $rows */
+        $rows = $this->em()->createQueryBuilder()
+            ->select('s.id AS id, s.startedAt AS start, s.endedAt AS end, w.tenantId AS tenant, w.workerId AS worker')
+            ->from(WorkSegment::class, 's')->innerJoin(Workday::class, 'w', 'WITH', 'w.id = s.workdayId')
+            ->where('w.tenantId = :tenant AND w.workerId = :worker')
+            ->setParameter('tenant', $tenant->value)->setParameter('worker', $worker->value)
+            ->orderBy('s.startedAt')->getQuery()->getArrayResult();
+        $times = [];
+        foreach ($rows as $row) {
+            if ($row['tenant'] === $tenant->value && $row['worker'] === $worker->value) {
+                $times[] = ['id' => $row['id'], 'start' => $row['start'], 'end' => $row['end']];
+            }
+        }
+
+        return $times;
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function hasLinkHash(TenantRef $tenant, WorkerRef $worker, string $hash): bool
+    {
+        return $this->em()->getRepository(WorkdayRevision::class)->count(['tenantId' => $tenant->value, 'workerId' => $worker->value, 'hash' => $hash]) > 0;
     }
 
     /**
@@ -478,6 +516,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
     /**
      * See the implemented interface.
      */
+    public function exportsWithHeads(?TenantRef $tenant): array
+    {
+        $criteria = $tenant instanceof TenantRef ? ['tenantId' => $tenant->value] : [];
+        $rows     = $this->em()->getRepository(RegisterExport::class)->findBy($criteria, ['createdAt' => 'ASC']);
+
+        return array_values(array_filter($rows, static fn (RegisterExport $export): bool => $export->getChainHeads() !== [] && (!$tenant instanceof TenantRef || $export->getTenantId() === $tenant->value)));
+    }
+
+    /**
+     * See the implemented interface.
+     */
     public function claimExport(string $id): bool
     {
         $claimed = $this->em()->createQueryBuilder()->update(RegisterExport::class, 'e')
@@ -534,6 +583,19 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
             ->orderBy('n.deliverableFrom')->addOrderBy('n.createdAt')->setMaxResults($limit)->getQuery()->getResult();
 
         return $rows;
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function deferNotice(string $id, DateTimeImmutable $deliverableFrom): bool
+    {
+        $moved = $this->em()->createQueryBuilder()->update(RegisterNotice::class, 'n')
+            ->set('n.deliverableFrom', ':at')->where('n.id = :id AND n.sentAt IS NULL')
+            ->setParameter('at', WorkdayRevision::utc($deliverableFrom), UtcDateTimeImmutableType::NAME)->setParameter('id', $id)
+            ->getQuery()->execute();
+
+        return $moved === 1;
     }
 
     /**

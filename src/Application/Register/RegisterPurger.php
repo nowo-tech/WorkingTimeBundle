@@ -76,7 +76,7 @@ final readonly class RegisterPurger
                 if ($ids === []) {
                     break;
                 }
-                $counts = $this->runner->write(fn (): array => $this->purge->deleteBatch($ids, $runId, $now));
+                $counts = $this->runner->write(fn (): array => $this->purge->deleteBatch($ids, $runId, $now, $firstKept));
                 foreach ($counts as $key => $count) {
                     $totals[$key] += $count;
                 }

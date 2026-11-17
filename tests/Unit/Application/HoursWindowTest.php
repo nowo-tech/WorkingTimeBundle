@@ -59,4 +59,18 @@ final class HoursWindowTest extends TestCase
         self::assertSame($now, HoursWindow::nextDeliverable([], $now, 30));
         self::assertSame('2026-11-11 22:00:00', HoursWindow::nextDeliverable(['2026-11-10' => $this->schedule()], $now, 30)->format('Y-m-d H:i:s'));
     }
+
+    public function testRangeLessWeekdaysGetTheDefaultHours(): void
+    {
+        $days = HoursWindow::withDefaultHours([
+            '2026-11-20' => new DaySchedule('Europe/Madrid'),
+            '2026-11-21' => new DaySchedule('Europe/Madrid'),
+            '2026-11-23' => $this->schedule(),
+        ], '08:00-15:00');
+
+        self::assertSame([['from' => '08:00', 'to' => '15:00']], $days['2026-11-20']->ranges, 'a Friday without ranges');
+        self::assertSame('Europe/Madrid', $days['2026-11-20']->timezone);
+        self::assertSame([], $days['2026-11-21']->ranges, 'a Saturday stays without hours');
+        self::assertSame($this->schedule()->ranges, $days['2026-11-23']->ranges, 'scheduled hours are kept');
+    }
 }

@@ -7,6 +7,8 @@ namespace Nowo\WorkingTimeBundle\Tests\Integration\Kernel;
 use Closure;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
+use function dirname;
+
 /**
  * The two host kinds of the suite (REQ-ARCH-001): a standard Symfony app (default connection, default entity manager
  * plus the private `nowo_working_time` one the Flex recipe declares) and a DDD app (a dedicated connection and entity
@@ -68,7 +70,12 @@ final readonly class Host
 
         return static function (ContainerConfigurator $container, string $url) use ($kind): void {
             if ($kind === self::SINGLE) {
-                $container->extension('doctrine', ['dbal' => ['url' => $url], 'orm' => []]);
+                $container->extension('doctrine', ['dbal' => ['url' => $url], 'orm' => ['mappings' => ['Host' => [
+                    'type'      => 'attribute',
+                    'dir'       => dirname(__DIR__, 2) . '/Fixtures/HostEntity',
+                    'prefix'    => 'Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity',
+                    'is_bundle' => false,
+                ]]]]);
 
                 return;
             }

@@ -25,6 +25,6 @@ final readonly class EntityManagerHygieneListener
      */
     public function clear(): void
     {
-        $this->runner->manager()->clear(); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->runner->release($this->runner->manager()); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 }

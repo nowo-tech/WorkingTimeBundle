@@ -148,6 +148,7 @@ final class DoctrineInfrastructureTest extends TestCase
         $connection = $this->createStub(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new SQLitePlatform());
         $connection->method('fetchFirstColumn')->willThrowException(new RuntimeException('down'));
+        $connection->method('fetchAllAssociative')->willThrowException(new RuntimeException('down'));
         $installer = new RegisterTriggerInstaller();
         self::assertSame($installer->names(new SQLitePlatform()), (new DoctrineTriggerInspector($this->runner($connection), $installer))->missing());
     }

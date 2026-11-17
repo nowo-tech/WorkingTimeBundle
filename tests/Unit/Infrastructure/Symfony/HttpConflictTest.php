@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Tests\Unit\Infrastructure\Symfony;
 
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseContext;
+use Nowo\WorkingTimeBundle\Application\Register\Exception\ChainBusyException;
 use Nowo\WorkingTimeBundle\Application\Register\Exception\StaleCorrectionDecisionException;
 use Nowo\WorkingTimeBundle\Application\Register\Exception\StaleSettingsException;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\ConflictFallbackListener;
@@ -33,6 +34,7 @@ final class HttpConflictTest extends TestCase
         self::assertNull($formatter->format($this->request(true, false), $context), 'HTML: the responder\'s page');
         self::assertNull($formatter->format($this->request(false, true), $context), 'not a bundle route');
         self::assertSame('settings_stale', WorkingTimeConflictFormatter::code(new StaleSettingsException()));
+        self::assertSame(ChainBusyException::ERROR_CODE, WorkingTimeConflictFormatter::code(new RuntimeException('x', 0, new ChainBusyException())));
         self::assertSame('concurrency_conflict', WorkingTimeConflictFormatter::code(new RuntimeException()));
     }
 

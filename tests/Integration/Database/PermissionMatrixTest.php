@@ -75,7 +75,12 @@ final class PermissionMatrixTest extends UiTestCase
         self::assertSame(403, $this->statusOf('GET', '/working-time/team/day?worker=ana&date=2026-11-18'), 'manages leo, not ana');
         self::assertSame(200, $this->statusOf('GET', '/working-time/team/day?worker=leo&date=2026-11-18'));
         self::assertSame(404, $this->statusOf('GET', '/working-time/team/day?worker=ghost&date=2026-11-18'), 'not a member');
-        self::assertSame(403, $this->statusOf('GET', '/working-time/team'), 'the team page needs the tenant-wide grant');
+        $team = $this->client->request('GET', '/working-time/team');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode(), 'the team page lists the workers the actor manages');
+        self::assertStringContainsString('Leo', $team->text());
+        self::assertStringNotContainsString('Ana', $team->filter('tbody')->text());
+        $this->ctx()->grants['acme']['mia'] = ['clock'];
+        self::assertSame(403, $this->statusOf('GET', '/working-time/team'), 'nobody to manage');
         self::assertSame(200, $this->statusOf('GET', '/working-time/exports'), 'membership: own exports');
     }
 

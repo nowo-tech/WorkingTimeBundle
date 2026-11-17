@@ -155,11 +155,13 @@ final readonly class RegisterExportService implements RegisterExportServiceInter
 
     private function mayDownload(RegisterExport $export, RegisterContext $context): bool
     {
-        if ($export->getRequestedById() === $context->actor->value) {
-            return true;
+        // An own copy is only its requester's; an inspection export needs `export` now, also for its requester
+        // (audit ST-L3: a requester who lost the permission no longer downloads it).
+        if ($export->isOwnCopy()) {
+            return $export->getRequestedById() === $context->actor->value;
         }
 
-        return !$export->isOwnCopy() && $this->access->can(WorkingTimePermission::Export);
+        return $this->access->can(WorkingTimePermission::Export);
     }
 
     private function checkPeriod(string $from, string $to): void

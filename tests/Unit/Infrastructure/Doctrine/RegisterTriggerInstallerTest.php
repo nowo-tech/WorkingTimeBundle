@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Tests\Unit\Infrastructure\Doctrine;
 
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\MySQL80Platform;
@@ -18,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 use function implode;
+use function preg_match;
 use function str_contains;
 use function substr_count;
 
@@ -165,5 +167,48 @@ final class RegisterTriggerInstallerTest extends TestCase
         $other = new TriggerInstallException(false, $previous);
         self::assertFalse($other->mysql);
         self::assertStringContainsString('privilege to create triggers and functions', $other->getMessage());
+    }
+
+    #[DataProvider('mysqlPlatforms')]
+    public function testMysqlInstalledTriggersAreComparedByTheirActionStatement(AbstractPlatform $platform): void
+    {
+        $installer = new RegisterTriggerInstaller();
+        $rows      = [];
+        $names     = [];
+        foreach ($installer->statements($platform) as $sql) {
+            if (preg_match('/^CREATE TRIGGER (\S+) .*? FOR EACH ROW (.*)$/s', $sql, $m) === 1) {
+                $rows[]  = ['name' => $m[1], 'body' => '  ' . $m[2] . "\n"];
+                $names[] = $m[1];
+            }
+        }
+        $rows[0]['body'] = 'BEGIN END';
+        $connection      = $this->createStub(Connection::class);
+        $connection->method('getDatabasePlatform')->willReturn($platform);
+        $connection->method('fetchAllAssociative')->willReturn($rows);
+
+        self::assertSame([$names[0] ?? ''], $installer->missing($connection), 'a same-name no-op trigger is not installed (audit ST-L1)');
+    }
+
+    public function testPostgresqlInstalledTriggersMustBeEnabledWithTheShippedFunction(): void
+    {
+        $installer = new RegisterTriggerInstaller();
+        $functions = [];
+        $rows      = [];
+        $names     = [];
+        foreach ($installer->statements(new PostgreSQLPlatform()) as $sql) {
+            if (preg_match('/^CREATE OR REPLACE FUNCTION (\S+)\(\) .*? AS \$\$(.*)\$\$$/s', $sql, $m) === 1) {
+                $functions[$m[1]] = $m[2];
+            } elseif (preg_match('/^CREATE TRIGGER (\S+) .*? EXECUTE FUNCTION (\S+)\(\)$/s', $sql, $m) === 1) {
+                $rows[]  = ['name' => $m[1], 'enabled' => 'O', 'function' => $m[2], 'body' => $functions[$m[2]] ?? ''];
+                $names[] = $m[1];
+            }
+        }
+        $rows[0]['enabled'] = 'D';
+        $rows[1]['body']    = 'BEGIN RETURN NEW; END;';
+        $connection         = $this->createStub(Connection::class);
+        $connection->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+        $connection->method('fetchAllAssociative')->willReturn($rows);
+
+        self::assertSame([$names[0] ?? '', $names[1] ?? ''], $installer->missing($connection), 'disabled, then replaced');
     }
 }

@@ -33,6 +33,7 @@ final class PurgeTest extends RegisterTestCase
     {
         $this->bootForPurge();
         $this->dayAt('2022-09-05 08:00:00');
+        $early = $this->service(ChainVerifierInterface::class)->verify()->heads;
         $this->dayAt('2022-10-31 08:00:00');
         $this->dayAt('2022-11-02 08:00:00');
         // A late correction of 31 October, after 2 November's links: it stays (a chain only loses a prefix).
@@ -51,6 +52,7 @@ final class PurgeTest extends RegisterTestCase
         self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_chain_anchor'));
         self::assertSame(5, $this->int('SELECT COUNT(*) FROM nowo_working_time_revision'), 'four kept links and the late correction');
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
+        self::assertTrue($this->service(ChainVerifierInterface::class)->verify(null, null, $early)->isIntact(), 'a head published before the purge is covered by the anchor');
         self::assertContains('working_time.register_purged', $this->recorder()->auditKeys());
         if ($this->platform() === 'mysql') {
             self::assertNull($this->connection()->fetchOne('SELECT @nowo_working_time_purge'), 'guard cleared in finally');

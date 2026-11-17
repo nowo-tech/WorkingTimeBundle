@@ -42,7 +42,7 @@ final class PurgeDbUserTest extends RegisterTestCase
 
             return;
         }
-        $this->bootWithPurgeConnection($url);
+        $this->bootWithPurgeConnection();
         $this->enable();
         $this->actAs('ana', 'clock');
         $this->clock()->modify('2021-03-01 08:00:00');
@@ -64,7 +64,7 @@ final class PurgeDbUserTest extends RegisterTestCase
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
     }
 
-    private function bootWithPurgeConnection(string $url): void
+    private function bootWithPurgeConnection(): void
     {
         $this->boot(['integrity' => ['purge_guard' => 'db_user', 'purge_db_user' => self::PURGE_USER, 'purge_connection' => 'purge']], triggers: false);
         $mysql = $this->platform() === 'mysql';
@@ -85,9 +85,9 @@ final class PurgeDbUserTest extends RegisterTestCase
     protected function boot(array $config = [], bool $triggers = true): void
     {
         $url          = (string) getenv('NOWO_TEST_DATABASE_URL');
-        $purge        = self::purgeUrl($url);
+        $purge        = $this->purgeUrl($url);
         $this->kernel = $this->bootKernel(
-            Host::standard()->bundleConfig(self::config(array_replace_recursive(TestServices::PORTS, ['ui' => ['enabled' => true], 'register' => ['export' => ['async' => 'sync']]], $config))),
+            Host::standard()->bundleConfig($this->config(array_replace_recursive(TestServices::PORTS, ['ui' => ['enabled' => true], 'register' => ['export' => ['async' => 'sync']]], $config))),
             static function (ContainerConfigurator $container, string $default) use ($purge): void {
                 $container->extension('doctrine', [
                     'dbal' => ['default_connection' => 'default', 'connections' => ['default' => ['url' => $default], 'purge' => ['url' => $purge ?? $default]]],
@@ -98,7 +98,7 @@ final class PurgeDbUserTest extends RegisterTestCase
         $this->schema($triggers);
     }
 
-    private static function purgeUrl(string $url): ?string
+    private function purgeUrl(string $url): ?string
     {
         $parts = parse_url($url);
         if (!is_array($parts) || !isset($parts['user'])) {
@@ -113,7 +113,7 @@ final class PurgeDbUserTest extends RegisterTestCase
      *
      * @return array<string, mixed>
      */
-    private static function config(array $config): array
+    private function config(array $config): array
     {
         $typed = [];
         foreach ($config as $key => $value) {

@@ -84,13 +84,13 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
     /**
      * Deletes one batch, writes the anchors.
      */
-    public function deleteBatch(array $workdayIds, string $runId, DateTimeImmutable $at): array
+    public function deleteBatch(array $workdayIds, string $runId, DateTimeImmutable $at, ?LocalDate $firstKept = null): array
     {
         if ($this->purgeConnection instanceof Connection) {
-            return $this->purgeConnection->transactional(fn (Connection $connection): array => $this->batch($connection, $workdayIds, $runId, $at));
+            return $this->purgeConnection->transactional(fn (Connection $connection): array => $this->batch($connection, $workdayIds, $runId, $at, $firstKept));
         }
 
-        return $this->batch($this->connection(), $workdayIds, $runId, $at);
+        return $this->batch($this->connection(), $workdayIds, $runId, $at, $firstKept);
     }
 
     /**
@@ -106,7 +106,7 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
      *
      * @return array{workdays: int, segments: int, revisions: int, corrections: int, anchors: int}
      */
-    private function batch(Connection $connection, array $ids, string $runId, DateTimeImmutable $at): array
+    private function batch(Connection $connection, array $ids, string $runId, DateTimeImmutable $at, ?LocalDate $firstKept): array
     {
         $platform = $connection->getDatabasePlatform();
         $mysql    = $platform instanceof AbstractMySQLPlatform;
@@ -148,14 +148,15 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
                 );
                 $totals['revisions'] += (int) $deleted;
                 $connection->insert($this->table('chain_anchor'), [
-                    'id'             => $this->ids->generate(),
-                    'tenant_id'      => $tenant,
-                    'worker_id'      => $worker,
-                    'first_kept_seq' => max(1, $this->number($last['seq']) + 1),
-                    'anchor_hash'    => $this->text($last['hash']),
-                    'purged_links'   => (int) $deleted,
-                    'purged_at'      => WorkdayRevision::utc($at)->format('Y-m-d H:i:s'),
-                    'purge_run_id'   => $runId,
+                    'id'              => $this->ids->generate(),
+                    'tenant_id'       => $tenant,
+                    'worker_id'       => $worker,
+                    'first_kept_seq'  => max(1, $this->number($last['seq']) + 1),
+                    'anchor_hash'     => $this->text($last['hash']),
+                    'purged_links'    => (int) $deleted,
+                    'purged_at'       => WorkdayRevision::utc($at)->format('Y-m-d H:i:s'),
+                    'purge_run_id'    => $runId,
+                    'first_kept_date' => $firstKept?->value,
                 ]);
                 ++$totals['anchors'];
             }

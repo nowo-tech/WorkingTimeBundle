@@ -17,5 +17,6 @@
         <field name="purgedLinks" column="purged_links" type="integer"/>
         <field name="purgedAt" column="purged_at" type="nowo_wt_utc_datetime"/>
         <field name="purgeRunId" column="purge_run_id" type="string" length="36"/>
+        <field name="firstKeptDate" column="first_kept_date" type="date_immutable" nullable="true"/>
     </entity>
 </doctrine-mapping>

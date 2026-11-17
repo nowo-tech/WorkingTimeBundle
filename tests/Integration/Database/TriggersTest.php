@@ -123,6 +123,30 @@ final class TriggersTest extends RegisterTestCase
         self::assertNotSame([], $this->installer()->missing($this->connection()));
     }
 
+    public function testAReplacedOrDisabledTriggerIsNotInstalled(): void
+    {
+        $this->boot();
+        $c    = $this->connection();
+        $name = 'nowo_wt_revision_no_update';
+        self::assertTrue($this->installer()->installed($c));
+        if ($this->platform() === 'postgresql') {
+            $c->executeStatement('ALTER TABLE nowo_working_time_revision DISABLE TRIGGER ' . $name);
+            self::assertSame([$name], $this->installer()->missing($c), 'P6: a disabled trigger');
+            $c->executeStatement('ALTER TABLE nowo_working_time_revision ENABLE TRIGGER ' . $name);
+            $c->executeStatement('DROP TRIGGER ' . $name . ' ON nowo_working_time_revision');
+            $c->executeStatement('CREATE OR REPLACE FUNCTION audit_noop() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$');
+            $c->executeStatement('CREATE TRIGGER ' . $name . ' BEFORE UPDATE ON nowo_working_time_revision FOR EACH ROW EXECUTE FUNCTION audit_noop()');
+        } elseif ($this->platform() === 'mysql') {
+            $c->executeStatement('DROP TRIGGER ' . $name);
+            $c->executeStatement('CREATE TRIGGER ' . $name . ' BEFORE UPDATE ON nowo_working_time_revision FOR EACH ROW BEGIN END');
+        } else {
+            $c->executeStatement('DROP TRIGGER ' . $name);
+            $c->executeStatement('CREATE TRIGGER ' . $name . ' BEFORE UPDATE ON nowo_working_time_revision BEGIN SELECT 1; END');
+        }
+
+        self::assertSame([$name], $this->installer()->missing($c), 'P5: a same-name no-op trigger');
+    }
+
     public function testAFailedInstallLeavesNothingBehind(): void
     {
         $this->boot(triggers: false);

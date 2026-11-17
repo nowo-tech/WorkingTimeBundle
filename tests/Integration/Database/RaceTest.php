@@ -50,10 +50,10 @@ final class RaceTest extends UiTestCase
 
         $second             = $this->secondRequest();
         $this->ctx()->races = 2;
-        $this->assertConflict(fn () => $this->corrections()->decide($second->getId(), true, null, $second->getVersion()), StaleCorrectionDecisionException::class);
+        $this->assertConflict(fn (): CorrectionRequest => $this->corrections()->decide($second->getId(), true, null, $second->getVersion()), StaleCorrectionDecisionException::class);
         $this->ctx()->races        = 0;
         $this->ctx()->bumpVersions = true;
-        $this->assertConflict(fn () => $this->corrections()->decide($second->getId(), true, null, $second->getVersion()), StaleCorrectionDecisionException::class);
+        $this->assertConflict(fn (): CorrectionRequest => $this->corrections()->decide($second->getId(), true, null, $second->getVersion()), StaleCorrectionDecisionException::class);
         self::assertSame('pending', $this->text('SELECT status FROM nowo_working_time_correction WHERE id = ?', [$second->getId()]));
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
     }
@@ -66,11 +66,11 @@ final class RaceTest extends UiTestCase
         $this->ctx()->races = 1;
         $recorded           = $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-18'), $input);
         $this->ctx()->races = 2;
-        $this->assertConflict(fn () => $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-18'), $input), ChainBusyException::class);
+        $this->assertConflict(fn (): WorkdayRevision => $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-18'), $input), ChainBusyException::class);
 
         $this->ctx()->actor = 'ana';
         $this->ctx()->races = 2;
-        $this->assertConflict(fn () => $this->corrections()->answer($recorded->getId(), false, null), ChainBusyException::class);
+        $this->assertConflict(fn (): WorkdayRevision => $this->corrections()->answer($recorded->getId(), false, null), ChainBusyException::class);
         $this->ctx()->races = 0;
 
         $this->ctx()->actor = 'mia';
@@ -106,7 +106,7 @@ final class RaceTest extends UiTestCase
         $this->ctx()->grant('acme', 'leo', 'manage_team');
         $this->ctx()->grant('acme', 'mia', 'manage_team');
         $this->ctx()->member('acme', 'leo', 'Leo');
-        $kernel = $this->bootKernel(Host::standard()->bundleConfig(self::config(array_replace_recursive(TestServices::PORTS, ['ui' => ['enabled' => true], 'register' => ['export' => ['async' => 'sync']]]))), Host::standard()->configure());
+        $kernel = $this->bootKernel(Host::standard()->bundleConfig($this->config(array_replace_recursive(TestServices::PORTS, ['ui' => ['enabled' => true], 'register' => ['export' => ['async' => 'sync']]]))), Host::standard()->configure());
         $other  = $kernel->getContainer()->get('test.context');
         self::assertInstanceOf(TestContext::class, $other);
         foreach (['tenant', 'members', 'grants', 'groups', 'manages'] as $property) {
@@ -138,7 +138,7 @@ final class RaceTest extends UiTestCase
         $this->em()->getEventManager()->addEventListener([Events::prePersist], $listener);
         $this->ctx()->actor = 'mia';
         try {
-            $this->assertConflict(fn () => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), StaleCorrectionDecisionException::class);
+            $this->assertConflict(fn (): CorrectionRequest => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), StaleCorrectionDecisionException::class);
         } finally {
             $this->em()->getEventManager()->removeEventListener([Events::prePersist], $listener);
         }
@@ -196,7 +196,7 @@ final class RaceTest extends UiTestCase
      *
      * @return array<string, mixed>
      */
-    private static function config(array $config): array
+    private function config(array $config): array
     {
         $typed = [];
         foreach ($config as $key => $value) {

@@ -164,9 +164,19 @@ final readonly class NoticeDispatcher
         $sent   = 0;
         $failed = 0;
         foreach ($this->runner->read(fn (): array => $this->store->dueNotices($now, $this->budget)) as $notice) {
-            $tenant  = new TenantRef($notice->getTenantId());
-            $worker  = new WorkerRef($notice->getWorkerId());
-            $profile = $this->directory->worker($tenant, $worker);
+            $tenant   = new TenantRef($notice->getTenantId());
+            $worker   = new WorkerRef($notice->getWorkerId());
+            $profile  = $this->directory->worker($tenant, $worker);
+            $settings = $profile instanceof WorkerProfile ? $this->runner->read(fn (): ?RegisterSettings => $this->store->settings($tenant)) : null;
+            if ($settings instanceof RegisterSettings && $profile instanceof WorkerProfile) {
+                // A late run (cron delay, notifier outage) never delivers outside the recipient's hours (audit ST-L2).
+                $at = $this->runner->read(fn (): DateTimeImmutable => $this->outbox->deliverableFrom($settings, $profile, $now));
+                if ($at > $now) {
+                    $this->runner->write(fn (): bool => $this->store->deferNotice($notice->getId(), $at));
+
+                    continue;
+                }
+            }
             try {
                 if ($profile instanceof WorkerProfile && $profile->worker->equals($worker)) {
                     $this->notifier->send(new NoticeMessage($tenant, $worker, $notice->getKind(), $notice->getParams(), $notice->getActionPath(), $profile->locale));

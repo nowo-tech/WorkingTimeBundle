@@ -27,11 +27,13 @@ final class TimezoneTest extends RegisterTestCase
     protected function setUp(): void
     {
         $this->zone = date_default_timezone_get();
+        // @phpstan-ignore frankenphp.worker.noDateDefaultTimezoneSet (a test of the process default zone, restored in tearDown)
         date_default_timezone_set('Europe/Madrid');
     }
 
     protected function tearDown(): void
     {
+        // @phpstan-ignore frankenphp.worker.noDateDefaultTimezoneSet (restores the zone the test changed)
         date_default_timezone_set($this->zone);
         parent::tearDown();
     }

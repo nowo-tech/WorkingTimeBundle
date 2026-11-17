@@ -12,16 +12,16 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use LogicException;
 use Throwable;
 
-use function array_diff;
 use function array_map;
-use function array_values;
 use function implode;
-use function is_string;
+use function is_scalar;
 use function preg_match;
+use function preg_replace;
 use function sprintf;
 use function str_contains;
 use function str_replace;
 use function strtolower;
+use function trim;
 
 /**
  * The database side of the append-only register (contract section 6.4, spec 198 FR-017): triggers that refuse.
@@ -152,14 +152,67 @@ final readonly class RegisterTriggerInstaller
     public function missing(Connection $connection): array
     {
         $platform = $connection->getDatabasePlatform();
-        $sql      = match (true) {
-            $platform instanceof AbstractMySQLPlatform => 'SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE()',
-            $platform instanceof PostgreSQLPlatform    => 'SELECT tgname FROM pg_trigger WHERE NOT tgisinternal',
-            default                                    => "SELECT name FROM sqlite_master WHERE type = 'trigger'",
-        };
-        $present = array_map(static fn (mixed $name): string => is_string($name) ? strtolower($name) : '', $connection->fetchFirstColumn($sql));
+        $expected = $this->expectedBodies($platform);
+        $present  = [];
+        if ($platform instanceof AbstractMySQLPlatform) {
+            foreach ($connection->fetchAllAssociative('SELECT TRIGGER_NAME AS name, ACTION_STATEMENT AS body FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE()') as $row) {
+                $present[$this->text($row['name'])] = $this->normalize($this->text($row['body']));
+            }
+        } elseif ($platform instanceof PostgreSQLPlatform) {
+            $sql = 'SELECT t.tgname AS name, t.tgenabled AS enabled, p.proname AS function, p.prosrc AS body FROM pg_trigger t INNER JOIN pg_proc p ON p.oid = t.tgfoid WHERE NOT t.tgisinternal';
+            foreach ($connection->fetchAllAssociative($sql) as $row) {
+                // A disabled trigger (ALTER TABLE … DISABLE TRIGGER) does not count as installed.
+                $present[$this->text($row['name'])] = $this->text($row['enabled']) === 'O' ? $this->text($row['function']) . ':' . $this->normalize($this->text($row['body'])) : 'disabled';
+            }
+        } else {
+            foreach ($connection->fetchAllAssociative("SELECT name, sql AS body FROM sqlite_master WHERE type = 'trigger'") as $row) {
+                $present[$this->text($row['name'])] = $this->normalize($this->text($row['body']));
+            }
+        }
+        $missing = [];
+        foreach ($expected as $name => $body) {
+            // Missing, disabled or replaced by another body (a same-name no-op trigger): not installed (audit ST-L1).
+            if (($present[$name] ?? null) !== $body) {
+                $missing[] = $name;
+            }
+        }
 
-        return array_values(array_diff(array_map(strtolower(...), $this->names($platform)), $present));
+        return $missing;
+    }
+
+    /**
+     * The body each trigger must have, normalised (MySQL / MariaDB: the action statement; PostgreSQL: the function and
+     * its source; SQLite: the whole statement).
+     *
+     * @return array<string, string>
+     */
+    private function expectedBodies(AbstractPlatform $platform): array
+    {
+        $bodies    = [];
+        $functions = [];
+        foreach ($this->statements($platform) as $sql) {
+            if (preg_match('/^CREATE OR REPLACE FUNCTION (\S+)\(\) .*? AS \$\$(.*)\$\$$/s', $sql, $m) === 1) {
+                $functions[$m[1]] = $this->normalize($m[2]);
+            } elseif (preg_match('/^CREATE TRIGGER (\S+) .*? EXECUTE FUNCTION (\S+)\(\)$/s', $sql, $m) === 1) {
+                $bodies[$m[1]] = $m[2] . ':' . ($functions[$m[2]] ?? '');
+            } elseif ($platform instanceof AbstractMySQLPlatform && preg_match('/^CREATE TRIGGER (\S+) .*? FOR EACH ROW (.*)$/s', $sql, $m) === 1) {
+                $bodies[$m[1]] = $this->normalize($m[2]);
+            } elseif (preg_match('/^CREATE TRIGGER (\S+) /', $sql, $m) === 1) {
+                $bodies[$m[1]] = $this->normalize($sql);
+            }
+        }
+
+        return $bodies;
+    }
+
+    private function normalize(string $sql): string
+    {
+        return strtolower(trim((string) preg_replace('/\s+/', ' ', $sql)));
+    }
+
+    private function text(mixed $value): string
+    {
+        return is_scalar($value) ? (string) $value : '';
     }
 
     /**

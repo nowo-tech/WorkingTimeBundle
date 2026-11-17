@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Tests\Integration\Database;
 
+use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
+use LogicException;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
+use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 
 /**
@@ -50,6 +54,35 @@ final class HostKindsTest extends RegisterTestCase
         $this->act(ClockAction::ClockOut, 60);
 
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
-        self::assertSame(0, $this->em()->getUnitOfWork()->size(), 'nothing left managed in the host unit of work');
+        self::assertSame(0, $this->em()->getUnitOfWork()->size(), 'nothing of the bundle left managed in the host unit of work');
+    }
+
+    public function testASingleEmHostKeepsItsEntitiesAndItsPendingChanges(): void
+    {
+        $this->hostKind = Host::singleEntityManager();
+        $this->boot();
+        $tool = new SchemaTool($this->em());
+        $meta = [$this->em()->getClassMetadata(HostNote::class)];
+        $tool->dropSchema($meta);
+        $tool->createSchema($meta);
+        $this->enable();
+        $this->actAs('ana', 'clock');
+        $note = new HostNote('n1', 'draft');
+        $this->em()->persist($note);
+        $this->em()->flush();
+        $note->text = 'edited by the host';
+
+        self::assertSame('idle', $this->service(RegisterClockInterface::class)->state()->status->value, 'a bundle read');
+        self::assertTrue($this->em()->contains($note), 'the host entity stays managed');
+        try {
+            $this->act(ClockAction::ClockIn);
+            self::fail('A write while the host has pending changes is refused.');
+        } catch (LogicException $e) {
+            self::assertStringContainsString('will not flush the host', $e->getMessage());
+        }
+        $this->em()->flush();
+        self::assertSame('working', $this->act(ClockAction::ClockIn)->status->value);
+        self::assertTrue($this->em()->contains($note));
+        self::assertSame('edited by the host', $this->text("SELECT text FROM host_note WHERE id = 'n1'"));
     }
 }

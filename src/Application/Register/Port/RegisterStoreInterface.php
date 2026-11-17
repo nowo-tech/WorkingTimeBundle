@@ -140,7 +140,7 @@ interface RegisterStoreInterface
     public function addRevision(WorkdayRevision $revision): void;
 
     /**
-     * The chains (tenant, worker), optionally of one tenant / worker.
+     * The chains (tenant, worker) — every pair with links, workdays or anchors — optionally of one tenant / worker.
      *
      * @return list<array{TenantRef, WorkerRef}>
      */
@@ -152,6 +152,18 @@ interface RegisterStoreInterface
      * @return list<WorkdayRevision>
      */
     public function chainBatch(TenantRef $tenant, WorkerRef $worker, int $afterSeq, int $limit): array;
+
+    /**
+     * Every segment of a worker's workdays in a tenant (the verifier's cross-check), by start.
+     *
+     * @return list<array{id: string, start: DateTimeImmutable, end: ?DateTimeImmutable}>
+     */
+    public function segmentTimes(TenantRef $tenant, WorkerRef $worker): array;
+
+    /**
+     * Whether the worker's chain holds a link with this hash.
+     */
+    public function hasLinkHash(TenantRef $tenant, WorkerRef $worker, string $hash): bool;
 
     /**
      * The anchors of a chain, by first kept seq.
@@ -233,6 +245,13 @@ interface RegisterStoreInterface
      */
     public function exportsAbout(string $ref): array;
 
+    /**
+     * Exports that recorded chain heads (every tenant, or one), oldest first.
+     *
+     * @return list<RegisterExport>
+     */
+    public function exportsWithHeads(?TenantRef $tenant): array;
+
     /** Moves a pending export to running; false when another generator won. */
     public function claimExport(string $id): bool;
 
@@ -254,6 +273,9 @@ interface RegisterStoreInterface
      * @return list<RegisterNotice>
      */
     public function dueNotices(DateTimeImmutable $now, int $limit): array;
+
+    /** Moves an unsent notice to a later instant (outside the recipient's hours at delivery). */
+    public function deferNotice(string $id, DateTimeImmutable $deliverableFrom): bool;
 
     /** Marks a notice sent; false when another run sent it. */
     public function markNoticeSent(string $id, DateTimeImmutable $at): bool;

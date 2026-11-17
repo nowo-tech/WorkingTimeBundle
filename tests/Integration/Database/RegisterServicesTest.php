@@ -195,6 +195,14 @@ final class RegisterServicesTest extends RegisterTestCase
             self::assertSame($sum, hash('sha256', $entries[$name]));
         }
         self::assertCount(2, $exports->list(), 'inspection exports, not the own copy of someone else');
+        // Audit ST-L3: a requester who loses `export` no longer downloads an inspection export.
+        $this->ctx()->grants['acme']['ins'] = ['clock'];
+        try {
+            $exports->open($pdf->getId());
+            self::fail('export revoked');
+        } catch (RegisterUnavailableException) {
+        }
+        $this->actAs('ins', 'export');
 
         $this->clock()->modify('+8 days');
         self::assertSame(3, $this->service(RegisterExportService::class)->expire());

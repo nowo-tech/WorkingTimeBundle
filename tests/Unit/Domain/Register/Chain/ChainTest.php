@@ -19,6 +19,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use function hash;
+use function ini_get;
+use function ini_set;
+use function json_decode;
 use function str_repeat;
 use function strlen;
 
@@ -42,6 +45,25 @@ final class ChainTest extends TestCase
         self::assertSame('{"p":"/a/ñ€","v":1.0}', CanonicalJson::encode(['v' => 1.0, 'p' => '/a/ñ€']));
         self::assertSame('5', CanonicalJson::encode(5));
         self::assertSame('[]', CanonicalJson::encode([]));
+    }
+
+    public function testCanonicalJsonHazardsThatKeepFloatsAndEmptyMapsOutOfPayloads(): void
+    {
+        // Floats follow serialize_precision, so payloads never carry them (audit ST); the same value prints differently.
+        $precision = ini_get('serialize_precision');
+        try {
+            // @phpstan-ignore frankenphp.worker.noPersistentIniSet (shows the hazard; restored in finally)
+            ini_set('serialize_precision', '17');
+            self::assertSame('0.10000000000000001', CanonicalJson::encode(0.1));
+        } finally {
+            // @phpstan-ignore frankenphp.worker.noPersistentIniSet (restores the setting)
+            ini_set('serialize_precision', (string) $precision);
+        }
+        self::assertSame('0.1', CanonicalJson::encode(0.1));
+        // An empty map and a numeric-key map collapse to lists after a JSON round trip.
+        self::assertSame('[]', CanonicalJson::encode(json_decode('{}', true)));
+        self::assertSame('{"1":"a"}', CanonicalJson::encode([1 => 'a']));
+        self::assertSame('["a"]', CanonicalJson::encode(json_decode('{"0":"a"}', true)));
     }
 
     public function testFormatOneGoldenVector(): void

@@ -12,6 +12,7 @@ use function array_unique;
 use function count;
 use function is_array;
 use function is_string;
+use function preg_match;
 use function str_starts_with;
 
 /**
@@ -121,6 +122,9 @@ final class ConfigurationTree
         $register->integerNode('ipv6_prefix')->defaultValue(64)->min(64)->max(64)->end();
         $register->arrayNode('reminders')->addDefaultsIfNotSet()->children()
             ->integerNode('window_minutes')->defaultValue(15)->min(1)->end()
+            ->scalarNode('default_hours')->defaultValue('09:00-18:00')->info('Hours (Monday–Friday) notices go out for workers whose schedule has no ranges.')
+                ->validate()->ifTrue(static fn (string $v): bool => preg_match('/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/D', $v) !== 1)->thenInvalid('register.reminders.default_hours is "HH:MM-HH:MM".')->end()
+            ->end()
         ->end()->end();
         $register->arrayNode('monthly_summary')->addDefaultsIfNotSet()->children()
             ->booleanNode('enabled')->defaultTrue()->end()

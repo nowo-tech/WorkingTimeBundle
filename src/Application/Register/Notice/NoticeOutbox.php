@@ -38,7 +38,20 @@ final readonly class NoticeOutbox
         private ScheduleResolver $schedules,
         private IdGeneratorInterface $ids,
         private int $windowMinutes = 15,
+        private string $defaultHours = '09:00-18:00',
     ) {
+    }
+
+    /**
+     * The first instant at or after `$now` inside the recipient's hours ± the window (their schedule's ranges, else the
+     * default hours on weekdays).
+     */
+    public function deliverableFrom(RegisterSettings $settings, WorkerProfile $profile, DateTimeImmutable $now): DateTimeImmutable
+    {
+        $from = LocalDate::of($now, $this->schedules->forDate($settings, $profile, LocalDate::of($now, new DateTimeZone('UTC')))->zone());
+        $days = HoursWindow::withDefaultHours($this->schedules->range($settings, $profile, $from->plusDays(-1), $from->plusDays(self::LOOKAHEAD_DAYS)), $this->defaultHours);
+
+        return HoursWindow::nextDeliverable($days, $now, $this->windowMinutes);
     }
 
     /**
@@ -57,8 +70,6 @@ final readonly class NoticeOutbox
         if (!$profile instanceof WorkerProfile || !$profile->worker->equals($recipient)) {
             return false;
         }
-        $from = LocalDate::of($now, $this->schedules->forDate($settings, $profile, LocalDate::of($now, new DateTimeZone('UTC')))->zone());
-        $days = $this->schedules->range($settings, $profile, $from->plusDays(-1), $from->plusDays(self::LOOKAHEAD_DAYS));
 
         return $this->store->addNotice(RegisterNotice::queue( // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $this->ids->generate(),
@@ -68,7 +79,7 @@ final readonly class NoticeOutbox
             $params,
             $actionPath,
             $key,
-            HoursWindow::nextDeliverable($days, $now, $this->windowMinutes),
+            $this->deliverableFrom($settings, $profile, $now),
             $now,
         ));
     }

@@ -198,7 +198,7 @@ final class ServiceDefinitions
         $s->set(RegisterReader::class)->args([service(RegisterStoreInterface::class), service(RegisterRules::class)])->public();
         $s->alias(RegisterReaderInterface::class, RegisterReader::class)->public();
         $s->set(RevisionChain::class)->args([service(RegisterStoreInterface::class), service(TransactionRunnerInterface::class), service(IdGeneratorInterface::class)]);
-        $s->set(NoticeOutbox::class)->args([service(RegisterStoreInterface::class), service(WorkerDirectoryInterface::class), service(ScheduleResolver::class), service(IdGeneratorInterface::class), param($p . 'register.reminders.window_minutes')]);
+        $s->set(NoticeOutbox::class)->args([service(RegisterStoreInterface::class), service(WorkerDirectoryInterface::class), service(ScheduleResolver::class), service(IdGeneratorInterface::class), param($p . 'register.reminders.window_minutes'), param($p . 'register.reminders.default_hours')]);
         $s->set(TimeClock::class)->args([
             service(RegisterAccess::class),
             service(RegisterStoreInterface::class),
@@ -255,7 +255,7 @@ final class ServiceDefinitions
         ]);
         $s->alias(RegisterSettingsEditorInterface::class, RegisterSettingsEditor::class)->public();
         $s->set(WorkerPreferences::class)->args([service(RegisterAccess::class), service(RegisterStoreInterface::class), service(TransactionRunnerInterface::class), $clock])->public();
-        $s->set(ChainVerifier::class)->args([service(RegisterStoreInterface::class), service(TransactionRunnerInterface::class), service(WorkingTimeAuditSinkInterface::class), $events]);
+        $s->set(ChainVerifier::class)->args([service(RegisterStoreInterface::class), service(TransactionRunnerInterface::class), service(WorkingTimeAuditSinkInterface::class), $events, $clock]);
         $s->alias(ChainVerifierInterface::class, ChainVerifier::class)->public();
         $s->set(RegisterPurger::class)->args([
             service(RegisterStoreInterface::class),
@@ -373,6 +373,7 @@ final class ServiceDefinitions
                 service(RegisterAccess::class),
                 service(RegisterStoreInterface::class),
                 service(ScheduleResolver::class),
+                service(WorkerDirectoryInterface::class),
                 service('request_stack')->nullOnInvalid(),
                 param($p . 'register.reminders.window_minutes'),
             ])->public();

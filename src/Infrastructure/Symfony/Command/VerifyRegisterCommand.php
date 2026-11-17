@@ -14,8 +14,17 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
+use function file_get_contents;
+use function file_put_contents;
+use function is_array;
+use function is_file;
 use function is_string;
+use function json_decode;
+use function json_encode;
 use function sprintf;
+
+use const JSON_PRETTY_PRINT;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * `nowo:working-time:verify` (weekly, contract section 12): checks every register chain (or one tenant's / worker's);
@@ -35,15 +44,40 @@ final class VerifyRegisterCommand extends Command
     protected function configure(): void
     {
         $this->addOption('tenant', null, InputOption::VALUE_REQUIRED, 'Only this tenant')
-            ->addOption('worker', null, InputOption::VALUE_REQUIRED, 'Only this worker');
+            ->addOption('worker', null, InputOption::VALUE_REQUIRED, 'Only this worker')
+            ->addOption('heads', null, InputOption::VALUE_REQUIRED, 'JSON file of heads published earlier ({"tenant\\u001fworker": "hash"}, as --heads-out writes): each must still be a link')
+            ->addOption('heads-out', null, InputOption::VALUE_REQUIRED, 'Write the current heads to this JSON file (keep it outside the database)')
+            ->addOption('publish-heads', null, InputOption::VALUE_NONE, 'Record every head through the audit sink (working_time.chain_head)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io     = new SymfonyStyle($input, $output);
-        $tenant = $input->getOption('tenant');
-        $worker = $input->getOption('worker');
-        $report = $this->verifier->verify(is_string($tenant) ? new TenantRef($tenant) : null, is_string($worker) ? new WorkerRef($worker) : null);
+        $io        = new SymfonyStyle($input, $output);
+        $tenant    = $input->getOption('tenant');
+        $worker    = $input->getOption('worker');
+        $file      = $input->getOption('heads');
+        $published = [];
+        if (is_string($file)) {
+            $decoded = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+            if (!is_array($decoded)) {
+                $io->error('The heads file is not a JSON object.');
+
+                return Command::INVALID;
+            }
+            foreach ($decoded as $key => $hash) {
+                if (is_string($key) && is_string($hash)) {
+                    $published[$key] = $hash;
+                }
+            }
+        }
+        $report = $this->verifier->verify(is_string($tenant) ? new TenantRef($tenant) : null, is_string($worker) ? new WorkerRef($worker) : null, $published);
+        $out    = $input->getOption('heads-out');
+        if (is_string($out)) {
+            file_put_contents($out, json_encode($report->heads, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+        }
+        if ($input->getOption('publish-heads') === true) {
+            $io->writeln(sprintf('%d head(s) published.', $this->verifier->publishHeads($report)));
+        }
         foreach ($report->broken as $broken) {
             $io->error(sprintf('Broken chain: tenant %s, worker %s, link %d (%s).', $broken['tenant'], $broken['worker'], $broken['seq'], $broken['reason']));
         }

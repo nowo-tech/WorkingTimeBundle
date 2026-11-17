@@ -14,9 +14,17 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 interface ChainVerifierInterface
 {
     /**
-     * Verifies every chain, or one tenant's, or one worker's.
+     * Verifies every chain, or one tenant's, or one worker's. `$publishedHeads` ("tenant\x1Fworker" => hash) are heads
+     * published earlier that must still be links of their chains.
+     *
+     * @param array<string, string> $publishedHeads
      */
-    public function verify(?TenantRef $tenant = null, ?WorkerRef $worker = null): VerificationReport;
+    public function verify(?TenantRef $tenant = null, ?WorkerRef $worker = null, array $publishedHeads = []): VerificationReport;
+
+    /**
+     * Records the report's heads through the audit sink (`working_time.chain_head`) for a later comparison.
+     */
+    public function publishHeads(VerificationReport $report): int;
 
     /**
      * The hash of a chain's last link (null: empty chain).

@@ -46,6 +46,8 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Symfony\Component\Security\Core\User\InMemoryUser;
 
+use function array_column;
+
 /**
  * The remaining rules: the clock's race replay (a racing writer's link refuses ours: one more attempt, then 409), the
  * task-timer link (a failure never undoes the register), the TimeTrack workday source, group exports, a second
@@ -111,8 +113,21 @@ final class GapsTest extends UiTestCase
             self::fail('bad key');
         } catch (WorkdayForbiddenException) {
         }
+        // Audit ST: the user TimeTrack names must be the signed-in worker (by id or by identifier).
+        self::assertNotNull($source->todayFor(TimeTrackUserRef::ofId('App\User', '42', 'ana')));
+        $bob = TimeTrackUserRef::ofId('App\User', 'bob', 'bob');
+        self::assertNull($source->todayFor($bob));
+        try {
+            $source->actFor($bob, WorkdayAction::ClockOut, null, 'k5', ClientType::Web);
+            self::fail('another user');
+        } catch (WorkdayForbiddenException) {
+        }
+        self::assertSame('working', $source->todayFor($user)->status, 'nothing was recorded for the other user');
         $this->ctx()->actor = 'nobody';
         self::assertNull($source->todayFor($user));
+        $this->ctx()->actor                 = 'ana';
+        $this->ctx()->grants['acme']['ana'] = [];
+        self::assertNull($source->todayFor($user), 'the signed-in worker without the clock permission');
     }
 
     public function testAGroupExportAndASecondGeneratorAndADisabledFormat(): void
@@ -164,6 +179,31 @@ final class GapsTest extends UiTestCase
         self::assertSame(RegisterNotice::MONTHLY_SUMMARY, $this->text('SELECT kind FROM nowo_working_time_notice'));
     }
 
+    public function testALateRunDefersANoticeAndRangeLessDaysUseTheDefaultHours(): void
+    {
+        // Audit ST-L2: no schedule at all → the default 09:00-18:00 on weekdays; a late run re-checks the hours.
+        $this->boot();
+        $this->enable('acme', ['ana'], new RegisterSettingsInput(enabled: true, remindersAllowed: true));
+        $settings = $this->service(RegisterStoreInterface::class)->settings(new TenantRef('acme'));
+        self::assertInstanceOf(RegisterSettings::class, $settings);
+        $outbox     = $this->service(NoticeOutbox::class);
+        $dispatcher = $this->service(NoticeDispatcher::class);
+        $this->clock()->modify('2026-11-18 12:00:00');
+        self::assertTrue($outbox->queue($settings, new WorkerRef('ana'), RegisterNotice::REMINDER_IN, [], null, 'late', $this->clock()->now()));
+        $this->em()->flush();
+        $this->clock()->modify('2026-11-18 23:00:00');
+
+        self::assertSame(0, $dispatcher->run()['sent'], 'the run came after the hours');
+        self::assertStringStartsWith('2026-11-19', $this->text('SELECT deliverable_from FROM nowo_working_time_notice'));
+        $this->clock()->modify('2026-11-19 12:00:00');
+        self::assertSame(1, $dispatcher->run()['sent']);
+
+        $this->clock()->modify('2026-11-21 12:00:00');
+        self::assertTrue($outbox->queue($settings, new WorkerRef('ana'), RegisterNotice::REMINDER_IN, [], null, 'weekend', $this->clock()->now()));
+        $this->em()->flush();
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM nowo_working_time_notice WHERE sent_at IS NULL AND deliverable_from >= '2026-11-23'"), 'a weekend without ranges waits for Monday');
+    }
+
     public function testStoreEdgeCases(): void
     {
         $this->boot();
@@ -185,7 +225,7 @@ final class GapsTest extends UiTestCase
     public function testTheGdprExportListsCorrectionRequests(): void
     {
         $this->boot();
-        $this->enable();
+        $this->enable('acme', ['ana', 'mia']);
         $this->actAs('ana', 'clock');
         $this->workDay();
         $segment = $this->text('SELECT id FROM nowo_working_time_segment ORDER BY started_at');
@@ -193,6 +233,14 @@ final class GapsTest extends UiTestCase
         $export = $this->service(RegisterPersonalData::class)->export(new WorkerRef('ana'));
         self::assertSame('pending', $export['corrections'][0]['status']);
         self::assertSame('Arrived earlier', $export['corrections'][0]['reason']);
+        // Audit ST-L4: a correction a manager records keeps its reason in the worker's own export.
+        $this->actAs('mia', 'manage_team');
+        $this->service(CorrectionServiceInterface::class)->record(new WorkerRef('ana'), new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $segment, null, new DateTimeImmutable('2026-11-18 09:15:00 UTC'), null, 'Badge reader was down'));
+        $this->actAs('ana', 'clock');
+        $export = $this->service(RegisterPersonalData::class)->export(new WorkerRef('ana'));
+        $trail  = $export['workdays'][0]['trail'] ?? [];
+        self::assertIsArray($trail);
+        self::assertContains('Badge reader was down', array_column($trail, 'reason'));
         $this->service(UserKitRegisterEraser::class)->erase(new ErasureRequest(new InMemoryUser('ana', null)));
         self::assertContains('working_time.personal_data_erased', $this->recorder()->auditKeys());
         self::assertIsArray($this->service(UserKitRegisterExportProvider::class)->export(new InMemoryUser('ana', null)));

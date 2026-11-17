@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Domain\Register\Model;
 
 use DateTimeImmutable;
+use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\Uuid;
 
 /**
@@ -23,15 +24,16 @@ class ChainAnchor
         private int $purgedLinks,
         private DateTimeImmutable $purgedAt,
         private string $purgeRunId,
+        private ?DateTimeImmutable $firstKeptDate = null,
     ) {
     }
 
     /**
      * A new anchor.
      */
-    public static function record(string $id, string $tenantId, string $workerId, int $firstKeptSeq, string $anchorHash, int $purgedLinks, DateTimeImmutable $purgedAt, string $purgeRunId): self
+    public static function record(string $id, string $tenantId, string $workerId, int $firstKeptSeq, string $anchorHash, int $purgedLinks, DateTimeImmutable $purgedAt, string $purgeRunId, ?LocalDate $firstKeptDate = null): self
     {
-        return new self(Uuid::assert($id), $tenantId, $workerId, $firstKeptSeq, $anchorHash, $purgedLinks, WorkdayRevision::utc($purgedAt), $purgeRunId);
+        return new self(Uuid::assert($id), $tenantId, $workerId, $firstKeptSeq, $anchorHash, $purgedLinks, WorkdayRevision::utc($purgedAt), $purgeRunId, $firstKeptDate?->toDateTime());
     }
 
     /** Row id. */
@@ -80,5 +82,11 @@ class ChainAnchor
     public function getPurgeRunId(): string
     {
         return $this->purgeRunId;
+    }
+
+    /** The retention boundary of the purge (first kept local date). */
+    public function firstKeptDate(): ?LocalDate
+    {
+        return $this->firstKeptDate instanceof DateTimeImmutable ? LocalDate::fromDateTime($this->firstKeptDate) : null;
     }
 }

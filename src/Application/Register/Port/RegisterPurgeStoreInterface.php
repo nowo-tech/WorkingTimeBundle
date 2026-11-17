@@ -35,7 +35,7 @@ interface RegisterPurgeStoreInterface
      *
      * @return array{workdays: int, segments: int, revisions: int, corrections: int, anchors: int}
      */
-    public function deleteBatch(array $workdayIds, string $runId, DateTimeImmutable $at): array;
+    public function deleteBatch(array $workdayIds, string $runId, DateTimeImmutable $at, ?LocalDate $firstKept = null): array;
 
     /** Deletes delivered notices sent before the instant. */
     public function deleteNoticesSentBefore(DateTimeImmutable $before): int;

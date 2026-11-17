@@ -16,6 +16,7 @@ use Nowo\WorkingTimeBundle\Application\Register\Notice\HoursWindow;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
 use Nowo\WorkingTimeBundle\Application\Register\ScheduleResolver;
+use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentSource;
 use Nowo\WorkingTimeBundle\Domain\Register\Exception\ClockConflictException;
@@ -25,6 +26,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Exception\RegisterUnavailableExceptio
 use Nowo\WorkingTimeBundle\Domain\Register\Read\ClockState;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\RequestKey;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -49,6 +51,7 @@ final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
         private RegisterAccess $access,
         private RegisterStoreInterface $store,
         private ScheduleResolver $schedules,
+        private WorkerDirectoryInterface $directory,
         private ?RequestStack $requests = null,
         private int $windowMinutes = 15,
     ) {
@@ -59,6 +62,9 @@ final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
      */
     public function todayFor(TimeTrackUserRef $user): ?WorkdayState
     {
+        if (!$this->isActor($user)) {
+            return null;
+        }
         try {
             return self::toWorkdayState($this->withReminder($this->clock->state()));
         } catch (RegisterUnavailableException|PermissionDeniedException) {
@@ -71,6 +77,9 @@ final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
      */
     public function actFor(TimeTrackUserRef $user, WorkdayAction $action, ?DateTimeImmutable $occurredAt, string $idempotencyKey, ClientType $client): WorkdayState
     {
+        if (!$this->isActor($user)) {
+            throw new WorkdayForbiddenException();
+        }
         try {
             $state = $this->clock->act(null, ClockAction::from($action->value), $occurredAt, RequestKey::api($idempotencyKey), $this->source($client), $this->requests?->getMainRequest()?->getClientIp());
         } catch (ClockConflictException $e) {
@@ -111,6 +120,16 @@ final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
             $state->reminder,
             array_map(static fn (ClockAction $action): string => $action->value, $state->allowedActions()),
         );
+    }
+
+    /**
+     * The TimeTrack user must be the signed-in worker (the register clocks only for the actor).
+     */
+    private function isActor(TimeTrackUserRef $user): bool
+    {
+        $current = $this->directory->current();
+
+        return $current instanceof WorkerRef && ($current->value === $user->id || $current->value === $user->identifier);
     }
 
     private function withReminder(ClockState $state): ClockState

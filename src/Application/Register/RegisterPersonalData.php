@@ -87,7 +87,7 @@ final readonly class RegisterPersonalData
                         'kind'   => $revision->getKind()->value,
                         'at'     => self::iso($revision->getCreatedAt()),
                         'by'     => $revision->getAuthorName(),
-                        'reason' => $revision->getAuthorId() === $worker->value ? $revision->getReason() : null,
+                        'reason' => $revision->getReason(),
                     ], $record->revisions),
                 ];
                 foreach ($record->requests as $request) {

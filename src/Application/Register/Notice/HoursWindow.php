@@ -9,6 +9,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Model\DaySchedule;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\ScheduleDefinition;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 
+use function explode;
 use function intdiv;
 use function sprintf;
 
@@ -38,6 +39,26 @@ final class HoursWindow
         }
 
         return $any ? $now->modify('+1 day') : $now;
+    }
+
+    /**
+     * The days with the default hours on the weekdays (Monday–Friday) whose schedule has no ranges (a target-only or a
+     * missing schedule, audit ST-L2): notices never go out at an arbitrary hour.
+     *
+     * @param array<string, DaySchedule> $days
+     *
+     * @return array<string, DaySchedule>
+     */
+    public static function withDefaultHours(array $days, string $defaultHours): array
+    {
+        [$from, $to] = explode('-', $defaultHours, 2);
+        foreach ($days as $date => $schedule) {
+            if ($schedule->ranges === [] && (new LocalDate($date))->weekday() <= 5) {
+                $days[$date] = new DaySchedule($schedule->timezone, [['from' => $from, 'to' => $to]], $schedule->expectedSeconds, $schedule->dailyOvertimeSeconds, $schedule->weeklyOvertimeSeconds, $schedule->flexMinutes, $schedule->breaksCounted, $schedule->minBreakMinutes);
+            }
+        }
+
+        return $days;
     }
 
     /**
