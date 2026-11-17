@@ -145,7 +145,7 @@ final readonly class RegisterController
             $summary  = MonthSummary::of($days);
             $previous = $first->toDateTime()->modify('-1 month')->format('Y-m');
             $next     = $first->toDateTime()->modify('+1 month')->format('Y-m');
-            $actions  = [new Action('previous', UiSupport::label('month.previous'), $this->ui->url('nowo_working_time_month', ['month' => $previous]))];
+            $actions  = [new Action('prev', UiSupport::label('month.previous'), $this->ui->url('nowo_working_time_month', ['month' => $previous]))];
             if ($next <= $today->month()) {
                 $actions[] = new Action('next', UiSupport::label('month.next'), $this->ui->url('nowo_working_time_month', ['month' => $next]));
             }
@@ -267,12 +267,12 @@ final readonly class RegisterController
         $correction ??= $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
         $answers = [];
         foreach ($record->pendingAcknowledgements ?? [] as $revisionId) {
-            $answers[$revisionId] = $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $revisionId)->createView();
+            $answers[] = ['form' => $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $revisionId)->createView(), 'action' => $this->ui->url('nowo_working_time_correction_answer', ['id' => $revisionId])];
         }
 
         return $this->ui->render('@NowoWorkingTime/register/day.html.twig', [
             'page' => new ShowPage(
-                new PageHeader(UiSupport::label('day.title', ['%date%' => $date->value]), null, [new Action('back', UiSupport::label('day.back_to_month'), $this->ui->url('nowo_working_time_month', ['month' => $date->month()]))], tabs: $this->ui->tabs('month')),
+                new PageHeader(UiSupport::label('day.title', ['%date%' => $date->value]), null, [new Action('prev', UiSupport::label('day.back_to_month'), $this->ui->url('nowo_working_time_month', ['month' => $date->month()]))], tabs: $this->ui->tabs('month')),
                 DayView::sections($date, $record, $zone, $context->settings->ipEvidence()),
                 bundle: 'NowoWorkingTimeBundle',
                 layout: $this->ui->layout(),
@@ -280,7 +280,6 @@ final readonly class RegisterController
             'correction'        => $correction->createView(),
             'correction_action' => $this->ui->url('nowo_working_time_correction_request', ['date' => $date->value]),
             'answers'           => $answers,
-            'answer_action'     => fn (string $id): string => $this->ui->url('nowo_working_time_correction_answer', ['id' => $id]),
         ], $status);
     }
 
@@ -314,7 +313,7 @@ final readonly class RegisterController
 
         return $this->ui->render('@NowoWorkingTime/register/today.html.twig', [
             'page' => new DashboardPage(
-                new PageHeader(UiSupport::label('today.title'), UiSupport::label('today.intro', ['%date%' => $state->date->value]), [new Action('day', UiSupport::label('today.view_day'), $this->ui->url('nowo_working_time_date', ['date' => $state->date->value]))], tabs: $this->ui->tabs('today')),
+                new PageHeader(UiSupport::label('today.title'), UiSupport::label('today.intro', ['%date%' => $state->date->value]), [new Action('view', UiSupport::label('today.view_day'), $this->ui->url('nowo_working_time_date', ['date' => $state->date->value]))], tabs: $this->ui->tabs('today')),
                 [
                     new KpiTile(UiSupport::label('today.status'), $this->status($state), variant: $state->status->value === 'working' ? 'success' : 'neutral'),
                     new KpiTile(UiSupport::label('today.worked'), MonthSummary::hours($state->workedSeconds())),

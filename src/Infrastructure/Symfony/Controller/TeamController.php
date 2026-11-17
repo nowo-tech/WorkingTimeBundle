@@ -196,6 +196,8 @@ final readonly class TeamController
                 'form'    => $this->ui->form(DecisionType::class, ['version' => (string) $correction->getVersion()], [], 'wt_decision_' . $correction->getId())->createView(),
                 'date'    => $this->runner->read(fn (): ?string => $this->store->workday($correction->getWorkdayId())?->date()->value),
                 'change'  => self::change($correction),
+                'approve' => $this->ui->url('nowo_working_time_correction_decide', ['id' => $correction->getId(), 'decision' => 'approve']),
+                'reject'  => $this->ui->url('nowo_working_time_correction_decide', ['id' => $correction->getId(), 'decision' => 'reject']),
             ];
         }
 
@@ -214,8 +216,7 @@ final readonly class TeamController
                 bundle: 'NowoWorkingTimeBundle',
                 layout: $this->ui->layout(),
             ),
-            'decisions'       => $decisions,
-            'decision_action' => fn (string $id, string $decision): string => $this->ui->url('nowo_working_time_correction_decide', ['id' => $id, 'decision' => $decision]),
+            'decisions' => $decisions,
         ], $status, $headers);
     }
 
@@ -230,7 +231,7 @@ final readonly class TeamController
 
         return $this->ui->render('@NowoWorkingTime/register/team_day.html.twig', [
             'page' => new ShowPage(
-                new PageHeader(UiSupport::label('team.day_title', ['%worker%' => $context->subject->displayName, '%date%' => $date->value]), null, [new Action('back', UiSupport::label('team.back'), $this->ui->url('nowo_working_time_team', ['date' => $date->value]))], tabs: $this->ui->tabs('team')),
+                new PageHeader(UiSupport::label('team.day_title', ['%worker%' => $context->subject->displayName, '%date%' => $date->value]), null, [new Action('prev', UiSupport::label('team.back'), $this->ui->url('nowo_working_time_team', ['date' => $date->value]))], tabs: $this->ui->tabs('team')),
                 DayView::sections($date, $record, $zone, $context->settings->ipEvidence()),
                 bundle: 'NowoWorkingTimeBundle',
                 layout: $this->ui->layout(),

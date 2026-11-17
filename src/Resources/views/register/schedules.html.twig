@@ -1,7 +1,7 @@
 {#
-  Dated schedules (contract section 11.1, manage_team): UiKit list scaffold of the tenant's rows (a withdraw button on
-  rows that are not valid yet is offered through the forms below), then the form to add a row. Variables: page
-  (ListPage), form (FormView of ScheduleType), withdraws (id => FormView), withdraw_action (callable id => URL).
+  Dated schedules (contract section 11.1, manage_team): UiKit list scaffold of the tenant's rows, the withdraw buttons
+  of the rows that are not valid yet, then the form to add a row. Variables: page (ListPage), form (FormView of
+  ScheduleType), withdraws (list of {form, action, valid_from}: rows not valid yet).
 #}
 {% extends '@NowoUiKit/page/list.html.twig' %}
 
@@ -12,11 +12,11 @@
         <section class="{{ nowo_ui_class('card', _b) }}">
             <div class="{{ nowo_ui_class('card_body', _b) }}">
                 <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'schedule.withdraw_title'|trans({}, _d) }}</h2>
-                {% for id, withdraw in withdraws %}
-                    {{ form_start(withdraw, {action: withdraw_action(id), attr: {'data-testid': 'wt-withdraw-' ~ id}}) }}
-                    {{ form_widget(withdraw) }}
-                    <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'schedule.withdraw'|trans({}, _d) }} · {{ page.rows[loop.index0].valid_from|default('') }}</button>
-                    {{ form_end(withdraw) }}
+                {% for withdraw in withdraws %}
+                    {{ form_start(withdraw.form, {action: withdraw.action, attr: {'data-testid': 'wt-withdraw'}}) }}
+                    {{ form_widget(withdraw.form) }}
+                    <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'schedule.withdraw'|trans({}, _d) }} · {{ withdraw.valid_from }}</button>
+                    {{ form_end(withdraw.form) }}
                 {% endfor %}
             </div>
         </section>

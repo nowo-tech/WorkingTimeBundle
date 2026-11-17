@@ -70,6 +70,15 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\UiSupport;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterExportGenerator;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterReportBuilder;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\SyncExportDispatcher;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\AnswerType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ClockType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\CorrectionType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\DecisionType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ExportType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\PreferencesType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ScheduleType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\SettingsType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\WithdrawType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\EntityManagerHygieneListener;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\WorkingTimeConflictFormatter;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportHandler;
@@ -345,10 +354,13 @@ final class ServiceDefinitions
             $controllers = [
                 RegisterController::class => [service(UiSupport::class), service(RegisterAccess::class), service(RegisterClockInterface::class), service(CorrectionServiceInterface::class), service(RegisterReader::class), service(RegisterStoreInterface::class), service(ScheduleResolver::class), service(TransactionRunnerInterface::class), $clock],
                 TeamController::class     => [service(UiSupport::class), service(RegisterAccess::class), service(CorrectionServiceInterface::class), service(RegisterReader::class), service(RegisterStoreInterface::class), service(ScheduleResolver::class), service(WorkerDirectoryInterface::class), service(TransactionRunnerInterface::class), $clock, param($p . 'ui.page_size')],
-                ScheduleController::class => [service(UiSupport::class), service(RegisterAccess::class), service(ScheduleServiceInterface::class), service(WorkerDirectoryInterface::class), param($p . 'register.schedule.default_timezone')],
+                ScheduleController::class => [service(UiSupport::class), service(RegisterAccess::class), service(ScheduleServiceInterface::class), service(WorkerDirectoryInterface::class), $clock, param($p . 'register.schedule.default_timezone')],
                 ExportController::class   => [service(UiSupport::class), service(RegisterAccess::class), service(RegisterExportServiceInterface::class), service(WorkerDirectoryInterface::class), $clock, param($p . 'register.export.formats')],
                 SettingsController::class => [service(UiSupport::class), service(RegisterSettingsEditorInterface::class), service(WorkerPreferences::class), service(TriggerInspectorInterface::class), param($p . 'register.ip_evidence_allowed')],
             ];
+            foreach ([ClockType::class, CorrectionType::class, DecisionType::class, AnswerType::class, WithdrawType::class, PreferencesType::class, ScheduleType::class, ExportType::class, SettingsType::class] as $type) {
+                $s->set($type)->tag('form.type');
+            }
             foreach ($controllers as $class => $args) {
                 $s->set($class)->args($args)->public()->tag('controller.service_arguments');
             }

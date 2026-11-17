@@ -20,6 +20,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ScheduleType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\WithdrawType;
+use Psr\Clock\ClockInterface;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -55,6 +56,7 @@ final readonly class ScheduleController
         private RegisterAccess $access,
         private ScheduleServiceInterface $schedules,
         private WorkerDirectoryInterface $directory,
+        private ClockInterface $clock,
         private string $defaultTimezone = 'UTC',
     ) {
     }
@@ -120,9 +122,12 @@ final readonly class ScheduleController
     {
         $rows      = [];
         $withdraws = [];
+        $today     = $this->clock->now()->format('Y-m-d');
         foreach ($this->schedules->list() as $row) {
-            $rows[]                   = self::row($row);
-            $withdraws[$row->getId()] = $this->ui->form(WithdrawType::class, null, [], 'wt_withdraw_' . $row->getId())->createView();
+            $rows[] = self::row($row);
+            if ($row->validFrom()->value > $today) {
+                $withdraws[] = ['form' => $this->ui->form(WithdrawType::class, null, [], 'wt_withdraw_' . $row->getId())->createView(), 'action' => $this->ui->url('nowo_working_time_schedule_withdraw', ['id' => $row->getId()]), 'valid_from' => $row->validFrom()->value];
+            }
         }
 
         return $this->ui->render('@NowoWorkingTime/register/schedules.html.twig', [
@@ -140,9 +145,8 @@ final readonly class ScheduleController
                 bundle: 'NowoWorkingTimeBundle',
                 layout: $this->ui->layout(),
             ),
-            'form'            => $form->createView(),
-            'withdraws'       => $withdraws,
-            'withdraw_action' => fn (string $id): string => $this->ui->url('nowo_working_time_schedule_withdraw', ['id' => $id]),
+            'form'      => $form->createView(),
+            'withdraws' => $withdraws,
         ], $status);
     }
 

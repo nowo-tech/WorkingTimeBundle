@@ -26,7 +26,7 @@
         <div class="{{ nowo_ui_class('card_body', _b) }}">
             <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'today.segments'|trans({}, _d) }}</h2>
             {% if segments is empty %}
-                <p class="{{ nowo_ui_class('text_muted', _b) }}">{{ 'today.no_segments'|trans({}, _d) }}</p>
+                <p class="{{ nowo_ui_class('muted', _b) }}">{{ 'today.no_segments'|trans({}, _d) }}</p>
             {% else %}
                 <ul class="{{ nowo_ui_class('detail_list', _b) }}">
                     {% for segment in segments %}
