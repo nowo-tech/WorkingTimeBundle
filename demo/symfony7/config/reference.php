@@ -1785,6 +1785,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         ipv6_prefix?: int|Param, // Default: 64
  *         reminders?: array{
  *             window_minutes?: int|Param, // Default: 15
+ *             default_hours?: scalar|Param|null, // Hours (Monday–Friday) notices go out for workers whose schedule has no ranges. // Default: "09:00-18:00"
  *         },
  *         monthly_summary?: array{
  *             enabled?: bool|Param, // Default: true
