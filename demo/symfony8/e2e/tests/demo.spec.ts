@@ -22,7 +22,7 @@ test.describe('Working Time demo', () => {
     await enabled.check();
     await page.locator('form:has(input[name="wt_settings[enabled]"]) button[type="submit"]').click();
     // The flash is shown as the translation key today (see the report); accept the translated text too.
-    await expect(page.getByRole('alert').filter({ hasText: /settings\.saved|The settings were saved\./ })).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: /The settings were saved\./ })).toBeVisible();
     await expect(page.locator('input[name="wt_settings[enabled]"]')).toBeChecked();
     await logout(page);
   });

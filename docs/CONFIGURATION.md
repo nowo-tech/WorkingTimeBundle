@@ -1,7 +1,58 @@
 # Configuration
 
-The tree is strict: unknown keys fail the container build. Every key of contract section 10 is accepted from S0; each
-slice starts reading its part. Values are published as container parameters `nowo_working_time.<path>`.
+The tree is strict: unknown keys fail the container build. Every key of contract section 10 is accepted; 0.1 reads the
+ports, `permissions`, `doctrine`, `integrity`, `register` and `ui` (holidays and leave keys are read from S2 / S3).
+Values are published as container parameters `nowo_working_time.<path>`.
+
+## Register (0.1)
+
+```yaml
+nowo_working_time:
+    tenant_resolver: ~             # service id; null = single tenant "default"
+    permission_checker: ~          # service id; null = role map below (every list empty = denied)
+    worker_directory: ~            # service id; null = only the signed-in user
+    brand_provider: ~              # service id; null = the container's BrandProviderInterface, else a neutral brand
+    clock: ~                       # service id; null = the framework clock
+    notifier: auto                 # auto (Symfony Mailer when installed) | null | <service id>
+    notifier_from: no-reply@localhost
+    audit_sink: auto               # auto (one PSR log line per entry) | <service id>
+    permissions:
+        roles: { clock: [], manage_team: [], export: [], manage_settings: [] }
+    integrity:
+        triggers: warn             # warn | require | off
+        purge_guard: session_variable   # session_variable | db_user (purge_db_user + purge_connection)
+        verify_before_export: true
+    register:
+        schedule:
+            default_timezone: Europe/Madrid
+            default: ~             # { ranges: { mon: ['09:00-14:00'] }, timezone: … } or { daily_target_minutes: 420 }
+        missing_clock_out_grace_minutes: 120
+        long_day_hours: 16
+        late_client_minutes: 10
+        correction_window_days: 31 # default of new tenants (they choose 1..31)
+        retention_years: 4         # default of new tenants (they choose 4..10)
+        ip_evidence: prefix        # off | prefix (tenants opt in with a notice; /24 and /64 only)
+        reminders: { window_minutes: 15 }
+        monthly_summary: { enabled: true }
+        export:
+            formats: [pdf, csv]    # pdf needs dompdf/dompdf or a renderer service; the recipe ships [csv]
+            max_months: 12
+            download_days: 7
+            async: auto            # auto (Messenger when enabled) | sync | messenger
+        task_timer_link: auto      # auto (TimeTrack when installed) | off | <service id of a TaskTimerLinkInterface>
+    ui:
+        enabled: false             # routes are opt-in
+        register_path: /working-time
+        settings_path: /working-time/settings
+        page_size: 25
+        layout: ~                  # null = nowo_ui_layout.admin
+```
+
+`doctrine.mapping: attribute` is refused in 0.x (the XML mapping is the only one shipped). A `pdf` format without a
+renderer, `export.async: messenger` without Messenger and an invalid `register.schedule.default` fail the build with
+the fix.
+
+## Whole tree
 
 ```yaml
 nowo_working_time:

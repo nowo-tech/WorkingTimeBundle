@@ -8,12 +8,11 @@
 can be enabled separately, a private entity manager, a UiKit + FormKit UI and bridges to the other Nowo bundles.**
 
 **Standard Symfony by default, DDD / hexagonal opt-in:** zero configuration in a standard project; public ports are
-interfaces and value objects with no Symfony, Doctrine or HTTP types, the bundle-owned tables are mapped in XML (with an
-attribute twin) and referenced by id, and the bundle never flushes your EntityManager.
+interfaces and value objects with no Symfony, Doctrine or HTTP types, the bundle-owned tables are mapped in XML and referenced by
+id, and the bundle never flushes your EntityManager.
 
-> 🚧 **Status: S0 scaffold** (no tag yet). The bundle class, the strict configuration tree, the three part toggles and
-> the private entity manager are in place; the register, holiday and leave features arrive slice by slice from
-> [docs/CONTRACT.md](docs/CONTRACT.md) ([docs/ROADMAP.md](docs/ROADMAP.md)).
+> 🚧 **Status: 0.1 (S1) — the working-hours register.** Holidays (S2) and leave (S3) arrive slice by slice from
+> [docs/CONTRACT.md](docs/CONTRACT.md) ([docs/ROADMAP.md](docs/ROADMAP.md)). Usage: [docs/USAGE.md](docs/USAGE.md).
 
 > 📋 **Compatible with Symfony 7.4, 8.0 and 8.1** · PHP 8.2+ (Symfony 8.x requires PHP 8.4+)
 
@@ -33,7 +32,7 @@ Three parts, switched separately (`register.enabled` on, `holidays.enabled` on, 
   unit of work.
 - **Closed PDF rendering**: no remote resources, no JavaScript, no PHP.
 
-Built slice by slice: S0 (this scaffold) → S1 register → S2 holidays + leave foundations → S3 leave workflow.
+Built slice by slice: S0 scaffold → **S1 register (0.1)** → S2 holidays + leave foundations → S3 leave workflow.
 
 ## Installation
 
@@ -62,12 +61,13 @@ Every key of the contract is already accepted (strict tree): [docs/CONFIGURATION
 - PHP >= 8.2, < 8.6 (Symfony 8.x needs PHP 8.4+)
 - Symfony 7.4, 8.0 or 8.1
 - Doctrine DBAL 3.8+ / 4 and ORM 3.7+ with DoctrineBundle
-- `nowo-tech/ui-kit-bundle` ^2.49, `nowo-tech/form-kit-bundle` ^2.22, `nowo-tech/outbound-url-guard-bundle` ^1.5
+- `nowo-tech/ui-kit-bundle` ^2.55, `nowo-tech/transaction-doctrine` ^1.3, `nowo-tech/form-kit-bundle` ^2.22, `nowo-tech/outbound-url-guard-bundle` ^1.5
 
 ## Demo
 
-`demo/symfony8` (Symfony 8.1, http://localhost:8241): FrankenPHP worker mode, MySQL, UiKit layout (`make -C demo up-symfony8`).
-At S0 it is a single page showing the part toggles. See [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md).
+`demo/symfony7` (Symfony 7.4, http://localhost:8240) and `demo/symfony8` (Symfony 8.1, http://localhost:8241):
+FrankenPHP worker mode, MySQL, UiKit + FormKit, the register with in-memory users `ana` (worker), `mia` (manager) and
+`admin` (password `demo`); `make -C demo up-symfony8`, then `make test-e2e` for the Playwright run. See [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md).
 
 ## Documentation
 
