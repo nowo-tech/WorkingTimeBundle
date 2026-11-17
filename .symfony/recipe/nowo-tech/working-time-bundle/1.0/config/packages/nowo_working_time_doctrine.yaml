@@ -1,0 +1,8 @@
+# The bundle keeps its data on a private entity manager so it never flushes the host's unit of work.
+# DoctrineBundle needs the multi-entity-manager form: if your config/packages/doctrine.yaml uses the single form
+# (orm: auto_mapping: true, mappings: ...), move that block under entity_managers.default. See docs/INSTALLATION.md.
+doctrine:
+    orm:
+        entity_managers:
+            nowo_working_time:
+                connection: default

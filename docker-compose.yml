@@ -1,0 +1,66 @@
+name: working-time-bundle
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: working-time-bundle-php
+    working_dir: /app
+    volumes:
+      - .:/app
+      - composer-cache:/root/.composer/cache
+      - coverage-data:/app/coverage
+    environment:
+      - COMPOSER_ALLOW_SUPERUSER=1
+    command: ["tail", "-f", "/dev/null"]
+    networks:
+      - working-time-bundle-network
+
+  # REQ-TEST-005: the Database suite runs on MySQL 8.4, MariaDB 11.4 and PostgreSQL 16 (profile "db": not started by
+  # `make up`) and on SQLite without a service. Passwordless root on the private network only, no port published
+  # (nothing credential-like in the repository).
+  database:
+    image: mysql:8.4
+    profiles: ["db"]
+    container_name: working-time-bundle-db
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: app
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - working-time-bundle-network
+
+  mariadb:
+    image: mariadb:11.4
+    profiles: ["db"]
+    container_name: working-time-bundle-mariadb
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+      MARIADB_DATABASE: app
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - working-time-bundle-network
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["db"]
+    container_name: working-time-bundle-postgres
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: app
+    tmpfs:
+      - /var/lib/postgresql/data
+    networks:
+      - working-time-bundle-network
+
+volumes:
+  composer-cache:
+    driver: local
+  coverage-data:
+    driver: local
+
+networks:
+  working-time-bundle-network:
+    driver: bridge

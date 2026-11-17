@@ -1,0 +1,10 @@
+{
+    "bundles": {
+        "Nowo\\WorkingTimeBundle\\NowoWorkingTimeBundle": [
+            "all"
+        ]
+    },
+    "copy-from-recipe": {
+        "config/": "%CONFIG_DIR%/"
+    }
+}
