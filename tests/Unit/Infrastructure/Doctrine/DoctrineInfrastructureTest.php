@@ -16,6 +16,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\UnitOfWork;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
 use LogicException;
@@ -205,6 +206,21 @@ final class DoctrineInfrastructureTest extends TestCase
         $registry->method('getManager')->willReturn($closed);
         $registry->expects(self::once())->method('resetManager')->with('wt')->willReturn($fresh);
         self::assertSame($fresh, (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'wt'))->manager());
+    }
+
+    public function testAConfiguredNameOfTheDefaultManagerIsSharedAndAnotherIsPrivate(): void
+    {
+        $default = $this->createMock(EntityManagerInterface::class);
+        $default->expects(self::never())->method('clear');
+        $default->method('getUnitOfWork')->willReturn($this->createStub(UnitOfWork::class));
+        $private = $this->createMock(EntityManagerInterface::class);
+        $private->expects(self::once())->method('clear');
+        $registry = $this->createStub(ManagerRegistry::class);
+        $registry->method('getManager')->willReturnCallback(static fn (?string $name = null): EntityManagerInterface => $name === 'wt' ? $private : $default);
+
+        // `entity_manager: default` resolves to the registry's default manager: only the bundle's entities are released (audit ST Info).
+        (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'default'))->release($default);
+        (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'wt'))->release($private);
     }
 
     public function testThePurgeFlagDriverRecognisesMysql(): void

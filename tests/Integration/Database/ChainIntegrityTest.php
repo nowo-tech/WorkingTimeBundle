@@ -27,7 +27,9 @@ use function file_put_contents;
 use function json_encode;
 use function microtime;
 use function random_bytes;
+use function str_repeat;
 use function sys_get_temp_dir;
+use function unlink;
 
 /**
  * The hash chain on the configured database (contract section 6.3, Q-O4): a migrated Beacon chain (format 1) is never
@@ -78,6 +80,7 @@ final class ChainIntegrityTest extends RegisterTestCase
         yield 'forged segment without a link (P10)' => ["INSERT INTO nowo_working_time_segment (id, workday_id, type, started_at, start_source, start_received_at, ended_at, end_source, end_received_at) SELECT '01900000-0000-7000-8000-0000000000aa', id, 'work', '2026-11-18 20:00:00', 'web', '2026-11-18 20:00:00', '2026-11-18 23:00:00', 'web', '2026-11-18 23:00:00' FROM nowo_working_time_workday", 'segment_unlinked'];
         yield 'removed tail (P12)' => ['DELETE FROM nowo_working_time_revision WHERE seq = 4', 'segment_close_unlinked'];
         yield 'removed chain, segments kept (MySQL TRUNCATE, P7)' => ['DELETE FROM nowo_working_time_revision', 'segment_unlinked'];
+        yield 'forged anchor past the chain start (ST-D1)' => ["INSERT INTO nowo_working_time_chain_anchor (id, tenant_id, worker_id, first_kept_seq, anchor_hash, purged_links, purged_at, purge_run_id, first_kept_date) SELECT '01900000-0000-7000-8000-0000000000bc', tenant_id, worker_id, 5, hash, 4, '2026-11-18 07:00:00', 'run', '2022-11-01' FROM nowo_working_time_revision WHERE seq = 4", 'anchor_after_start'];
         yield 'forged anchor re-rooting a recent chain (P12)' => ["INSERT INTO nowo_working_time_chain_anchor (id, tenant_id, worker_id, first_kept_seq, anchor_hash, purged_links, purged_at, purge_run_id, first_kept_date) SELECT '01900000-0000-7000-8000-0000000000bb', tenant_id, worker_id, 2, prev_hash, 1, '2026-11-18 20:00:00', 'run', '2026-11-01' FROM nowo_working_time_revision WHERE seq = 2", 'anchor_out_of_retention'];
     }
 
@@ -161,6 +164,22 @@ final class ChainIntegrityTest extends RegisterTestCase
         self::assertSame(1, $tester->execute(['--heads' => $file]));
         file_put_contents($file, 'nope');
         self::assertSame(2, $tester->execute(['--heads' => $file]));
+        file_put_contents($file, (string) json_encode(['acme' . "\x1F" . 'ana' => str_repeat('a', 64)]));
+        self::assertSame(2, $tester->execute(['--heads' => $file]), 'a 0.1.0 file (bare hashes) is refused');
+        self::assertStringContainsString('written by 0.1.0', $tester->getDisplay());
+        file_put_contents($file, (string) json_encode(['acme' . "\x1F" . 'ana' => ['hash' => str_repeat('a', 64)]]));
+        self::assertSame(2, $tester->execute(['--heads' => $file]), 'an entry without its seq');
+        self::assertStringContainsString('invalid entry', $tester->getDisplay());
+        unlink($file);
+    }
+
+    public function testAnEmptyChainHeadIsTheGenesis(): void
+    {
+        $this->boot();
+        $report = $this->service(ChainVerifierInterface::class)->verify(null, null, ['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0, 'at' => null]]);
+
+        self::assertTrue($report->isIntact(), 'a chain published while it was still empty has nothing to lose');
+        self::assertSame(['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0, 'at' => null]], $report->headLinks);
     }
 
     public function testTheVerifyCommandReportsAnIntactRegister(): void

@@ -12,11 +12,12 @@ use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Both host kinds (REQ-ARCH-001, contract section 17) and the single-entity-manager Flex host (`entity_manager: null`,
- * coordinator decision for S1): the register works on a DDD host (its own connection and entity manager, another table
- * prefix) and on the default entity manager, which the bundle never flushes outside its explicit transactions.
+ * or the default manager's name; coordinator decision for S1): the register works on a DDD host (its own connection
+ * and entity manager, another table prefix) and on the default entity manager, which the bundle never flushes outside its explicit transactions.
  */
 final class HostKindsTest extends RegisterTestCase
 {
@@ -57,10 +58,23 @@ final class HostKindsTest extends RegisterTestCase
         self::assertSame(0, $this->em()->getUnitOfWork()->size(), 'nothing of the bundle left managed in the host unit of work');
     }
 
-    public function testASingleEmHostKeepsItsEntitiesAndItsPendingChanges(): void
+    /**
+     * @return iterable<string, array{array<string, mixed>}>
+     */
+    public static function sharedManagerConfigs(): iterable
+    {
+        yield 'entity_manager: null' => [[]];
+        yield 'entity_manager: default (the default manager by name, audit ST Info)' => [['doctrine' => ['entity_manager' => 'default']]];
+    }
+
+    /**
+     * @param array<string, mixed> $config
+     */
+    #[DataProvider('sharedManagerConfigs')]
+    public function testASingleEmHostKeepsItsEntitiesAndItsPendingChanges(array $config): void
     {
         $this->hostKind = Host::singleEntityManager();
-        $this->boot();
+        $this->boot($config);
         $tool = new SchemaTool($this->em());
         $meta = [$this->em()->getClassMetadata(HostNote::class)];
         $tool->dropSchema($meta);

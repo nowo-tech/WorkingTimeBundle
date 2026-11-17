@@ -14,10 +14,12 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 interface ChainVerifierInterface
 {
     /**
-     * Verifies every chain, or one tenant's, or one worker's. `$publishedHeads` ("tenant\x1Fworker" => hash) are heads
-     * published earlier that must still be links of their chains.
+     * Verifies every chain, or one tenant's, or one worker's. `$publishedHeads` ("tenant\x1Fworker" => `{hash, seq, at}`,
+     * as {@see VerificationReport::$headLinks}) are heads published earlier that must still be links of their chains
+     * unless a purge removed them (an anchor past their `seq`). A bare hash (0.1.0) has no `seq`: only the anchor of the
+     * purge that removed exactly that link excuses it.
      *
-     * @param array<string, string> $publishedHeads
+     * @param array<string, array{hash: string, seq: int, at?: string|null}|string> $publishedHeads
      */
     public function verify(?TenantRef $tenant = null, ?WorkerRef $worker = null, array $publishedHeads = []): VerificationReport;
 

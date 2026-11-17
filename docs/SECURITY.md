@@ -21,6 +21,12 @@ a segment opened or closed without a link, a head older than the newest segment,
 earlier heads are given (`--heads`, the `chain_heads` stored with every export, or heads published to the audit sink
 with `--publish-heads`). `triggers:check` verifies that every trigger exists, is enabled and has the shipped body.
 
+A published head carries its link's `seq` and time (`{hash, seq, at}`). A head that is no longer a link is accepted
+only when a purge anchor of that chain has a `first_kept_seq` past its `seq` (or the anchor's hash is the head): a
+removed tail is found even after the chain's purges (audit ST-D1). An anchor past the chain's first link is reported as
+`anchor_after_start`, since a purge only removes a prefix. Still out of reach: a whole chain removed together with a
+forged anchor past its published head, by a role that can delete with the purge flag (the residual risk below).
+
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.
 When the application user owns the schema, it can drop or replace the triggers, disable them, or (in
 `session_variable` mode) set the purge flag itself, and then rewrite the register and recompute the hashes. The chain
@@ -37,6 +43,8 @@ register that must stand up to an inspection, the host should:
 4. Keep `nowo:working-time:triggers:check` in the deploy and in monitoring.
 
 ## Shared entity manager (`doctrine.entity_manager: null`)
+
+The same applies when `doctrine.entity_manager` names the registry's default manager (for example `default`).
 
 With the private entity manager (default) the bundle clears it after each unit of work. With the host's default entity
 manager the bundle never flushes or clears the host's work: before a register write it refuses (LogicException) when
