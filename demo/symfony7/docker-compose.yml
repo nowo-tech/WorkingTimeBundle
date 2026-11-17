@@ -1,4 +1,4 @@
-name: working-time-bundle-demo-symfony-8
+name: working-time-bundle-demo-symfony-7
 services:
   php:
     build:
