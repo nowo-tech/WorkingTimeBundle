@@ -59,7 +59,7 @@ final class DayRecordBuilderTest extends TestCase
      *
      * @return list<string>
      */
-    private static function values(array $flags): array
+    private function values(array $flags): array
     {
         return array_map(static fn (DayFlag $f): string => $f->value, $flags);
     }
@@ -105,7 +105,7 @@ final class DayRecordBuilderTest extends TestCase
             $this->segment($workday, 3, SegmentType::Work, '2026-11-10 13:10:00', '2026-11-10 23:30:00'),
         ], [], [], Fx::at('2026-11-11 08:00:00'));
 
-        self::assertSame(['overtime', 'long_day', 'short_break'], self::values($record->flags));
+        self::assertSame(['overtime', 'long_day', 'short_break'], $this->values($record->flags));
         self::assertGreaterThan(0, $record->overtimeSeconds());
         self::assertSame(['overtime', 'long_day', 'short_break'], $record->flagValues());
     }
@@ -117,7 +117,7 @@ final class DayRecordBuilderTest extends TestCase
             $this->segment($workday, 1, SegmentType::Work, '2026-11-10 09:00:00', '2026-11-10 17:00:00', '2026-11-10 09:30:00'),
         ], [], [], Fx::at('2026-11-10 18:00:00'));
 
-        self::assertSame(['late_entry'], self::values($record->flags));
+        self::assertSame(['late_entry'], $this->values($record->flags));
         self::assertTrue($record->has(DayFlag::LateEntry));
         self::assertTrue($record->segments[0]->late);
     }
@@ -130,7 +130,7 @@ final class DayRecordBuilderTest extends TestCase
             $this->segment($workday, 2, SegmentType::Work, '2026-11-10 08:00:00', '2026-11-10 08:30:00', '2026-11-10 09:30:00'),
         ], [$this->revision($workday, RevisionKind::Correction, ['op' => 'void', 'segment' => Fx::uuid(2)])], [], Fx::at('2026-11-10 18:00:00'));
 
-        self::assertSame(['corrected'], self::values($record->flags));
+        self::assertSame(['corrected'], $this->values($record->flags));
         self::assertSame(8 * 3600, $record->workSeconds);
         self::assertSame('09:00', $record->firstStart()?->format('H:i'));
     }
@@ -142,7 +142,7 @@ final class DayRecordBuilderTest extends TestCase
             $this->segment($workday, 1, SegmentType::Work, '2026-11-10 10:00:00', '2026-11-10 17:00:00'),
         ], [], [], Fx::at('2026-11-10 18:00:00'));
 
-        self::assertSame(['outside_band'], self::values($record->flags));
+        self::assertSame(['outside_band'], $this->values($record->flags));
     }
 
     public function testNoFlexMeansNoBand(): void
@@ -161,7 +161,7 @@ final class DayRecordBuilderTest extends TestCase
         $open    = [$this->segment($workday, 1, SegmentType::Work, '2026-11-10 09:00:00', null)];
 
         $stale = DayRecordBuilder::build($workday, $open, [], [], Fx::at('2026-11-10 19:00:01'));
-        self::assertSame(['missing_clock_out'], self::values($stale->flags));
+        self::assertSame(['missing_clock_out'], $this->values($stale->flags));
         self::assertSame(0, $stale->workSeconds);
         self::assertNull($stale->openSegment());
 
@@ -180,7 +180,7 @@ final class DayRecordBuilderTest extends TestCase
         $open    = [$this->segment($workday, 1, SegmentType::Work, '2026-11-10 06:00:00', null)];
 
         $record = DayRecordBuilder::build($workday, $open, [], [], Fx::at('2026-11-11 00:00:01'));
-        self::assertSame(['missing_clock_out'], self::values($record->flags));
+        self::assertSame(['missing_clock_out'], $this->values($record->flags));
 
         $young = DayRecordBuilder::build($workday, $open, [], [], Fx::at('2026-11-10 20:00:00'));
         self::assertSame([], $young->flags);
@@ -261,7 +261,7 @@ final class DayRecordBuilderTest extends TestCase
 
         $contested = DayRecordBuilder::build($workday, [], [$recorded, $this->revision($workday, RevisionKind::Contested, ['revision' => $recorded->getId()]), $this->revision($workday, RevisionKind::Acknowledged, ['revision' => 5])], [], Fx::at('2026-11-10 18:00:00'));
         self::assertSame([], $contested->pendingAcknowledgements);
-        self::assertSame(['corrected', 'contested'], self::values($contested->flags));
+        self::assertSame(['corrected', 'contested'], $this->values($contested->flags));
     }
 
     public function testPendingRequestsFlagTheDay(): void
@@ -270,7 +270,7 @@ final class DayRecordBuilderTest extends TestCase
         $request = CorrectionRequest::file(Fx::uuid(60), $workday, CorrectionOperation::Void, Fx::uuid(1), null, null, null, 'entered by mistake', Fx::at('2026-11-11'));
 
         $pending = DayRecordBuilder::build($workday, [], [], [$request], Fx::at('2026-11-12'));
-        self::assertSame(['correction_pending'], self::values($pending->flags));
+        self::assertSame(['correction_pending'], $this->values($pending->flags));
 
         $request->reject(new ActorRef('boss'), 'Boss', null, Fx::at('2026-11-12'));
         $decided = DayRecordBuilder::build($workday, [], [], [$request], Fx::at('2026-11-12'));
@@ -304,7 +304,7 @@ final class DayRecordBuilderTest extends TestCase
             $this->segment($workday, 1, SegmentType::Work, '2026-11-10 09:00:00', '2026-11-10 17:00:00', '2026-11-10 09:01:00'),
         ], [], [], Fx::at('2026-11-10 18:00:00'), new RegisterRules(lateSeconds: 30, longDaySeconds: 3600));
 
-        self::assertSame(['late_entry', 'long_day'], self::values($record->flags));
+        self::assertSame(['late_entry', 'long_day'], $this->values($record->flags));
     }
 
     /**
@@ -326,7 +326,7 @@ final class DayRecordBuilderTest extends TestCase
         $time = DayRecordBuilder::time($value);
 
         self::assertSame($expected, $time instanceof DateTimeImmutable ? $time->format('Y-m-d H:i:s') : null);
-        if ($time !== null) {
+        if ($time instanceof DateTimeImmutable) {
             self::assertSame('UTC', $time->getTimezone()->getName());
         }
     }

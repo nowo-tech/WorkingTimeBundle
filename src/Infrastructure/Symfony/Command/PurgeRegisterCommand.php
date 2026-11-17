@@ -48,7 +48,7 @@ final class PurgeRegisterCommand extends Command
         } catch (PurgeRefusedException $e) {
             $io->error($e->getMessage());
 
-            return 2;
+            return Command::INVALID;
         } catch (Throwable $e) {
             $io->error('The purge failed: ' . $e::class);
 

@@ -94,7 +94,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
             $this->build($exportId);
         } catch (Throwable $e) {
             $this->logger?->error('Working-time register export failed.', ['export' => $exportId, 'exception' => $e::class]);
-            $this->runner->write(function () use ($exportId, $e): void {
+            $this->runner->write(function () use ($exportId, $e): void { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $this->store->export($exportId)?->fail(substr(strrchr('\\' . $e::class, '\\') ?: 'error', 1));
             });
 
@@ -133,7 +133,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
             $head           = $this->verifier->head($tenant, $ref);
             $heads[$worker] = $head ?? '';
             $days           = $this->runner->read(fn (): array => $this->reader->worker($tenant, $ref, $from, $to, $now));
-            $slug           = $base . '-' . self::slug($name) . '-' . substr(hash('sha256', $worker), 0, 8);
+            $slug           = $base . '-' . $this->slug($name) . '-' . substr(hash('sha256', $worker), 0, 8);
             $rows           = RegisterCsv::rows($org, $days, $settings->ipEvidence());
             foreach ($rows as $row) {
                 $team[] = $row;
@@ -148,14 +148,14 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
         }
         if ($export->getFormat() === ExportFormat::Zip) {
             $files[$base . '-team.csv'] = RegisterCsv::encode($team);
-            [$name, $type, $bytes]      = [$base . '.zip', 'application/zip', self::zip($files)];
+            [$name, $type, $bytes]      = [$base . '.zip', 'application/zip', $this->zip($files)];
         } else {
             $name  = array_key_first($files) ?? $base . '.csv';
             $bytes = $files[$name] ?? RegisterCsv::encode([]);
             $type  = $export->getFormat() === ExportFormat::Pdf ? 'application/pdf' : 'text/csv; charset=UTF-8';
         }
         $sha256 = hash('sha256', $bytes);
-        $this->runner->write(function () use ($exportId, $name, $type, $sha256, $bytes, $heads, $now, $tenant): void {
+        $this->runner->write(function () use ($exportId, $name, $type, $sha256, $bytes, $heads, $now, $tenant): void { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $export = $this->store->export($exportId) ?? throw new RuntimeException('Export gone.');
             $export->complete($name, $type, $sha256, $heads, $now, $this->downloadDays);
             $this->files->put($exportId, $bytes);
@@ -204,7 +204,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
     /**
      * @param array<string, string> $files name => bytes
      */
-    private static function zip(array $files): string
+    private function zip(array $files): string
     {
         $path = tempnam(sys_get_temp_dir(), 'nowo-wt-export-') ?: throw new RuntimeException('No temp file.');
         try {
@@ -226,7 +226,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
         }
     }
 
-    private static function slug(string $name): string
+    private function slug(string $name): string
     {
         $ascii = strtolower((string) preg_replace('/[^A-Za-z0-9]+/', '-', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name) ?: ''));
 

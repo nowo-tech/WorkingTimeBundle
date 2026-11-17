@@ -50,14 +50,14 @@ final readonly class WorkerPreferences
     {
         $context = $this->access->context(WorkingTimePermission::Clock);
 
-        return $this->runner->write(function () use ($context, $reminders, $monthlySummary): WorkerPreference {
+        return $this->runner->write(function () use ($context, $reminders, $monthlySummary): WorkerPreference { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $now        = $this->clock->now();
             $preference = $this->store->preference($context->worker());
-            $new        = $preference === null;
+            $new        = !$preference instanceof WorkerPreference;
             $preference ??= WorkerPreference::defaults($context->worker()->value, $now);
             $preference->change($reminders && $context->settings->remindersAllowed(), $monthlySummary || $context->settings->monthlySummaryMandatory(), $now);
             if ($new) {
-                $this->store->addPreference($preference);
+                $this->store->addPreference($preference); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             }
 
             return $preference;

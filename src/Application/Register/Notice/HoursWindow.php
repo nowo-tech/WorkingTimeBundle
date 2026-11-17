@@ -65,10 +65,10 @@ final class HoursWindow
         $start = $schedule->start($date);
         $end   = $schedule->end($date);
         $span  = $windowMinutes * 60;
-        if ($start !== null && $now->getTimestamp() >= $start->getTimestamp() - $span && $now->getTimestamp() <= $start->getTimestamp() + $span) {
+        if ($start instanceof DateTimeImmutable && $now->getTimestamp() >= $start->getTimestamp() - $span && $now->getTimestamp() <= $start->getTimestamp() + $span) {
             return 'in';
         }
-        if ($end !== null && $now->getTimestamp() >= $end->getTimestamp() - $span && $now->getTimestamp() <= $end->getTimestamp() + $span) {
+        if ($end instanceof DateTimeImmutable && $now->getTimestamp() >= $end->getTimestamp() - $span && $now->getTimestamp() <= $end->getTimestamp() + $span) {
             return 'out';
         }
 

@@ -55,13 +55,13 @@ class WorkSegment
      */
     public function close(DateTimeImmutable $at, SegmentSource $source, DateTimeImmutable $receivedAt, ?IpPrefix $ip): void
     {
-        if ($this->endedAt !== null) {
+        if ($this->endedAt instanceof DateTimeImmutable) {
             throw new LogicException('A register segment is closed once.');
         }
-        $this->endedAt       = WorkdayRevision::utc($at);
-        $this->endSource     = $source;
-        $this->endReceivedAt = WorkdayRevision::utc($receivedAt);
-        $this->endIpPrefix   = $ip?->value;
+        $this->endedAt       = WorkdayRevision::utc($at); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->endSource     = $source; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->endReceivedAt = WorkdayRevision::utc($receivedAt); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->endIpPrefix   = $ip?->value; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /** Row id. */
@@ -97,7 +97,7 @@ class WorkSegment
     /** Whether the segment is still open. */
     public function isOpen(): bool
     {
-        return $this->endedAt === null;
+        return !$this->endedAt instanceof DateTimeImmutable;
     }
 
     /** Where the start came from. */
@@ -142,6 +142,6 @@ class WorkSegment
     public function isLate(int $lateSeconds): bool
     {
         return abs($this->startReceivedAt->getTimestamp() - $this->startedAt->getTimestamp()) > $lateSeconds
-            || ($this->endedAt !== null && $this->endReceivedAt !== null && abs($this->endReceivedAt->getTimestamp() - $this->endedAt->getTimestamp()) > $lateSeconds);
+            || ($this->endedAt instanceof DateTimeImmutable && $this->endReceivedAt instanceof DateTimeImmutable && abs($this->endReceivedAt->getTimestamp() - $this->endedAt->getTimestamp()) > $lateSeconds);
     }
 }

@@ -96,7 +96,7 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
     public function removePreference(WorkerRef $worker): void
     {
         $preference = $this->preference($worker);
-        if ($preference !== null) {
+        if ($preference instanceof WorkerPreference) {
             $this->em()->remove($preference);
         }
     }
@@ -291,17 +291,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
     {
         $qb = $this->em()->createQueryBuilder()->select('DISTINCT r.tenantId AS tenant, r.workerId AS worker')->from(WorkdayRevision::class, 'r')
             ->orderBy('r.tenantId')->addOrderBy('r.workerId');
-        if ($tenant !== null) {
+        if ($tenant instanceof TenantRef) {
             $qb->andWhere('r.tenantId = :tenant')->setParameter('tenant', $tenant->value);
         }
-        if ($worker !== null) {
+        if ($worker instanceof WorkerRef) {
             $qb->andWhere('r.workerId = :worker')->setParameter('worker', $worker->value);
         }
         $chains = [];
         /** @var list<array{tenant: mixed, worker: mixed}> $rows */
         $rows = $qb->getQuery()->getArrayResult();
         foreach ($rows as $row) {
-            if (is_string($row['tenant']) && is_string($row['worker']) && ($tenant === null || $row['tenant'] === $tenant->value) && ($worker === null || $row['worker'] === $worker->value)) {
+            if (is_string($row['tenant']) && is_string($row['worker']) && (!$tenant instanceof TenantRef || $row['tenant'] === $tenant->value) && (!$worker instanceof WorkerRef || $row['worker'] === $worker->value)) {
                 $chains[] = [new TenantRef($row['tenant']), new WorkerRef($row['worker'])];
             }
         }

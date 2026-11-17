@@ -61,8 +61,8 @@ final readonly class RegisterAccess
         }
         $actor        = $this->permissions->currentActor() ?? throw new RegisterUnavailableException();
         $actorProfile = $this->member($tenant, $actor->asWorker());
-        $profile      = $subject === null || $subject->isActor($actor) ? $actorProfile : $this->member($tenant, $subject);
-        if ($permission !== null && !$this->permissions->isGranted($permission, $tenant, $subject)) {
+        $profile      = !$subject instanceof WorkerRef || $subject->isActor($actor) ? $actorProfile : $this->member($tenant, $subject);
+        if ($permission instanceof WorkingTimePermission && !$this->permissions->isGranted($permission, $tenant, $subject)) {
             throw new PermissionDeniedException();
         }
 
@@ -100,7 +100,7 @@ final readonly class RegisterAccess
     public function member(TenantRef $tenant, WorkerRef $worker): WorkerProfile
     {
         $profile = $this->directory->worker($tenant, $worker);
-        if ($profile === null || !$profile->worker->equals($worker) || !$profile->active) {
+        if (!$profile instanceof WorkerProfile || !$profile->worker->equals($worker) || !$profile->active) {
             throw new RegisterUnavailableException();
         }
 

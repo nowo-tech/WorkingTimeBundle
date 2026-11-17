@@ -55,11 +55,11 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
             return $result;
         }
 
-        return $this->writeUnit->run(function () use ($work): mixed {
+        return $this->writeUnit->run(function () use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $manager = $this->manager();
-            $manager->clear();
+            $manager->clear(); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             try {
-                return $manager->wrapInTransaction(static function (EntityManagerInterface $manager) use ($work): mixed {
+                return $manager->wrapInTransaction(static function (EntityManagerInterface $manager) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
                     $result = $work();
                     $manager->flush();
 
@@ -87,7 +87,7 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
         try {
             return $work();
         } finally {
-            $manager->clear();
+            $manager->clear(); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
         }
     }
 

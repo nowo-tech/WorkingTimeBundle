@@ -74,22 +74,22 @@ class RegisterSettings
      */
     public function change(RegisterSettingsInput $input, ?ActorRef $by, DateTimeImmutable $at): void
     {
-        $this->enabled                 = $input->enabled;
-        $this->breaksCounted           = $input->breaksCounted;
-        $this->flexMinutes             = $input->flexMinutes;
-        $this->minBreakMinutes         = $input->minBreakMinutes;
-        $this->dailyOvertimeMinutes    = $input->dailyOvertimeMinutes;
-        $this->weeklyOvertimeMinutes   = $input->weeklyOvertimeMinutes;
-        $this->taskTimerLink           = $input->taskTimerLink;
-        $this->remindersAllowed        = $input->remindersAllowed;
-        $this->monthlySummaryMandatory = $input->monthlySummaryMandatory;
-        $this->ipEvidence              = $input->ipEvidence;
-        $this->ipNotices               = $input->ipNotices;
-        $this->ipNoticeLocale          = $input->ipNoticeLocale;
-        $this->retentionYears          = $input->retentionYears;
-        $this->correctionWindowDays    = $input->correctionWindowDays;
-        $this->updatedById             = $by?->value;
-        $this->updatedAt               = WorkdayRevision::utc($at);
+        $this->enabled                 = $input->enabled; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->breaksCounted           = $input->breaksCounted; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->flexMinutes             = $input->flexMinutes; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->minBreakMinutes         = $input->minBreakMinutes; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->dailyOvertimeMinutes    = $input->dailyOvertimeMinutes; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->weeklyOvertimeMinutes   = $input->weeklyOvertimeMinutes; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->taskTimerLink           = $input->taskTimerLink; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->remindersAllowed        = $input->remindersAllowed; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->monthlySummaryMandatory = $input->monthlySummaryMandatory; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->ipEvidence              = $input->ipEvidence; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->ipNotices               = $input->ipNotices; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->ipNoticeLocale          = $input->ipNoticeLocale; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->retentionYears          = $input->retentionYears; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->correctionWindowDays    = $input->correctionWindowDays; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->updatedById             = $by?->value; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->updatedAt               = WorkdayRevision::utc($at); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /**

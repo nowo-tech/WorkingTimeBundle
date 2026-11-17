@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle\Bridge\UserKit;
 
 use Nowo\UserKitBundle\PersonalData\PersonalDataExportProviderInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterPersonalData;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 
 /**
  * UserKit bridge (contract section 14.4): the `working_time` section of a person's data export — their workdays
@@ -38,7 +39,7 @@ final readonly class UserKitRegisterExportProvider implements PersonalDataExport
      */
     public function supports(object $user): bool
     {
-        return $this->workers->workerOf($user) !== null;
+        return $this->workers->workerOf($user) instanceof WorkerRef;
     }
 
     /**
@@ -48,6 +49,6 @@ final readonly class UserKitRegisterExportProvider implements PersonalDataExport
     {
         $worker = $this->workers->workerOf($user);
 
-        return $worker === null ? null : $this->data->export($worker);
+        return $worker instanceof WorkerRef ? $this->data->export($worker) : null;
     }
 }

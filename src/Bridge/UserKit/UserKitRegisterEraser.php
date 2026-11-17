@@ -7,6 +7,7 @@ namespace Nowo\WorkingTimeBundle\Bridge\UserKit;
 use Nowo\UserKitBundle\PersonalData\ErasureRequest;
 use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterPersonalData;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 
 /**
  * UserKit bridge (contract section 14.4): an erasure deletes the worker's register preferences and their export files;
@@ -40,7 +41,7 @@ final readonly class UserKitRegisterEraser implements PersonalDataEraserInterfac
      */
     public function supports(object $user): bool
     {
-        return $this->workers->workerOf($user) !== null;
+        return $this->workers->workerOf($user) instanceof WorkerRef;
     }
 
     /**
@@ -49,7 +50,7 @@ final readonly class UserKitRegisterEraser implements PersonalDataEraserInterfac
     public function erase(ErasureRequest $request): void
     {
         $worker = $this->workers->workerOf($request->user, $request->identifier());
-        if ($worker !== null) {
+        if ($worker instanceof WorkerRef) {
             $this->data->erase($worker);
         }
     }

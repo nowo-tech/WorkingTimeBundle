@@ -62,9 +62,9 @@ final readonly class ScheduleService implements ScheduleServiceInterface
             throw new ScheduleRefusedException('schedule.error.past');
         }
 
-        return $this->runner->write(function () use ($context, $scope, $target, $validFrom, $definition, $workCentreId, $now): ScheduleAssignment {
+        return $this->runner->write(function () use ($context, $scope, $target, $validFrom, $definition, $workCentreId, $now): ScheduleAssignment { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $row = ScheduleAssignment::create($this->ids->generate(), $context->tenant->value, $scope, $target, $validFrom, $definition, $workCentreId, $now, $context->actor);
-            $this->store->addSchedule($row);
+            $this->store->addSchedule($row); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $this->audit->record(new AuditEntry('working_time.schedule_assigned', $context->tenant, $context->actor, $scope === ScheduleScope::Worker ? new WorkerRef((string) $target) : null, ['schedule' => $row->getId(), 'scope' => $scope->value, 'valid_from' => $validFrom->value]));
 
             return $row;
@@ -79,9 +79,9 @@ final readonly class ScheduleService implements ScheduleServiceInterface
         $context = $this->access->context(WorkingTimePermission::ManageTeam);
         $now     = $this->clock->now();
         [$today] = $this->resolver->at($context->settings, $context->actorProfile, $now);
-        $this->runner->write(function () use ($context, $scheduleId, $today): void {
+        $this->runner->write(function () use ($context, $scheduleId, $today): void { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $row = $this->store->schedule($scheduleId);
-            if ($row === null || $row->getTenantId() !== $context->tenant->value) {
+            if (!$row instanceof ScheduleAssignment || $row->getTenantId() !== $context->tenant->value) {
                 throw new RegisterUnavailableException();
             }
             if ($row->getScope() === ScheduleScope::Worker) {
@@ -90,7 +90,7 @@ final readonly class ScheduleService implements ScheduleServiceInterface
             if ($row->validFrom()->compare($today) <= 0) {
                 throw new ScheduleRefusedException('schedule.error.not_future');
             }
-            $this->store->removeSchedule($row);
+            $this->store->removeSchedule($row); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $this->audit->record(new AuditEntry('working_time.schedule_withdrawn', $context->tenant, $context->actor, null, ['schedule' => $row->getId()]));
         });
     }

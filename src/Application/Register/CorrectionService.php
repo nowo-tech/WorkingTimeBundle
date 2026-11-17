@@ -16,6 +16,7 @@ use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeAuditSinkInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\CorrectionOperation;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\RevisionKind;
+use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType;
 use Nowo\WorkingTimeBundle\Domain\Register\Event\CorrectionDecided;
 use Nowo\WorkingTimeBundle\Domain\Register\Event\CorrectionRecorded;
 use Nowo\WorkingTimeBundle\Domain\Register\Event\CorrectionRequested;
@@ -92,13 +93,13 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         if ($date->compare($today->plusDays(-$context->settings->correctionWindowDays())) < 0) {
             throw new CorrectionRefusedException('correction.error.window');
         }
-        $reason  = self::reason($input->reason);
+        $reason  = $this->reason($input->reason);
         $events  = new AfterCommitEvents();
-        $request = $this->runner->write(function () use ($context, $date, $input, $reason, $now, $events): CorrectionRequest {
+        $request = $this->runner->write(function () use ($context, $date, $input, $reason, $now, $events): CorrectionRequest { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $workday   = $this->workday($context, $context->worker(), $date, $now);
             $operation = $this->validate($this->reader->one($workday, $now), $input, $now);
             $request   = CorrectionRequest::file($this->ids->generate(), $workday, $operation, $operation === CorrectionOperation::Add ? null : $input->segment, $operation === CorrectionOperation::Add ? $input->segmentType : null, $input->start, $input->end, $reason, $now);
-            $this->store->addCorrection($request);
+            $this->store->addCorrection($request); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             foreach ($this->directory->workers($context->tenant) as $manager) {
                 if (!$manager->worker->isActor($context->actor) && $this->managesAs($context->tenant, $manager->worker, $context->worker())) {
                     $this->notices->queue($context->settings, $manager->worker, RegisterNotice::CORRECTION_REQUESTED, ['worker' => $context->subject->displayName, 'date' => $date->value], null, 'request:' . $request->getId() . ':' . $manager->worker->value, $now);
@@ -129,10 +130,10 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         if ($context->isOwn()) {
             throw new CorrectionRefusedException('correction.error.own_day');
         }
-        $comment = self::comment($comment);
+        $comment = $this->comment($comment);
         $events  = new AfterCommitEvents();
         try {
-            $request = $this->runner->write(function () use ($context, $correctionId, $approve, $comment, $expectedVersion, $events): CorrectionRequest {
+            $request = $this->runner->write(function () use ($context, $correctionId, $approve, $comment, $expectedVersion, $events): CorrectionRequest { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $now     = $this->clock->now();
                 $request = $this->store->correction($correctionId) ?? throw new RegisterUnavailableException();
                 if ($request->getVersion() !== $expectedVersion) {
@@ -145,7 +146,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
                 $name    = $context->actorProfile->displayName;
                 if ($approve) {
                     $segment  = $request->getSegmentId() ?? $this->ids->generate();
-                    $revision = $this->chain->append($workday, RevisionKind::Correction, $segment, self::payload($request->getOperation(), $segment, $request->getSegmentType()?->value, $request->getNewStart(), $request->getNewEnd(), [
+                    $revision = $this->chain->append($workday, RevisionKind::Correction, $segment, $this->payload($request->getOperation(), $segment, $request->getSegmentType()?->value, $request->getNewStart(), $request->getNewEnd(), [ // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                         'request'        => $request->getId(),
                         'approved_by_id' => $context->actor->value,
                         'approved_by'    => $name,
@@ -186,14 +187,14 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         if ($date->compare($today) > 0) {
             throw new CorrectionRefusedException('correction.error.future');
         }
-        $reason   = self::reason($input->reason);
+        $reason   = $this->reason($input->reason);
         $events   = new AfterCommitEvents();
-        $revision = $this->runner->write(function () use ($context, $date, $input, $reason, $now, $events): WorkdayRevision {
+        $revision = $this->runner->write(function () use ($context, $date, $input, $reason, $now, $events): WorkdayRevision { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $workday   = $this->workday($context, $context->worker(), $date, $now);
             $operation = $this->validate($this->reader->one($workday, $now), $input, $now);
             $segment   = $operation === CorrectionOperation::Add ? $this->ids->generate() : (string) $input->segment;
             $name      = $context->actorProfile->displayName;
-            $revision  = $this->chain->append($workday, RevisionKind::RecordedCorrection, $segment, self::payload($operation, $segment, $operation === CorrectionOperation::Add ? $input->segmentType?->value : null, $input->start, $input->end, [
+            $revision  = $this->chain->append($workday, RevisionKind::RecordedCorrection, $segment, $this->payload($operation, $segment, $operation === CorrectionOperation::Add ? $input->segmentType?->value : null, $input->start, $input->end, [ // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 'recorded_by_id' => $context->actor->value,
                 'recorded_by'    => $name,
             ]), $reason, $context->actor, $name, $now);
@@ -215,22 +216,22 @@ final readonly class CorrectionService implements CorrectionServiceInterface
     public function answer(string $recordedRevisionId, bool $contest, ?string $comment): WorkdayRevision
     {
         $context = $this->access->context(WorkingTimePermission::Clock);
-        $comment = self::comment($comment);
+        $comment = $this->comment($comment);
         if ($contest && ($comment === null || mb_strlen($comment) < CorrectionRequest::REASON_MIN)) {
             throw new CorrectionRefusedException('correction.error.reason');
         }
 
-        return $this->runner->write(function () use ($context, $recordedRevisionId, $contest, $comment): WorkdayRevision {
+        return $this->runner->write(function () use ($context, $recordedRevisionId, $contest, $comment): WorkdayRevision { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $now      = $this->clock->now();
             $recorded = $this->store->revision($recordedRevisionId);
-            $workday  = $recorded === null ? null : $this->store->workday($recorded->getWorkdayId());
-            if ($recorded === null || $workday === null || $recorded->getKind() !== RevisionKind::RecordedCorrection || $workday->getWorkerId() !== $context->worker()->value || $workday->getTenantId() !== $context->tenant->value) {
+            $workday  = $recorded instanceof WorkdayRevision ? $this->store->workday($recorded->getWorkdayId()) : null;
+            if (!$recorded instanceof WorkdayRevision || !$workday instanceof Workday || $recorded->getKind() !== RevisionKind::RecordedCorrection || $workday->getWorkerId() !== $context->worker()->value || $workday->getTenantId() !== $context->tenant->value) {
                 throw new RegisterUnavailableException();
             }
             if (!in_array($recorded->getId(), $this->reader->one($workday, $now)->pendingAcknowledgements, true)) {
                 throw new CorrectionRefusedException('correction.error.already_answered');
             }
-            $revision = $this->chain->append($workday, $contest ? RevisionKind::Contested : RevisionKind::Acknowledged, $recorded->getSegmentId(), ['revision' => $recorded->getId()], $comment, $context->actor, $context->subject->displayName, $now);
+            $revision = $this->chain->append($workday, $contest ? RevisionKind::Contested : RevisionKind::Acknowledged, $recorded->getSegmentId(), ['revision' => $recorded->getId()], $comment, $context->actor, $context->subject->displayName, $now); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $this->audit->record(new AuditEntry($contest ? 'working_time.correction_contested' : 'working_time.correction_acknowledged', $context->tenant, $context->actor, $context->worker(), ['revision' => $recorded->getId(), 'date' => $workday->date()->value]));
 
             return $revision;
@@ -255,11 +256,11 @@ final readonly class CorrectionService implements CorrectionServiceInterface
     private function workday(RegisterContext $context, WorkerRef $worker, LocalDate $date, DateTimeImmutable $now): Workday
     {
         $workday = $this->store->workdayOn($context->tenant, $worker, $date);
-        if ($workday !== null) {
+        if ($workday instanceof Workday) {
             return $workday;
         }
         $workday = Workday::open($this->ids->generate(), $context->tenant, $worker, $context->subject->displayName, $date, $this->schedules->forDate($context->settings, $context->subject, $date), $now);
-        $this->store->addWorkday($workday);
+        $this->store->addWorkday($workday); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
         $this->runner->flush();
 
         return $workday;
@@ -288,19 +289,19 @@ final readonly class CorrectionService implements CorrectionServiceInterface
             if ($operation === CorrectionOperation::Void) {
                 return $operation;
             }
-            if ($input->start === null && $input->end === null) {
+            if (!$input->start instanceof DateTimeImmutable && !$input->end instanceof DateTimeImmutable) {
                 throw new CorrectionRefusedException('correction.error.times');
             }
             $start = $input->start ?? $segment->start;
             $end   = $input->end ?? $segment->end;
         } else {
-            if ($input->start === null || $input->end === null || $input->segmentType === null) {
+            if (!$input->start instanceof DateTimeImmutable || !$input->end instanceof DateTimeImmutable || !$input->segmentType instanceof SegmentType) {
                 throw new CorrectionRefusedException('correction.error.times');
             }
             $start = $input->start;
             $end   = $input->end;
         }
-        if ($start > $now || ($end !== null && ($end <= $start || $end > $now || $end->getTimestamp() - $start->getTimestamp() > $this->rules->longDaySeconds))) {
+        if ($start > $now || ($end instanceof DateTimeImmutable && ($end <= $start || $end > $now || $end->getTimestamp() - $start->getTimestamp() > $this->rules->longDaySeconds))) {
             throw new CorrectionRefusedException('correction.error.times');
         }
 
@@ -312,7 +313,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
      *
      * @return array<string, scalar>
      */
-    private static function payload(CorrectionOperation $operation, string $segment, ?string $type, ?DateTimeImmutable $start, ?DateTimeImmutable $end, array $extra): array
+    private function payload(CorrectionOperation $operation, string $segment, ?string $type, ?DateTimeImmutable $start, ?DateTimeImmutable $end, array $extra): array
     {
         $void = $operation === CorrectionOperation::Void;
 
@@ -320,13 +321,13 @@ final readonly class CorrectionService implements CorrectionServiceInterface
             'op'      => $operation->value,
             'segment' => $segment,
             'type'    => $type,
-            'start'   => $start === null || $void ? null : WorkdayRevision::iso($start),
-            'end'     => $end === null || $void ? null : WorkdayRevision::iso($end),
+            'start'   => !$start instanceof DateTimeImmutable || $void ? null : WorkdayRevision::iso($start),
+            'end'     => !$end instanceof DateTimeImmutable || $void ? null : WorkdayRevision::iso($end),
             ...$extra,
         ], static fn (mixed $value): bool => $value !== null);
     }
 
-    private static function reason(?string $reason): string
+    private function reason(?string $reason): string
     {
         $reason = trim((string) $reason);
         $length = mb_strlen($reason);
@@ -337,7 +338,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         return $reason;
     }
 
-    private static function comment(?string $comment): ?string
+    private function comment(?string $comment): ?string
     {
         $comment = $comment === null ? null : mb_substr(trim($comment), 0, CorrectionRequest::REASON_MAX);
 

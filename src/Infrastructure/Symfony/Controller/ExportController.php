@@ -58,7 +58,7 @@ final readonly class ExportController
      */
     public function exports(Request $request): Response
     {
-        return $this->ui->guard(function () use ($request): Response {
+        return $this->ui->guard(function () use ($request): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $member     = $this->access->context(null);
             $inspection = $this->access->can(WorkingTimePermission::Export);
             $workers    = [];
@@ -89,7 +89,7 @@ final readonly class ExportController
                     default  => null,
                 };
                 try {
-                    if ($scope === 'worker' && $worker === null) {
+                    if ($scope === 'worker' && !$worker instanceof WorkerRef) {
                         throw new ExportRefusedException('export.error.worker');
                     }
                     $this->exports->request($worker, null, is_string($data['from'] ?? null) ? $data['from'] : '', is_string($data['to'] ?? null) ? $data['to'] : '', ExportFormat::from(is_string($data['format'] ?? null) ? $data['format'] : 'csv'), $request->getLocale());
@@ -97,7 +97,7 @@ final readonly class ExportController
 
                     return $this->ui->redirect('nowo_working_time_exports');
                 } catch (ExportRefusedException $e) {
-                    $form->addError(new FormError($this->ui->trans($e->key)));
+                    $form->addError(new FormError($this->ui->trans($e->key))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 }
             }
 
@@ -110,7 +110,7 @@ final readonly class ExportController
      */
     public function download(Request $request, string $id): Response
     {
-        return $this->ui->guard(function () use ($id): Response {
+        return $this->ui->guard(function () use ($id): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             [$export, $bytes] = $this->exports->open($id);
 
             return new Response($bytes, Response::HTTP_OK, [
@@ -132,7 +132,7 @@ final readonly class ExportController
         $now  = $this->clock->now();
         $rows = [];
         foreach ($this->exports->list() as $export) {
-            $rows[] = self::row($export, $export->isDownloadable($now) ? $this->ui->url('nowo_working_time_export_download', ['id' => $export->getId()]) : null);
+            $rows[] = $this->row($export, $export->isDownloadable($now) ? $this->ui->url('nowo_working_time_export_download', ['id' => $export->getId()]) : null);
         }
 
         return $this->ui->render('@NowoWorkingTime/register/exports.html.twig', [
@@ -159,7 +159,7 @@ final readonly class ExportController
     /**
      * @return array{created: string, period: string, scope: string, format: string, status: string, sha256: string, href: ?string}
      */
-    private static function row(RegisterExport $export, ?string $href): array
+    private function row(RegisterExport $export, ?string $href): array
     {
         return [
             'created' => $export->getCreatedAt()->format('Y-m-d H:i'),

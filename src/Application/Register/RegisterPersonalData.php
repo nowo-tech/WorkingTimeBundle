@@ -11,6 +11,8 @@ use Nowo\WorkingTimeBundle\Domain\Port\ExportFileStoreInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeAuditSinkInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterExport;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\Workday;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\WorkdayRevision;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\WorkerPreference;
 use Nowo\WorkingTimeBundle\Domain\Shared\AuditEntry;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
@@ -54,7 +56,7 @@ final readonly class RegisterPersonalData
      */
     public function export(WorkerRef $worker): array
     {
-        return $this->runner->read(function () use ($worker): array {
+        return $this->runner->read(function () use ($worker): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $now      = $this->clock->now();
             $workdays = [];
             $requests = [];
@@ -80,7 +82,7 @@ final readonly class RegisterPersonalData
                     'worked_minutes' => (int) ($record->workedSeconds / 60),
                     'flags'          => $record->flagValues(),
                     'segments'       => $segments,
-                    'trail'          => array_map(static fn ($revision): array => [
+                    'trail'          => array_map(static fn (WorkdayRevision $revision): array => [
                         'seq'    => $revision->getSeq(),
                         'kind'   => $revision->getKind()->value,
                         'at'     => self::iso($revision->getCreatedAt()),
@@ -117,7 +119,7 @@ final readonly class RegisterPersonalData
                     'requested' => self::iso($export->getCreatedAt()),
                     'sha256'    => $export->getSha256(),
                 ], $this->exports($worker)),
-                'preferences' => $preference !== null && $preference->getWorkerId() === $worker->value
+                'preferences' => $preference instanceof WorkerPreference && $preference->getWorkerId() === $worker->value
                     ? ['reminders' => $preference->wantsReminders(), 'monthly_summary' => $preference->wantsMonthlySummary()]
                     : null,
             ];
@@ -131,11 +133,11 @@ final readonly class RegisterPersonalData
      */
     public function erase(WorkerRef $worker): array
     {
-        $result = $this->runner->write(function () use ($worker): array {
+        $result = $this->runner->write(function () use ($worker): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $preference = $this->store->preference($worker);
             $prefs      = 0;
-            if ($preference !== null && $preference->getWorkerId() === $worker->value) {
-                $this->store->removePreference($worker);
+            if ($preference instanceof WorkerPreference && $preference->getWorkerId() === $worker->value) {
+                $this->store->removePreference($worker); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 $prefs = 1;
             }
             $files = 0;

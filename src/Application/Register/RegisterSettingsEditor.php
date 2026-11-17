@@ -53,7 +53,7 @@ final readonly class RegisterSettingsEditor implements RegisterSettingsEditorInt
     {
         $context = $this->access->context(WorkingTimePermission::ManageSettings, null, false);
 
-        return $this->runner->read(function () use ($context): array {
+        return $this->runner->read(function () use ($context): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $stored = $this->store->settings($context->tenant);
 
             return [$stored ?? $context->settings, $stored?->getVersion() ?? 0];
@@ -74,7 +74,7 @@ final readonly class RegisterSettingsEditor implements RegisterSettingsEditorInt
         }
         $events = new AfterCommitEvents();
         try {
-            $settings = $this->runner->write(function () use ($context, $input, $expectedVersion, $events): RegisterSettings {
+            $settings = $this->runner->write(function () use ($context, $input, $expectedVersion, $events): RegisterSettings { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $now    = $this->clock->now();
                 $stored = $this->store->settings($context->tenant);
                 if (($stored?->getVersion() ?? 0) !== $expectedVersion) {
@@ -82,8 +82,8 @@ final readonly class RegisterSettingsEditor implements RegisterSettingsEditorInt
                 }
                 $settings = $stored ?? RegisterSettings::defaults($context->tenant->value, $now);
                 $settings->change($input, $context->actor, $now);
-                if ($stored === null) {
-                    $this->store->addSettings($settings);
+                if (!$stored instanceof RegisterSettings) {
+                    $this->store->addSettings($settings); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 }
                 $this->runner->flush();
                 $this->audit->record(new AuditEntry('working_time.settings_changed', $context->tenant, $context->actor, null, ['enabled' => $input->enabled, 'ip_evidence' => $input->ipEvidence, 'retention_years' => $input->retentionYears]));

@@ -14,6 +14,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterNotice;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 
 use function hash;
@@ -53,13 +54,13 @@ final readonly class NoticeOutbox
             return false;
         }
         $profile = $this->directory->worker($tenant, $recipient);
-        if ($profile === null || !$profile->worker->equals($recipient)) {
+        if (!$profile instanceof WorkerProfile || !$profile->worker->equals($recipient)) {
             return false;
         }
         $from = LocalDate::of($now, $this->schedules->forDate($settings, $profile, LocalDate::of($now, new DateTimeZone('UTC')))->zone());
         $days = $this->schedules->range($settings, $profile, $from->plusDays(-1), $from->plusDays(self::LOOKAHEAD_DAYS));
 
-        return $this->store->addNotice(RegisterNotice::queue(
+        return $this->store->addNotice(RegisterNotice::queue( // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $this->ids->generate(),
             $tenant->value,
             $recipient->value,

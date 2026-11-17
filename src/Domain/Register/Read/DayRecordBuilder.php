@@ -121,7 +121,7 @@ final class DayRecordBuilder
         }
         $end = $workday->schedule()->end($workday->date());
 
-        return $end !== null && $open->start <= $end && $now->getTimestamp() > $end->getTimestamp() + $rules->missingClockOutGraceSeconds;
+        return $end instanceof DateTimeImmutable && $open->start <= $end && $now->getTimestamp() > $end->getTimestamp() + $rules->missingClockOutGraceSeconds;
     }
 
     /**
@@ -151,9 +151,9 @@ final class DayRecordBuilder
         $id        = is_string($payload['segment'] ?? null) ? $payload['segment'] : '';
         $start     = self::time($payload['start'] ?? null);
         $end       = self::time($payload['end'] ?? null);
-        if ($operation === CorrectionOperation::Add && $start !== null) {
+        if ($operation === CorrectionOperation::Add && $start instanceof DateTimeImmutable) {
             $type           = SegmentType::tryFrom(is_string($payload['type'] ?? null) ? $payload['type'] : '') ?? SegmentType::Work;
-            $effective[$id] = new EffectiveSegment($id, $type, $start, $end, SegmentSource::Correction, $end === null ? null : SegmentSource::Correction, false, true, false, null, null);
+            $effective[$id] = new EffectiveSegment($id, $type, $start, $end, SegmentSource::Correction, $end instanceof DateTimeImmutable ? SegmentSource::Correction : null, false, true, false, null, null);
         } elseif (isset($effective[$id]) && ($operation === CorrectionOperation::Change || $operation === CorrectionOperation::Void)) {
             $effective[$id] = $effective[$id]->with($start, $end, $operation === CorrectionOperation::Void);
         }
@@ -189,7 +189,7 @@ final class DayRecordBuilder
             $flags[] = DayFlag::Overtime;
         }
         $last = $stale ? null : ($record->lastEnd() ?? ($first === null ? null : $now));
-        if ($first !== null && $last !== null && $last->getTimestamp() - $first->getTimestamp() > $rules->longDaySeconds) {
+        if ($first !== null && $last instanceof DateTimeImmutable && $last->getTimestamp() - $first->getTimestamp() > $rules->longDaySeconds) {
             $flags[] = DayFlag::LongDay;
         }
         if (!$open && $schedule->minBreakMinutes > 0 && $record->workSeconds > RegisterRules::BREAK_RULE_AFTER && $record->breakSeconds < $schedule->minBreakMinutes * 60) {
@@ -197,7 +197,7 @@ final class DayRecordBuilder
         }
         $scheduled = $schedule->start($record->workday->date());
         $firstWork = $record->firstStart();
-        if ($schedule->flexMinutes > 0 && $scheduled !== null && $firstWork !== null && abs($firstWork->getTimestamp() - $scheduled->getTimestamp()) > $schedule->flexMinutes * 60) {
+        if ($schedule->flexMinutes > 0 && $scheduled instanceof DateTimeImmutable && $firstWork instanceof DateTimeImmutable && abs($firstWork->getTimestamp() - $scheduled->getTimestamp()) > $schedule->flexMinutes * 60) {
             $flags[] = DayFlag::OutsideBand;
         }
         foreach ($record->revisions as $revision) {

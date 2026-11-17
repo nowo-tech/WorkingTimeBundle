@@ -247,7 +247,7 @@ final readonly class RegisterTriggerInstaller
      */
     public static function isRefusal(Throwable $failure): bool
     {
-        for ($e = $failure; $e !== null; $e = $e->getPrevious()) {
+        for ($e = $failure; $e instanceof Throwable; $e = $e->getPrevious()) {
             if (str_contains($e->getMessage(), 'is append-only')) {
                 return true;
             }

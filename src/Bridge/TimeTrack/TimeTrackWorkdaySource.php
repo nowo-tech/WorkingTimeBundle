@@ -72,7 +72,7 @@ final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
     public function actFor(TimeTrackUserRef $user, WorkdayAction $action, ?DateTimeImmutable $occurredAt, string $idempotencyKey, ClientType $client): WorkdayState
     {
         try {
-            $state = $this->clock->act(null, ClockAction::from($action->value), $occurredAt, RequestKey::api($idempotencyKey), self::source($client), $this->requests?->getMainRequest()?->getClientIp());
+            $state = $this->clock->act(null, ClockAction::from($action->value), $occurredAt, RequestKey::api($idempotencyKey), $this->source($client), $this->requests?->getMainRequest()?->getClientIp());
         } catch (ClockConflictException $e) {
             throw new WorkdayConflictException(self::toWorkdayState($e->state));
         } catch (RegisterUnavailableException|PermissionDeniedException|InvalidRequestKeyException) {
@@ -124,7 +124,7 @@ final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
         return $state->withReminder(HoursWindow::reminder($date, $schedule, $state->now, $this->windowMinutes));
     }
 
-    private static function source(ClientType $client): SegmentSource
+    private function source(ClientType $client): SegmentSource
     {
         return match ($client) {
             ClientType::Desktop   => SegmentSource::Desktop,

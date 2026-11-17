@@ -106,7 +106,7 @@ final class NowoWorkingTimeBundle extends AbstractBundle
                 $manager = is_string($doctrine['entity_manager']) && $doctrine['entity_manager'] !== '' ? $doctrine['entity_manager'] : 'default';
             }
         }
-        if ($manager !== 'default' && !self::declares($builder, $manager)) {
+        if ($manager !== 'default' && !$this->declares($builder, $manager)) {
             // The private entity manager is the host's to declare (the Flex recipe does): PrivateEntityManagerPass
             // fails the build with the fix instead of creating one silently.
             return;
@@ -122,7 +122,7 @@ final class NowoWorkingTimeBundle extends AbstractBundle
     /**
      * Whether the host's Doctrine configuration declares the entity manager.
      */
-    private static function declares(ContainerBuilder $builder, string $manager): bool
+    private function declares(ContainerBuilder $builder, string $manager): bool
     {
         foreach ($builder->getExtensionConfig('doctrine') as $doctrine) {
             $orm = is_array($doctrine) && is_array($doctrine['orm'] ?? null) ? $doctrine['orm'] : [];

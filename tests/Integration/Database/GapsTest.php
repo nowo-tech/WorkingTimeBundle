@@ -222,7 +222,7 @@ final class GapsTest extends UiTestCase
         $this->ctx()->actor                   = 'ana';
         $this->ctx()->grant('acme', 'ana', 'manage_team');
         $own                = $this->client->request('GET', '/working-time/team');
-        $pending            = (string) $this->text('SELECT id FROM nowo_working_time_correction');
+        $pending            = $this->text('SELECT id FROM nowo_working_time_correction');
         $this->ctx()->actor = 'mia';
         $form               = $this->client->request('GET', '/working-time/team')->filter('form[data-testid="wt-decide-' . $pending . '"]')->form();
         $this->ctx()->actor = 'ana';

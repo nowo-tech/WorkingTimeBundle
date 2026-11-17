@@ -28,6 +28,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Exception\RegisterUnavailableExceptio
 use Nowo\WorkingTimeBundle\Domain\Register\Model\Workday;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\ClockState;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
+use Nowo\WorkingTimeBundle\Domain\Register\Read\EffectiveSegment;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\CorrectionServiceInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
@@ -80,7 +81,7 @@ final readonly class RegisterController
     /**
      * `GET {register}`: today.
      */
-    public function today(Request $request): Response
+    public function today(): Response
     {
         return $this->ui->guard(fn (): Response => $this->todayPage($this->access->context(WorkingTimePermission::Clock), $this->clock->state()));
     }
@@ -90,7 +91,7 @@ final readonly class RegisterController
      */
     public function clock(Request $request, string $action): Response
     {
-        return $this->ui->guard(function () use ($request, $action): Response {
+        return $this->ui->guard(function () use ($request, $action): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $clockAction = ClockAction::tryFrom($action) ?? throw new NotFoundHttpException();
             $context     = $this->access->context(WorkingTimePermission::Clock);
             $form        = $this->ui->form(ClockType::class, null, [], 'wt_clock_' . $clockAction->key());
@@ -119,7 +120,7 @@ final readonly class RegisterController
      */
     public function month(Request $request, ?string $month = null): Response
     {
-        return $this->ui->guard(function () use ($month): Response {
+        return $this->ui->guard(function () use ($month): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $context = $this->access->context(WorkingTimePermission::Clock);
             [$today] = $this->schedules->at($context->settings, $context->subject, $this->time->now());
             $month ??= $today->month();
@@ -176,7 +177,7 @@ final readonly class RegisterController
      */
     public function day(Request $request, string $id): Response
     {
-        return $this->ui->guard(function () use ($id): Response {
+        return $this->ui->guard(function () use ($id): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $member  = $this->access->context(null);
             $workday = $this->runner->read(fn (): ?Workday => $this->store->workday($id));
             if ($workday === null || $workday->getTenantId() !== $member->tenant->value) {
@@ -196,7 +197,7 @@ final readonly class RegisterController
      */
     public function date(Request $request, string $date): Response
     {
-        return $this->ui->guard(fn (): Response => $this->dayPage($this->access->context(WorkingTimePermission::Clock), self::localDate($date)));
+        return $this->ui->guard(fn (): Response => $this->dayPage($this->access->context(WorkingTimePermission::Clock), $this->localDate($date)));
     }
 
     /**
@@ -204,9 +205,9 @@ final readonly class RegisterController
      */
     public function requestCorrection(Request $request, string $date): Response
     {
-        return $this->ui->guard(function () use ($request, $date): Response {
+        return $this->ui->guard(function () use ($request, $date): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $context         = $this->access->context(WorkingTimePermission::Clock);
-            $day             = self::localDate($date);
+            $day             = $this->localDate($date);
             [$record, $zone] = $this->record($context, $day);
             $form            = $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
             $form->handleRequest($request);
@@ -233,11 +234,11 @@ final readonly class RegisterController
      */
     public function answer(Request $request, string $id): Response
     {
-        return $this->ui->guard(function () use ($request, $id): Response {
+        return $this->ui->guard(function () use ($request, $id): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $context = $this->access->context(WorkingTimePermission::Clock);
             $form    = $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $id);
             $form->handleRequest($request);
-            $revision = $this->runner->read(fn () => $this->store->revision($id));
+            $revision = $this->runner->read(fn (): ?\Nowo\WorkingTimeBundle\Domain\Register\Model\WorkdayRevision => $this->store->revision($id));
             $workday  = $revision === null ? null : $this->runner->read(fn (): ?Workday => $this->store->workday($revision->getWorkdayId()));
             if ($workday === null || $workday->getTenantId() !== $context->tenant->value || $workday->getWorkerId() !== $context->worker()->value) {
                 throw new RegisterUnavailableException();
@@ -288,9 +289,9 @@ final readonly class RegisterController
      */
     private function record(RegisterContext $context, LocalDate $date): array
     {
-        return $this->runner->read(function () use ($context, $date): array {
+        return $this->runner->read(function () use ($context, $date): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $workday = $this->store->workdayOn($context->tenant, $context->worker(), $date);
-            if ($workday !== null) {
+            if ($workday instanceof Workday) {
                 return [$this->reader->one($workday, $this->time->now()), $workday->schedule()->timezone];
             }
 
@@ -305,7 +306,7 @@ final readonly class RegisterController
             $forms[$action->value] = $this->ui->form(ClockType::class, ['requestKey' => UiSupport::requestKey()], ['action' => $this->ui->url('nowo_working_time_clock', ['action' => $action->value])], 'wt_clock_' . $action->key())->createView();
         }
         $zone     = new DateTimeZone($state->timezone);
-        $segments = array_map(static fn ($segment): array => [
+        $segments = array_map(static fn (EffectiveSegment $segment): array => [
             'type'  => $segment->type->value,
             'start' => RegisterCsv::local($segment->start, $zone),
             'end'   => RegisterCsv::local($segment->end, $zone),
@@ -334,7 +335,7 @@ final readonly class RegisterController
         return $this->ui->trans('status.' . $state->status->value);
     }
 
-    private static function localDate(string $date): LocalDate
+    private function localDate(string $date): LocalDate
     {
         try {
             return new LocalDate($date);

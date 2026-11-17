@@ -151,7 +151,7 @@ final class UiFlowTest extends UiTestCase
         $this->client->submit($form, [$form->getName() . '[answer]' => 'acknowledge']);
         self::assertSame(303, $this->client->getResponse()->getStatusCode());
         self::assertSame(1, $this->int("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'acknowledged'"));
-        $this->client->request('POST', (string) $form->getUri(), []);
+        $this->client->request('POST', $form->getUri(), []);
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
         $this->client->request('POST', '/working-time/corrections/01900000-0000-7000-8000-000000000000/answer', []);
         self::assertSame(404, $this->client->getResponse()->getStatusCode());

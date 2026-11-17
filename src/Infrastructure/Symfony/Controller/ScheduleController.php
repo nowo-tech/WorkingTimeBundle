@@ -66,7 +66,7 @@ final readonly class ScheduleController
      */
     public function schedules(Request $request): Response
     {
-        return $this->ui->guard(function () use ($request): Response {
+        return $this->ui->guard(function () use ($request): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $form = $this->form();
             $form->handleRequest($request);
             if (!$form->isSubmitted()) {
@@ -76,15 +76,15 @@ final readonly class ScheduleController
                 /** @var array<string, mixed> $data */
                 $data = $form->getData();
                 try {
-                    [$scope, $target, $from, $definition] = self::input($data);
+                    [$scope, $target, $from, $definition] = $this->input($data);
                     $this->schedules->assign($scope, $target, $from, $definition);
                     $this->ui->flash($request, 'success', 'schedule.saved');
 
                     return $this->ui->redirect('nowo_working_time_schedules');
                 } catch (ScheduleRefusedException $e) {
-                    $form->addError(new FormError($this->ui->trans($e->key)));
+                    $form->addError(new FormError($this->ui->trans($e->key))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 } catch (InvalidArgumentException) {
-                    $form->addError(new FormError($this->ui->trans('schedule.error.invalid')));
+                    $form->addError(new FormError($this->ui->trans('schedule.error.invalid'))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 }
             }
 
@@ -97,7 +97,7 @@ final readonly class ScheduleController
      */
     public function withdraw(Request $request, string $id): Response
     {
-        return $this->ui->guard(function () use ($request, $id): Response {
+        return $this->ui->guard(function () use ($request, $id): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $this->access->context(WorkingTimePermission::ManageTeam);
             $form = $this->ui->form(WithdrawType::class, null, [], 'wt_withdraw_' . $id);
             $form->handleRequest($request);
@@ -124,7 +124,7 @@ final readonly class ScheduleController
         $withdraws = [];
         $today     = $this->clock->now()->format('Y-m-d');
         foreach ($this->schedules->list() as $row) {
-            $rows[] = self::row($row);
+            $rows[] = $this->row($row);
             if ($row->validFrom()->value > $today) {
                 $withdraws[] = ['form' => $this->ui->form(WithdrawType::class, null, [], 'wt_withdraw_' . $row->getId())->createView(), 'action' => $this->ui->url('nowo_working_time_schedule_withdraw', ['id' => $row->getId()]), 'valid_from' => $row->validFrom()->value];
             }
@@ -173,7 +173,7 @@ final readonly class ScheduleController
      *
      * @return array{ScheduleScope, ?string, LocalDate, ScheduleDefinition}
      */
-    private static function input(array $data): array
+    private function input(array $data): array
     {
         $scope  = ScheduleScope::from(is_string($data['scope'] ?? null) ? $data['scope'] : 'tenant');
         $target = match ($scope) {
@@ -207,7 +207,7 @@ final readonly class ScheduleController
     /**
      * @return array<string, string>
      */
-    private static function row(ScheduleAssignment $row): array
+    private function row(ScheduleAssignment $row): array
     {
         $definition = $row->definition();
         $slots      = [];

@@ -11,6 +11,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 use function mb_substr;
 
@@ -34,7 +35,7 @@ final readonly class CurrentUserWorkerDirectory implements WorkerDirectoryInterf
     {
         $user = $this->tokens?->getToken()?->getUser();
 
-        return $user === null ? null : new WorkerRef($user->getUserIdentifier());
+        return $user instanceof UserInterface ? new WorkerRef($user->getUserIdentifier()) : null;
     }
 
     /**
@@ -44,7 +45,7 @@ final readonly class CurrentUserWorkerDirectory implements WorkerDirectoryInterf
     {
         $current = $this->current();
 
-        return $current !== null && $current->equals($worker) ? new WorkerProfile($worker, mb_substr($worker->value, 0, WorkerProfile::NAME_MAX)) : null;
+        return $current instanceof WorkerRef && $current->equals($worker) ? new WorkerProfile($worker, mb_substr($worker->value, 0, WorkerProfile::NAME_MAX)) : null;
     }
 
     /**
@@ -53,7 +54,7 @@ final readonly class CurrentUserWorkerDirectory implements WorkerDirectoryInterf
     public function workers(TenantRef $tenant, ?GroupRef $group = null): iterable
     {
         $current = $this->current();
-        if ($current !== null && $group === null) {
+        if ($current instanceof WorkerRef && !$group instanceof GroupRef) {
             yield new WorkerProfile($current, mb_substr($current->value, 0, WorkerProfile::NAME_MAX));
         }
     }

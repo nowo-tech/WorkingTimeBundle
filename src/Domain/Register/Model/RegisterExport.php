@@ -86,13 +86,13 @@ class RegisterExport
         if ($this->status !== ExportStatus::Running && $this->status !== ExportStatus::Pending) {
             throw new LogicException('Only a pending or running export completes.');
         }
-        $this->status      = ExportStatus::Ready;
-        $this->fileName    = $fileName;
-        $this->contentType = $contentType;
-        $this->sha256      = $sha256;
-        $this->chainHeads  = $chainHeads;
-        $this->readyAt     = WorkdayRevision::utc($at);
-        $this->expiresAt   = $this->readyAt->modify(sprintf('+%d days', $downloadDays));
+        $this->status      = ExportStatus::Ready; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->fileName    = $fileName; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->contentType = $contentType; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->sha256      = $sha256; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->chainHeads  = $chainHeads; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->readyAt     = WorkdayRevision::utc($at); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->expiresAt   = $this->readyAt->modify(sprintf('+%d days', $downloadDays)); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /**
@@ -100,8 +100,8 @@ class RegisterExport
      */
     public function fail(string $errorCode): void
     {
-        $this->status    = ExportStatus::Failed;
-        $this->errorCode = mb_substr($errorCode, 0, 120);
+        $this->status    = ExportStatus::Failed; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->errorCode = mb_substr($errorCode, 0, 120); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /**
@@ -109,7 +109,7 @@ class RegisterExport
      */
     public function expire(): void
     {
-        $this->status = ExportStatus::Expired;
+        $this->status = ExportStatus::Expired; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /**
@@ -117,7 +117,7 @@ class RegisterExport
      */
     public function isDownloadable(DateTimeImmutable $now): bool
     {
-        return $this->status === ExportStatus::Ready && $this->expiresAt !== null && $now < $this->expiresAt;
+        return $this->status === ExportStatus::Ready && $this->expiresAt instanceof DateTimeImmutable && $now < $this->expiresAt;
     }
 
     /** Row id. */

@@ -84,7 +84,7 @@ final class PortsTest extends TestCase
 
         self::assertFalse((new RoleMapPermissionChecker([], $authorization, $this->tokens('ana')))->isGranted(WorkingTimePermission::Clock, TenantRef::default()));
         self::assertFalse((new RoleMapPermissionChecker(['clock' => ['ROLE_A']], $authorization, $this->tokens(null)))->isGranted(WorkingTimePermission::Clock, TenantRef::default()));
-        self::assertFalse((new RoleMapPermissionChecker(['clock' => ['ROLE_A']], $authorization, null))->isGranted(WorkingTimePermission::Clock, TenantRef::default()));
+        self::assertFalse((new RoleMapPermissionChecker(['clock' => ['ROLE_A']], $authorization))->isGranted(WorkingTimePermission::Clock, TenantRef::default()));
         self::assertFalse((new RoleMapPermissionChecker(['clock' => ['ROLE_A']], null, $this->tokens('ana')))->isGranted(WorkingTimePermission::Clock, TenantRef::default()));
         self::assertNull((new RoleMapPermissionChecker())->currentActor());
     }

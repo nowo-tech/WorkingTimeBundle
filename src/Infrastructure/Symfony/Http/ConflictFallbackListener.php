@@ -10,6 +10,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Routing\UiRouteLoader;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Throwable;
 
 /**
  * Registered only when NowoTransactionDoctrineBundle's conflict responder is absent: a lock conflict on the bundle's
@@ -34,13 +35,13 @@ final readonly class ConflictFallbackListener
             return;
         }
         $conflict = null;
-        for ($e = $event->getThrowable(); $e !== null; $e = $e->getPrevious()) {
+        for ($e = $event->getThrowable(); $e instanceof Throwable; $e = $e->getPrevious()) {
             if ($e instanceof LockConflictExceptionInterface) {
                 $conflict = $e;
                 break;
             }
         }
-        if ($conflict === null) {
+        if (!$conflict instanceof LockConflictExceptionInterface) {
             return;
         }
         $headers  = $this->policy->headers() + ['Cache-Control' => 'no-store'];

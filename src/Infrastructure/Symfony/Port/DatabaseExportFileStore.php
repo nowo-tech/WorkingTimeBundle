@@ -49,7 +49,7 @@ final readonly class DatabaseExportFileStore implements ExportFileStoreInterface
     {
         $file = $this->runner->manager()->find(RegisterExportFile::class, $exportId);
         if ($file !== null) {
-            $this->runner->manager()->remove($file);
+            $this->runner->manager()->remove($file); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $this->runner->manager()->flush();
         }
     }

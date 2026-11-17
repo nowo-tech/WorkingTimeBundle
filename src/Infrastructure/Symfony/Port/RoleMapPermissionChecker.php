@@ -11,6 +11,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Throwable;
 
 /**
@@ -36,7 +37,7 @@ final readonly class RoleMapPermissionChecker implements WorkingTimePermissionCh
      */
     public function isGranted(WorkingTimePermission $permission, TenantRef $tenant, ?WorkerRef $subject = null): bool
     {
-        if ($this->authorization === null || $this->currentActor() === null) {
+        if (!$this->authorization instanceof AuthorizationCheckerInterface || !$this->currentActor() instanceof ActorRef) {
             return false;
         }
         foreach ($this->roles[$permission->value] ?? [] as $role) {
@@ -59,6 +60,6 @@ final readonly class RoleMapPermissionChecker implements WorkingTimePermissionCh
     {
         $user = $this->tokens?->getToken()?->getUser();
 
-        return $user === null ? null : new ActorRef($user->getUserIdentifier());
+        return $user instanceof UserInterface ? new ActorRef($user->getUserIdentifier()) : null;
     }
 }

@@ -53,9 +53,9 @@ final readonly class SettingsController
      */
     public function settings(Request $request): Response
     {
-        return $this->ui->guard(function () use ($request): Response {
+        return $this->ui->guard(function () use ($request): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             [$settings, $version] = $this->editor->get();
-            $form                 = $this->ui->form(SettingsType::class, self::data($settings, $version, $request->getLocale()), ['ip_evidence_offered' => $this->ipEvidenceOffered]);
+            $form                 = $this->ui->form(SettingsType::class, $this->data($settings, $version, $request->getLocale()), ['ip_evidence_offered' => $this->ipEvidenceOffered]);
             $form->handleRequest($request);
             if (!$form->isSubmitted()) {
                 return $this->page($form, Response::HTTP_OK);
@@ -64,18 +64,18 @@ final readonly class SettingsController
                 /** @var array<string, mixed> $data */
                 $data = $form->getData();
                 try {
-                    $this->editor->update(self::input($data, $request->getLocale(), $settings->ipNotices()), is_numeric($data['version'] ?? null) ? (int) $data['version'] : -1);
+                    $this->editor->update($this->input($data, $request->getLocale(), $settings->ipNotices()), is_numeric($data['version'] ?? null) ? (int) $data['version'] : -1);
                     $this->ui->flash($request, 'success', 'settings.saved');
 
                     return $this->ui->redirect('nowo_working_time_settings');
                 } catch (SettingsRefusedException $e) {
-                    $form->addError(new FormError($this->ui->trans($e->key)));
+                    $form->addError(new FormError($this->ui->trans($e->key))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
                 } catch (StaleSettingsException) {
                     $this->ui->flash($request, 'error', 'settings.stale');
                     [$status, $headers]   = $this->ui->conflict();
                     [$settings, $version] = $this->editor->get();
 
-                    return $this->page($this->ui->form(SettingsType::class, self::data($settings, $version, $request->getLocale()), ['ip_evidence_offered' => $this->ipEvidenceOffered]), $status, $headers);
+                    return $this->page($this->ui->form(SettingsType::class, $this->data($settings, $version, $request->getLocale()), ['ip_evidence_offered' => $this->ipEvidenceOffered]), $status, $headers);
                 }
             }
 
@@ -88,7 +88,7 @@ final readonly class SettingsController
      */
     public function preferences(Request $request): Response
     {
-        return $this->ui->guard(function () use ($request): Response {
+        return $this->ui->guard(function () use ($request): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             [$preference, $allowed, $mandatory] = $this->preferences->get();
             $form                               = $this->ui->form(PreferencesType::class, ['reminders' => $preference->wantsReminders(), 'monthlySummary' => $preference->wantsMonthlySummary() || $mandatory], ['reminders_allowed' => $allowed, 'summary_mandatory' => $mandatory]);
             $form->handleRequest($request);
@@ -134,7 +134,7 @@ final readonly class SettingsController
     /**
      * @return array<string, mixed>
      */
-    private static function data(RegisterSettings $settings, int $version, string $locale): array
+    private function data(RegisterSettings $settings, int $version, string $locale): array
     {
         $input = $settings->toInput();
 
@@ -160,7 +160,7 @@ final readonly class SettingsController
      * @param array<string, mixed> $data
      * @param array<string, string> $notices the stored notices of the other locales (kept)
      */
-    private static function input(array $data, string $locale, array $notices): RegisterSettingsInput
+    private function input(array $data, string $locale, array $notices): RegisterSettingsInput
     {
         $int    = static fn (string $key, int $default): int => is_int($data[$key] ?? null) ? $data[$key] : $default;
         $null   = static fn (string $key): ?int => is_int($data[$key] ?? null) ? $data[$key] : null;

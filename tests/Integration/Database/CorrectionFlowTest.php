@@ -16,6 +16,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Exception\PermissionDeniedException;
 use Nowo\WorkingTimeBundle\Domain\Register\Exception\RegisterUnavailableException;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionInput;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionRequest;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\WorkdayRevision;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\CorrectionServiceInterface;
@@ -100,17 +101,17 @@ final class CorrectionFlowTest extends RegisterTestCase
     {
         $request = $this->requestOnFirstSegment();
         $this->ctx()->grant('acme', 'ana', 'manage_team');
-        $this->assertThrows(fn () => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), CorrectionRefusedException::class, 'correction.error.own_day');
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), CorrectionRefusedException::class, 'correction.error.own_day');
         $this->actAs('mia', 'manage_team');
-        $this->assertThrows(fn () => $this->corrections()->decide('01900000-0000-7000-8000-000000000999', true, null, 1), RegisterUnavailableException::class);
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->decide('01900000-0000-7000-8000-000000000999', true, null, 1), RegisterUnavailableException::class);
         $this->ctx()->tenant = 'other';
         $this->enable('other', ['mia']);
         $this->ctx()->grant('other', 'mia', 'manage_team');
-        $this->assertThrows(fn () => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), RegisterUnavailableException::class);
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), RegisterUnavailableException::class);
         $this->ctx()->tenant = 'acme';
         $this->actAs('zoe');
         $this->ctx()->member('acme', 'zoe', 'Zoe');
-        $this->assertThrows(fn () => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), PermissionDeniedException::class);
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->decide($request->getId(), true, null, $request->getVersion()), PermissionDeniedException::class);
     }
 
     public function testAnAlreadyDecidedRequestOnItsNewVersionIsRefused(): void
@@ -118,7 +119,7 @@ final class CorrectionFlowTest extends RegisterTestCase
         $request = $this->requestOnFirstSegment();
         $this->actAs('mia', 'manage_team');
         $decided = $this->corrections()->decide($request->getId(), false, null, $request->getVersion());
-        $this->assertThrows(fn () => $this->corrections()->decide($request->getId(), true, null, $decided->getVersion()), CorrectionRefusedException::class, 'correction.error.already_decided');
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->decide($request->getId(), true, null, $decided->getVersion()), CorrectionRefusedException::class, 'correction.error.already_decided');
     }
 
     public function testAnAddedSegmentAndAVoidedOneAreApplied(): void
@@ -145,16 +146,16 @@ final class CorrectionFlowTest extends RegisterTestCase
         $first    = $this->day('ana')->segments[0]->id;
         $recorded = $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $first, null, null, new DateTimeImmutable('2026-11-18 13:00:00 UTC'), 'Clock-out time from the door log'));
         self::assertTrue($this->day('ana')->has(DayFlag::PendingAcknowledgement));
-        $this->assertThrows(fn () => $this->corrections()->record(new WorkerRef('mia'), new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Void, $first, null, null, null, 'Own day test')), CorrectionRefusedException::class, 'correction.error.own_day');
+        $this->assertThrows(fn (): WorkdayRevision => $this->corrections()->record(new WorkerRef('mia'), new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Void, $first, null, null, null, 'Own day test')), CorrectionRefusedException::class, 'correction.error.own_day');
 
         $this->ctx()->actor = 'ana';
-        $this->assertThrows(fn () => $this->corrections()->answer($recorded->getId(), true, 'no'), CorrectionRefusedException::class, 'correction.error.reason');
+        $this->assertThrows(fn (): WorkdayRevision => $this->corrections()->answer($recorded->getId(), true, 'no'), CorrectionRefusedException::class, 'correction.error.reason');
         $this->corrections()->answer($recorded->getId(), true, 'I left at two, not at one');
         $day = $this->day('ana');
         self::assertTrue($day->has(DayFlag::Contested));
         self::assertFalse($day->has(DayFlag::PendingAcknowledgement));
-        $this->assertThrows(fn () => $this->corrections()->answer($recorded->getId(), false, null), CorrectionRefusedException::class, 'correction.error.already_answered');
-        $this->assertThrows(fn () => $this->corrections()->answer($day->revisions[0]->getId(), false, null), RegisterUnavailableException::class);
+        $this->assertThrows(fn (): WorkdayRevision => $this->corrections()->answer($recorded->getId(), false, null), CorrectionRefusedException::class, 'correction.error.already_answered');
+        $this->assertThrows(fn (): WorkdayRevision => $this->corrections()->answer($day->revisions[0]->getId(), false, null), RegisterUnavailableException::class);
         self::assertContains('working_time.correction_contested', $this->recorder()->auditKeys());
     }
 
@@ -167,7 +168,7 @@ final class CorrectionFlowTest extends RegisterTestCase
         $this->corrections()->answer($recorded->getId(), false, null);
 
         self::assertContains('working_time.correction_acknowledged', $this->recorder()->auditKeys());
-        $this->assertThrows(fn () => $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-30'), new CorrectionInput(CorrectionOperation::Void, 'x', null, null, null, 'Future day test')), PermissionDeniedException::class);
+        $this->assertThrows(fn (): WorkdayRevision => $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-30'), new CorrectionInput(CorrectionOperation::Void, 'x', null, null, null, 'Future day test')), PermissionDeniedException::class);
     }
 
     /**
@@ -188,7 +189,7 @@ final class CorrectionFlowTest extends RegisterTestCase
     public function testRefusals(CorrectionInput $input, string $date, string $key): void
     {
         $this->bootWithDay();
-        $this->assertThrows(fn () => $this->corrections()->request(new LocalDate($date), $input), CorrectionRefusedException::class, $key);
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->request(new LocalDate($date), $input), CorrectionRefusedException::class, $key);
     }
 
     public function testTheLiveSegmentAndAChangeWithoutTimesAreRefused(): void
@@ -201,8 +202,8 @@ final class CorrectionFlowTest extends RegisterTestCase
         $this->act(ClockAction::BreakStart, 60);
         $this->clock()->modify('+30 minutes');
         $day = $this->day('ana');
-        $this->assertThrows(fn () => $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $day->segments[1]->id, null, null, null, 'Long enough reason')), CorrectionRefusedException::class, 'correction.error.live_segment');
-        $this->assertThrows(fn () => $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $day->segments[0]->id, null, null, null, 'Long enough reason')), CorrectionRefusedException::class, 'correction.error.times');
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $day->segments[1]->id, null, null, null, 'Long enough reason')), CorrectionRefusedException::class, 'correction.error.live_segment');
+        $this->assertThrows(fn (): CorrectionRequest => $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $day->segments[0]->id, null, null, null, 'Long enough reason')), CorrectionRefusedException::class, 'correction.error.times');
     }
 
     private function requestOnFirstSegment(): CorrectionRequest

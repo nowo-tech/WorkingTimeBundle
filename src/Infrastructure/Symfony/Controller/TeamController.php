@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller;
 
+use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use Nowo\UiKitBundle\View\Action;
@@ -24,7 +25,9 @@ use Nowo\WorkingTimeBundle\Domain\Register\Exception\CorrectionRefusedException;
 use Nowo\WorkingTimeBundle\Domain\Register\Exception\PermissionDeniedException;
 use Nowo\WorkingTimeBundle\Domain\Register\Exception\RegisterUnavailableException;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionRequest;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\Workday;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
+use Nowo\WorkingTimeBundle\Domain\Register\Read\EffectiveSegment;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\CorrectionServiceInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
@@ -86,7 +89,7 @@ final readonly class TeamController
      */
     public function teamDay(Request $request): Response
     {
-        return $this->ui->guard(function () use ($request): Response {
+        return $this->ui->guard(function () use ($request): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             [$worker, $date] = $this->target($request);
 
             return $this->dayPage($this->access->context(WorkingTimePermission::ManageTeam, $worker), $date);
@@ -98,7 +101,7 @@ final readonly class TeamController
      */
     public function decide(Request $request, string $id, string $decision): Response
     {
-        return $this->ui->guard(function () use ($request, $id, $decision): Response {
+        return $this->ui->guard(function () use ($request, $id, $decision): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $this->access->context(WorkingTimePermission::ManageTeam);
             $form = $this->ui->form(DecisionType::class, null, [], 'wt_decision_' . $id);
             $form->handleRequest($request);
@@ -130,7 +133,7 @@ final readonly class TeamController
      */
     public function record(Request $request): Response
     {
-        return $this->ui->guard(function () use ($request): Response {
+        return $this->ui->guard(function () use ($request): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             [$worker, $date] = $this->target($request);
             $context         = $this->access->context(WorkingTimePermission::ManageTeam, $worker);
             [$record, $zone] = $this->dayRecord($context, $date);
@@ -176,7 +179,7 @@ final readonly class TeamController
             $rows[] = [
                 'worker' => $worker->worker->value,
                 'name'   => $worker->displayName,
-                'status' => $this->ui->trans('status.' . self::status($record)),
+                'status' => $this->ui->trans('status.' . $this->status($record)),
                 'worked' => MonthSummary::hours($record->workedSeconds ?? 0),
                 'flags'  => $record === null ? '' : (string) count($record->flags),
             ];
@@ -195,7 +198,7 @@ final readonly class TeamController
                 'name'    => $names[$correction->getWorkerId()] ?? $correction->getWorkerId(),
                 'form'    => $this->ui->form(DecisionType::class, ['version' => (string) $correction->getVersion()], [], 'wt_decision_' . $correction->getId())->createView(),
                 'date'    => $this->runner->read(fn (): ?string => $this->store->workday($correction->getWorkdayId())?->date()->value),
-                'change'  => self::change($correction),
+                'change'  => $this->change($correction),
                 'approve' => $this->ui->url('nowo_working_time_correction_decide', ['id' => $correction->getId(), 'decision' => 'approve']),
                 'reject'  => $this->ui->url('nowo_working_time_correction_decide', ['id' => $correction->getId(), 'decision' => 'reject']),
             ];
@@ -246,9 +249,9 @@ final readonly class TeamController
      */
     private function dayRecord(RegisterContext $context, LocalDate $date): array
     {
-        return $this->runner->read(function () use ($context, $date): array {
+        return $this->runner->read(function () use ($context, $date): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $workday = $this->store->workdayOn($context->tenant, $context->worker(), $date);
-            if ($workday !== null) {
+            if ($workday instanceof Workday) {
                 return [$this->reader->one($workday, $this->time->now()), $workday->schedule()->timezone];
             }
 
@@ -303,20 +306,20 @@ final readonly class TeamController
         }
     }
 
-    private static function status(?DayRecord $record): string
+    private function status(?DayRecord $record): string
     {
         $open = $record?->openSegment();
-        if ($open !== null) {
+        if ($open instanceof EffectiveSegment) {
             return $open->type->value === 'break' ? 'on_break' : 'working';
         }
 
-        return $record === null || $record->segments === [] ? 'idle' : 'closed';
+        return !$record instanceof DayRecord || $record->segments === [] ? 'idle' : 'closed';
     }
 
-    private static function change(CorrectionRequest $correction): string
+    private function change(CorrectionRequest $correction): string
     {
         $zone = new DateTimeZone('UTC');
 
-        return $correction->getOperation()->value . ($correction->getNewStart() === null ? '' : ' ' . RegisterCsv::local($correction->getNewStart(), $zone, 'Y-m-d H:i') . ' UTC') . ($correction->getNewEnd() === null ? '' : ' – ' . RegisterCsv::local($correction->getNewEnd(), $zone, 'Y-m-d H:i') . ' UTC');
+        return $correction->getOperation()->value . ($correction->getNewStart() instanceof DateTimeImmutable ? ' ' . RegisterCsv::local($correction->getNewStart(), $zone, 'Y-m-d H:i') . ' UTC' : '') . ($correction->getNewEnd() instanceof DateTimeImmutable ? ' – ' . RegisterCsv::local($correction->getNewEnd(), $zone, 'Y-m-d H:i') . ' UTC' : '');
     }
 }

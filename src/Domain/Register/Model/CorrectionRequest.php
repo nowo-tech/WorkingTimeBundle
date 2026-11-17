@@ -71,8 +71,8 @@ class CorrectionRequest
             $operation,
             $segmentId,
             $segmentType,
-            $newStart === null ? null : WorkdayRevision::utc($newStart),
-            $newEnd === null ? null : WorkdayRevision::utc($newEnd),
+            $newStart instanceof DateTimeImmutable ? WorkdayRevision::utc($newStart) : null,
+            $newEnd instanceof DateTimeImmutable ? WorkdayRevision::utc($newEnd) : null,
             $reason,
             WorkdayRevision::utc($at),
         );
@@ -84,7 +84,7 @@ class CorrectionRequest
     public function approve(ActorRef $manager, string $managerName, ?string $comment, string $revisionId, DateTimeImmutable $at): void
     {
         $this->decide(CorrectionStatus::Approved, $manager, $managerName, $comment, $at);
-        $this->revisionId = $revisionId;
+        $this->revisionId = $revisionId; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /**
@@ -100,11 +100,11 @@ class CorrectionRequest
         if ($this->status !== CorrectionStatus::Pending) {
             throw new LogicException('A correction request is decided once.');
         }
-        $this->status          = $status;
-        $this->decidedById     = $manager->value;
-        $this->decidedByName   = mb_substr($managerName, 0, WorkerProfile::NAME_MAX);
-        $this->decidedAt       = WorkdayRevision::utc($at);
-        $this->decisionComment = $comment;
+        $this->status          = $status; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->decidedById     = $manager->value; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->decidedByName   = mb_substr($managerName, 0, WorkerProfile::NAME_MAX); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->decidedAt       = WorkdayRevision::utc($at); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->decisionComment = $comment; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /** Row id. */

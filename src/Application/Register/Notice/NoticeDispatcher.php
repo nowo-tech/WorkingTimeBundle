@@ -14,6 +14,9 @@ use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeNotifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\DaySchedule;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterNotice;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\Workday;
+use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
+use Nowo\WorkingTimeBundle\Domain\Register\Read\EffectiveSegment;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\NoticeMessage;
@@ -85,7 +88,7 @@ final readonly class NoticeDispatcher
             if (!$worker->active) {
                 continue;
             }
-            $queued += $this->runner->write(function () use ($settings, $worker, $now): int {
+            $queued += $this->runner->write(function () use ($settings, $worker, $now): int { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $preference     = $this->store->preference($worker->worker);
                 [$date, $today] = $this->schedules->at($settings, $worker, $now);
                 $queued         = 0;
@@ -112,9 +115,9 @@ final readonly class NoticeDispatcher
         }
         $tenant  = new TenantRef($settings->getTenantId());
         $workday = $this->store->workdayOn($tenant, $worker->worker, $date);
-        $record  = $workday === null ? null : $this->reader->one($workday, $now);
-        $working = $record?->openSegment() !== null;
-        if (($side === 'in' && $record !== null && $record->segments !== []) || ($side === 'out' && !$working)) {
+        $record  = $workday instanceof Workday ? $this->reader->one($workday, $now) : null;
+        $working = $record?->openSegment() instanceof EffectiveSegment;
+        if (($side === 'in' && $record instanceof DayRecord && $record->segments !== []) || ($side === 'out' && !$working)) {
             return false;
         }
         $kind = $side === 'in' ? RegisterNotice::REMINDER_IN : RegisterNotice::REMINDER_OUT;
@@ -165,7 +168,7 @@ final readonly class NoticeDispatcher
             $worker  = new WorkerRef($notice->getWorkerId());
             $profile = $this->directory->worker($tenant, $worker);
             try {
-                if ($profile !== null && $profile->worker->equals($worker)) {
+                if ($profile instanceof WorkerProfile && $profile->worker->equals($worker)) {
                     $this->notifier->send(new NoticeMessage($tenant, $worker, $notice->getKind(), $notice->getParams(), $notice->getActionPath(), $profile->locale));
                 }
                 $sent += $this->runner->write(fn (): bool => $this->store->markNoticeSent($notice->getId(), $this->clock->now())) ? 1 : 0;

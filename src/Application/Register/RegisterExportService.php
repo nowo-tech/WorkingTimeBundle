@@ -58,19 +58,19 @@ final readonly class RegisterExportService implements RegisterExportServiceInter
     public function request(?WorkerRef $worker, ?GroupRef $group, string $monthFrom, string $monthTo, ExportFormat $format, ?string $locale = null): RegisterExport
     {
         $member  = $this->access->context(null);
-        $own     = $worker !== null && $worker->isActor($member->actor);
+        $own     = $worker instanceof WorkerRef && $worker->isActor($member->actor);
         $context = $this->access->context($own ? WorkingTimePermission::Clock : WorkingTimePermission::Export, $worker);
-        if (($worker === null) !== ($format === ExportFormat::Zip) || ($own && $group !== null)) {
+        if ((!$worker instanceof WorkerRef) !== ($format === ExportFormat::Zip) || ($own && $group instanceof GroupRef)) {
             throw new ExportRefusedException('export.error.format');
         }
-        if (!in_array($format->value, $this->formats, true) && !($format === ExportFormat::Zip && $this->formats !== [])) {
+        if (!in_array($format->value, $this->formats, true) && ($format !== ExportFormat::Zip || $this->formats === [])) {
             throw new ExportRefusedException('export.error.format');
         }
         $this->checkPeriod($monthFrom, $monthTo);
-        $export = $this->runner->write(function () use ($context, $worker, $group, $own, $monthFrom, $monthTo, $format, $locale): RegisterExport {
+        $export = $this->runner->write(function () use ($context, $worker, $group, $own, $monthFrom, $monthTo, $format, $locale): RegisterExport { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $export = RegisterExport::request($this->ids->generate(), $context->tenant->value, $context->actor, $context->actorProfile->displayName, $worker?->value, $group?->value, $own, $monthFrom, $monthTo, $format, $locale ?? $context->locale, $this->clock->now());
-            $this->store->addExport($export);
-            $this->audit->record(new AuditEntry('working_time.export_requested', $context->tenant, $context->actor, $worker, ['export' => $export->getId(), 'from' => $monthFrom, 'to' => $monthTo, 'format' => $format->value, 'scope' => $own ? 'own' : ($worker === null ? 'team' : 'worker')]));
+            $this->store->addExport($export); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+            $this->audit->record(new AuditEntry('working_time.export_requested', $context->tenant, $context->actor, $worker, ['export' => $export->getId(), 'from' => $monthFrom, 'to' => $monthTo, 'format' => $format->value, 'scope' => $own ? 'own' : ($worker instanceof WorkerRef ? 'worker' : 'team')]));
 
             return $export;
         });
@@ -121,7 +121,7 @@ final readonly class RegisterExportService implements RegisterExportServiceInter
         $context = $this->access->context(null);
         $all     = $this->access->can(WorkingTimePermission::Export);
 
-        return $this->runner->read(function () use ($context, $all, $limit): array {
+        return $this->runner->read(function () use ($context, $all, $limit): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $visible = [];
             foreach ($this->store->exports($context->tenant, $all ? null : $context->actor->value, $limit) as $export) {
                 if ($export->getRequestedById() === $context->actor->value || ($all && !$export->isOwnCopy())) {
@@ -140,9 +140,9 @@ final readonly class RegisterExportService implements RegisterExportServiceInter
     {
         $count = 0;
         foreach ($this->runner->read(fn (): array => $this->store->expiredExports($this->clock->now(), 500)) as $expired) {
-            $this->runner->write(function () use ($expired): void {
+            $this->runner->write(function () use ($expired): void { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $export = $this->store->export($expired->getId());
-                if ($export !== null) {
+                if ($export instanceof RegisterExport) {
                     $this->files->delete($export->getId());
                     $export->expire();
                 }

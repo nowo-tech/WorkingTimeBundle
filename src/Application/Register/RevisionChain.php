@@ -46,7 +46,7 @@ final readonly class RevisionChain
         $tenant = new TenantRef($workday->getTenantId());
         $worker = new WorkerRef($workday->getWorkerId());
         $head   = $this->store->chainHead($tenant, $worker);
-        if ($head !== null) {
+        if ($head instanceof WorkdayRevision) {
             [$seq, $prevHash] = [$head->getSeq() + 1, $head->getHash()];
         } else {
             // A chain the purge emptied continues from its last anchor; a new chain starts at the genesis.
@@ -55,7 +55,7 @@ final readonly class RevisionChain
             [$seq, $prevHash] = $anchor === null ? [1, ChainCodecs::GENESIS] : [$anchor->getFirstKeptSeq(), $anchor->getAnchorHash()];
         }
         $revision = WorkdayRevision::append($this->ids->generate(), $seq, $prevHash, $workday, $kind, $segmentId, $payload, $reason, $author, $authorName, $at, $requestKey);
-        $this->store->addRevision($revision);
+        $this->store->addRevision($revision); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
         $this->runner->flush();
 
         return $revision;

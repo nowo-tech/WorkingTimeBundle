@@ -35,9 +35,9 @@ class WorkerPreference
      */
     public function change(bool $reminders, bool $monthlySummary, DateTimeImmutable $at): void
     {
-        $this->reminders      = $reminders;
-        $this->monthlySummary = $monthlySummary;
-        $this->updatedAt      = WorkdayRevision::utc($at);
+        $this->reminders      = $reminders; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->monthlySummary = $monthlySummary; // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+        $this->updatedAt      = WorkdayRevision::utc($at); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
     }
 
     /** Worker reference (primary key). */

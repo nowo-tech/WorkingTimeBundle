@@ -163,14 +163,14 @@ final class DoctrineInfrastructureTest extends TestCase
         $runner = $this->runner($connection, $em);
         try {
             $duplicate = $this->createStub(UniqueConstraintViolationException::class);
-            $runner->write(static function () use ($duplicate): void {
+            $runner->write(static function () use ($duplicate): never {
                 throw $duplicate;
             });
             self::fail('duplicate'); // @phpstan-ignore deadCode.unreachable
         } catch (DuplicateRowException) {
         }
         try {
-            $runner->write(static function (): void {
+            $runner->write(static function (): never {
                 throw new OptimisticLockException('stale', null);
             });
             self::fail('stale'); // @phpstan-ignore deadCode.unreachable
@@ -243,7 +243,7 @@ final class DoctrineInfrastructureTest extends TestCase
 
     private function runner(Connection $connection, ?EntityManagerInterface $em = null): DoctrineTransactionRunner
     {
-        if ($em === null) {
+        if (!$em instanceof EntityManagerInterface) {
             $em = $this->createStub(EntityManagerInterface::class);
             $em->method('isOpen')->willReturn(true);
             $em->method('getConnection')->willReturn($connection);

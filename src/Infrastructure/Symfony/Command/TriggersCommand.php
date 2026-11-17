@@ -57,7 +57,7 @@ final class TriggersCommand extends Command
             } catch (TriggerInstallException $e) {
                 $io->error($e->getMessage());
 
-                return 2;
+                return Command::INVALID;
             }
             $io->success(sprintf('%d trigger(s) installed.', count($this->installer->names($connection->getDatabasePlatform()))));
 

@@ -33,7 +33,7 @@ final class TestDirectory implements WorkerDirectoryInterface
     public function workers(TenantRef $tenant, ?GroupRef $group = null): iterable
     {
         foreach ($this->context->members[$tenant->value] ?? [] as $profile) {
-            if ($group === null || $profile->inGroup($group)) {
+            if (!$group instanceof GroupRef || $profile->inGroup($group)) {
                 yield $profile;
             }
         }

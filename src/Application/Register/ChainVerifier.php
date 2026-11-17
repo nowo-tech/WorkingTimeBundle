@@ -89,7 +89,7 @@ final readonly class ChainVerifier implements ChainVerifierInterface
         $previousSeq  = 0;
         $count        = 0;
         do {
-            [$batch, $failure] = $this->runner->read(function () use ($tenant, $worker, &$previousHash, &$previousSeq, &$count, $anchors): array {
+            [$batch, $failure] = $this->runner->read(function () use ($tenant, $worker, &$previousHash, &$previousSeq, &$count, $anchors): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $batch    = $this->store->chainBatch($tenant, $worker, $previousSeq, self::BATCH);
                 $segments = $this->segments($batch);
                 foreach ($batch as $revision) {
@@ -108,7 +108,7 @@ final readonly class ChainVerifier implements ChainVerifierInterface
                     if (!ChainCodecs::isIntact($revision, $previousHash)) {
                         return [$batch, ['seq' => $revision->getSeq(), 'reason' => 'hash_mismatch']];
                     }
-                    $mismatch = self::segmentMismatch($revision, $segments);
+                    $mismatch = $this->segmentMismatch($revision, $segments);
                     if ($mismatch !== null) {
                         return [$batch, ['seq' => $revision->getSeq(), 'reason' => $mismatch]];
                     }
@@ -151,7 +151,7 @@ final readonly class ChainVerifier implements ChainVerifierInterface
      *
      * @param array<string, WorkSegment> $segments
      */
-    private static function segmentMismatch(WorkdayRevision $revision, array $segments): ?string
+    private function segmentMismatch(WorkdayRevision $revision, array $segments): ?string
     {
         $payload = $revision->getPayload();
         $at      = is_string($payload['at'] ?? null) ? $payload['at'] : null;

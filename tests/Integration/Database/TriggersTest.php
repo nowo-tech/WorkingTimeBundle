@@ -33,10 +33,10 @@ final class TriggersTest extends RegisterTestCase
         $c = $this->connection();
         $this->insertAnchor($c);
         foreach (['workday' => 'worker_name', 'revision' => 'author_name', 'chain_anchor' => 'purge_run_id'] as $table => $column) {
-            $this->assertRefused(static fn () => $c->executeStatement("UPDATE nowo_working_time_{$table} SET {$column} = 'x'"), $table . ' update');
-            $this->assertRefused(static fn () => $c->executeStatement("DELETE FROM nowo_working_time_{$table}"), $table . ' delete');
+            $this->assertRefused(static fn (): int|string => $c->executeStatement("UPDATE nowo_working_time_{$table} SET {$column} = 'x'"), $table . ' update');
+            $this->assertRefused(static fn (): int|string => $c->executeStatement("DELETE FROM nowo_working_time_{$table}"), $table . ' delete');
         }
-        $this->assertRefused(static fn () => $c->executeStatement('DELETE FROM nowo_working_time_segment'), 'segment delete');
+        $this->assertRefused(static fn (): int|string => $c->executeStatement('DELETE FROM nowo_working_time_segment'), 'segment delete');
         self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'));
     }
 
@@ -49,10 +49,10 @@ final class TriggersTest extends RegisterTestCase
         $c  = $this->connection();
         $id = $c->fetchOne('SELECT id FROM nowo_working_time_segment');
         self::assertIsString($id);
-        $this->assertRefused(static fn () => $c->executeStatement("UPDATE nowo_working_time_segment SET started_at = '2020-01-01 00:00:00' WHERE id = ?", [$id]), 'start change');
-        $this->assertRefused(static fn () => $c->executeStatement("UPDATE nowo_working_time_segment SET end_source = 'web' WHERE id = ?", [$id]), 'end source without end');
+        $this->assertRefused(static fn (): int|string => $c->executeStatement("UPDATE nowo_working_time_segment SET started_at = '2020-01-01 00:00:00' WHERE id = ?", [$id]), 'start change');
+        $this->assertRefused(static fn (): int|string => $c->executeStatement("UPDATE nowo_working_time_segment SET end_source = 'web' WHERE id = ?", [$id]), 'end source without end');
         self::assertSame(1, $c->executeStatement("UPDATE nowo_working_time_segment SET ended_at = '2026-11-18 12:00:00', end_source = 'web', end_received_at = '2026-11-18 12:00:00' WHERE id = ?", [$id]));
-        $this->assertRefused(static fn () => $c->executeStatement("UPDATE nowo_working_time_segment SET ended_at = '2026-11-18 13:00:00' WHERE id = ?", [$id]), 'second close');
+        $this->assertRefused(static fn (): int|string => $c->executeStatement("UPDATE nowo_working_time_segment SET ended_at = '2026-11-18 13:00:00' WHERE id = ?", [$id]), 'second close');
     }
 
     public function testThePurgeGuardLetsDeletesThroughInsideItsTransactionOnly(): void
@@ -60,7 +60,7 @@ final class TriggersTest extends RegisterTestCase
         $this->bootWithDay();
         $c = $this->connection();
         if ($this->platform() === 'sqlite') {
-            $this->assertRefused(static fn () => $c->executeStatement('DELETE FROM nowo_working_time_revision'), 'SQLite has no purge exception');
+            $this->assertRefused(static fn (): int|string => $c->executeStatement('DELETE FROM nowo_working_time_revision'), 'SQLite has no purge exception');
 
             return;
         }
@@ -71,12 +71,12 @@ final class TriggersTest extends RegisterTestCase
             $c->executeStatement('SET LOCAL ' . RegisterTriggerInstaller::PURGE_SETTING . " = '1'");
         }
         self::assertGreaterThan(0, $c->executeStatement('DELETE FROM nowo_working_time_revision'));
-        $this->assertRefused(static fn () => $c->executeStatement('DELETE FROM nowo_working_time_chain_anchor WHERE 1 = 1'), 'anchors are never deleted', $this->insertAnchor($c));
+        $this->assertRefused(static fn (): int|string => $c->executeStatement('DELETE FROM nowo_working_time_chain_anchor WHERE 1 = 1'), 'anchors are never deleted');
         $c->rollBack();
         if ($this->platform() === 'mysql') {
             $c->executeStatement('SET ' . RegisterTriggerInstaller::PURGE_VARIABLE . ' = NULL');
         }
-        $this->assertRefused(static fn () => $c->executeStatement('DELETE FROM nowo_working_time_revision'), 'guard gone after the transaction');
+        $this->assertRefused(static fn (): int|string => $c->executeStatement('DELETE FROM nowo_working_time_revision'), 'guard gone after the transaction');
     }
 
     public function testTheMysqlGuardIsClearedOnEveryConnect(): void
@@ -103,7 +103,7 @@ final class TriggersTest extends RegisterTestCase
         }
         $c = $this->connection();
         foreach (['workday', 'segment', 'revision', 'chain_anchor'] as $table) {
-            $this->assertRefused(static fn () => $c->executeStatement("TRUNCATE nowo_working_time_{$table} CASCADE"), $table . ' truncate');
+            $this->assertRefused(static fn (): int|string => $c->executeStatement("TRUNCATE nowo_working_time_{$table} CASCADE"), $table . ' truncate');
         }
     }
 
@@ -158,7 +158,7 @@ final class TriggersTest extends RegisterTestCase
     /**
      * @param callable(): mixed $statement
      */
-    private function assertRefused(callable $statement, string $what, mixed $unused = null): void
+    private function assertRefused(callable $statement, string $what): void
     {
         try {
             $statement();

@@ -86,7 +86,7 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
      */
     public function deleteBatch(array $workdayIds, string $runId, DateTimeImmutable $at): array
     {
-        if ($this->purgeConnection !== null) {
+        if ($this->purgeConnection instanceof Connection) {
             return $this->purgeConnection->transactional(fn (Connection $connection): array => $this->batch($connection, $workdayIds, $runId, $at));
         }
 
@@ -110,7 +110,7 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
     {
         $platform = $connection->getDatabasePlatform();
         $mysql    = $platform instanceof AbstractMySQLPlatform;
-        $guarded  = $this->purgeConnection === null;
+        $guarded  = !$this->purgeConnection instanceof Connection;
         $totals   = ['workdays' => 0, 'segments' => 0, 'revisions' => 0, 'corrections' => 0, 'anchors' => 0];
         if ($ids === []) {
             return $totals;
@@ -126,8 +126,8 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
             $workday  = $this->table('workday');
             $chains   = $connection->fetchAllAssociative('SELECT DISTINCT tenant_id, worker_id FROM ' . $revision . ' WHERE workday_id IN (?)', [$ids], $list);
             foreach ($chains as $chain) {
-                $tenant = self::text($chain['tenant_id']);
-                $worker = self::text($chain['worker_id']);
+                $tenant = $this->text($chain['tenant_id']);
+                $worker = $this->text($chain['worker_id']);
                 // The chain's first link of a workday that stays (neither in this batch nor already gone).
                 $keep = $connection->fetchOne(
                     'SELECT MIN(r.seq) FROM ' . $revision . ' r INNER JOIN ' . $workday . ' w ON w.id = r.workday_id WHERE r.tenant_id = ? AND r.worker_id = ? AND r.workday_id NOT IN (?)',
@@ -144,15 +144,15 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
                 }
                 $deleted = $connection->executeStatement(
                     'DELETE FROM ' . $revision . ' WHERE tenant_id = ? AND worker_id = ? AND seq <= ?',
-                    [$tenant, $worker, self::number($last['seq'])],
+                    [$tenant, $worker, $this->number($last['seq'])],
                 );
                 $totals['revisions'] += (int) $deleted;
                 $connection->insert($this->table('chain_anchor'), [
                     'id'             => $this->ids->generate(),
                     'tenant_id'      => $tenant,
                     'worker_id'      => $worker,
-                    'first_kept_seq' => max(1, self::number($last['seq']) + 1),
-                    'anchor_hash'    => self::text($last['hash']),
+                    'first_kept_seq' => max(1, $this->number($last['seq']) + 1),
+                    'anchor_hash'    => $this->text($last['hash']),
                     'purged_links'   => (int) $deleted,
                     'purged_at'      => WorkdayRevision::utc($at)->format('Y-m-d H:i:s'),
                     'purge_run_id'   => $runId,
@@ -177,12 +177,12 @@ final readonly class DbalRegisterPurgeStore implements RegisterPurgeStoreInterfa
         return $totals;
     }
 
-    private static function text(mixed $value): string
+    private function text(mixed $value): string
     {
         return is_string($value) ? $value : (is_numeric($value) ? (string) $value : '');
     }
 
-    private static function number(mixed $value): int
+    private function number(mixed $value): int
     {
         return is_numeric($value) ? (int) $value : 0;
     }

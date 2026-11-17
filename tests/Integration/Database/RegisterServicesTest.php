@@ -29,6 +29,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterSettingsEditorInterfa
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ScheduleServiceInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\GroupRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
+use Nowo\WorkingTimeBundle\Domain\Shared\NoticeMessage;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -273,7 +274,7 @@ final class RegisterServicesTest extends RegisterTestCase
         $run = $dispatcher->run();
         self::assertGreaterThanOrEqual(2, $run['sent'], 'the correction notice and the clock-in reminder');
         self::assertSame(0, $dispatcher->run()['sent'], 'once');
-        $kinds = array_map(static fn ($m): string => $m->kind, $this->recorder()->sent);
+        $kinds = array_map(static fn (NoticeMessage $m): string => $m->kind, $this->recorder()->sent);
         self::assertContains('register.correction_requested', $kinds);
         self::assertContains('register.reminder_in', $kinds);
 
@@ -283,11 +284,11 @@ final class RegisterServicesTest extends RegisterTestCase
         self::assertGreaterThan(0, $failed['failed']);
         $this->recorder()->failNotices = false;
         self::assertGreaterThan(0, $dispatcher->run()['sent']);
-        self::assertContains('register.monthly_summary', array_map(static fn ($m): string => $m->kind, $this->recorder()->sent));
+        self::assertContains('register.monthly_summary', array_map(static fn (NoticeMessage $m): string => $m->kind, $this->recorder()->sent));
         $this->clock()->modify('2026-12-01 16:55:00');
         $this->act(ClockAction::ClockIn);
         $dispatcher->run();
-        self::assertContains('register.reminder_out', array_map(static fn ($m): string => $m->kind, $this->recorder()->sent));
+        self::assertContains('register.reminder_out', array_map(static fn (NoticeMessage $m): string => $m->kind, $this->recorder()->sent));
         $tester = new CommandTester((new Application($this->kernel))->find('nowo:working-time:notices'));
         self::assertSame(0, $tester->execute([]));
     }

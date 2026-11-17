@@ -8,6 +8,7 @@ use Nowo\Brand\Contract\BrandProviderInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeNotifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\NoticeMessage;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
 use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
@@ -42,7 +43,7 @@ final readonly class MailerNotifier implements WorkingTimeNotifierInterface
     public function send(NoticeMessage $message): void
     {
         $profile = $this->directory->worker($message->tenant, $message->recipient);
-        if ($profile === null || $profile->email === null || $profile->email === '') {
+        if (!$profile instanceof WorkerProfile || $profile->email === null || $profile->email === '') {
             return;
         }
         $key    = 'notice.' . str_replace('.', '_', $message->kind);

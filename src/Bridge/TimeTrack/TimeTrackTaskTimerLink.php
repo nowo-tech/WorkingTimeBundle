@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Bridge\TimeTrack;
 
 use DateTimeImmutable;
+use Nowo\TimeTrackBundle\Entity\ActiveTimer;
 use Nowo\TimeTrackBundle\Service\TimerService;
 use Nowo\WorkingTimeBundle\Domain\Port\TaskTimerLinkInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
@@ -39,7 +40,7 @@ final readonly class TimeTrackTaskTimerLink implements TaskTimerLinkInterface
         if (!$user instanceof UserInterface || $this->directory->current()?->equals($worker) !== true) {
             return;
         }
-        if ($this->timers->getActive($user) !== null) {
+        if ($this->timers->getActive($user) instanceof ActiveTimer) {
             $this->timers->stop($user, $at);
         }
     }

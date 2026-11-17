@@ -39,7 +39,7 @@ final readonly class WorkingTimeConflictFormatter implements ConflictResponseFor
      */
     public static function code(Throwable $failure, string $default = 'concurrency_conflict'): string
     {
-        for ($e = $failure; $e !== null; $e = $e->getPrevious()) {
+        for ($e = $failure; $e instanceof Throwable; $e = $e->getPrevious()) {
             if ($e instanceof StaleCorrectionDecisionException) {
                 return StaleCorrectionDecisionException::ERROR_CODE;
             }

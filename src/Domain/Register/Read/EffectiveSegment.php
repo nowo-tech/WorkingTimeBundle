@@ -39,7 +39,7 @@ final readonly class EffectiveSegment
     /** Whether it has no end yet. */
     public function isOpen(): bool
     {
-        return $this->end === null;
+        return !$this->end instanceof DateTimeImmutable;
     }
 
     /**
@@ -64,8 +64,8 @@ final readonly class EffectiveSegment
             $this->type,
             $start ?? $this->start,
             $end ?? $this->end,
-            $start !== null ? SegmentSource::Correction : $this->startSource,
-            $end !== null ? SegmentSource::Correction : $this->endSource,
+            $start instanceof DateTimeImmutable ? SegmentSource::Correction : $this->startSource,
+            $end instanceof DateTimeImmutable ? SegmentSource::Correction : $this->endSource,
             $this->late,
             true,
             $voided || $this->voided,

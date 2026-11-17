@@ -73,7 +73,7 @@ final class TestContext
     {
         $mine = $this->grants[$tenant][$actor] ?? [];
 
-        return in_array($permission->value, $mine, true) || ($subject !== null && in_array($permission->value . ':' . $subject->value, $mine, true));
+        return in_array($permission->value, $mine, true) || ($subject instanceof WorkerRef && in_array($permission->value . ':' . $subject->value, $mine, true));
     }
 
     /**

@@ -20,7 +20,7 @@ final class AfterCommitEvents
      */
     public function add(object $event): void
     {
-        $this->events[] = $event;
+        $this->events[] = $event; // @igor-ignore - per-call buffer, never a shared service
     }
 
     /**
@@ -28,7 +28,7 @@ final class AfterCommitEvents
      */
     public function clear(): void
     {
-        $this->events = [];
+        $this->events = []; // @igor-ignore - per-call buffer, never a shared service
     }
 
     /**
@@ -37,7 +37,7 @@ final class AfterCommitEvents
     public function dispatch(?EventDispatcherInterface $dispatcher): void
     {
         $events       = $this->events;
-        $this->events = [];
+        $this->events = []; // @igor-ignore - per-call buffer, never a shared service
         foreach ($events as $event) {
             $dispatcher?->dispatch($event);
         }

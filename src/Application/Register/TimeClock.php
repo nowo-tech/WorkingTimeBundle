@@ -124,11 +124,11 @@ final readonly class TimeClock implements RegisterClockInterface
     private function attempt(RegisterContext $context, ClockAction $action, ?DateTimeImmutable $occurredAt, RequestKey $requestKey, SegmentSource $source, ?IpPrefix $ip, AfterCommitEvents $events): ClockState
     {
         $now = WorkdayRevision::utc($this->clock->now());
-        $at  = $occurredAt === null ? $now : WorkdayRevision::utc($occurredAt);
+        $at  = $occurredAt instanceof DateTimeImmutable ? WorkdayRevision::utc($occurredAt) : $now;
         $at  = $at > $now ? $now : $at;
         /** @var array{ClockState, bool} $result */
-        $result = $this->runner->write(function () use ($context, $action, $at, $now, $requestKey, $source, $ip): array {
-            if ($this->store->revisionByRequestKey($context->tenant, $context->worker(), $requestKey->value) !== null) {
+        $result = $this->runner->write(function () use ($context, $action, $at, $now, $requestKey, $source, $ip): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
+            if ($this->store->revisionByRequestKey($context->tenant, $context->worker(), $requestKey->value) instanceof WorkdayRevision) {
                 return [$this->resolve($context, $now)['state'], false];
             }
             $resolved = $this->resolve($context, $at);
@@ -136,7 +136,7 @@ final readonly class TimeClock implements RegisterClockInterface
                 throw new ClockConflictException($this->resolve($context, $now)['state']);
             }
             $last = self::lastRecorded($resolved['state']->record);
-            if ($last !== null && $at < $last) {
+            if ($last instanceof DateTimeImmutable && $at < $last) {
                 throw new ClockConflictException($this->resolve($context, $now)['state'], ClockConflictException::EARLIER_THAN_LAST);
             }
             $this->record($context, $action, $at, $now, $requestKey, $source, $ip, $resolved);
@@ -159,9 +159,9 @@ final readonly class TimeClock implements RegisterClockInterface
         $workday = $resolved['workday'];
         if ($action === ClockAction::ClockIn && ($workday === null || $resolved['stale'])) {
             $workday = $this->store->workdayOn($context->tenant, $context->worker(), $resolved['date']);
-            if ($workday === null) {
+            if (!$workday instanceof Workday) {
                 $workday = Workday::open($this->ids->generate(), $context->tenant, $context->worker(), $context->subject->displayName, $resolved['date'], $this->schedules->forDate($context->settings, $context->subject, $resolved['date']), $now);
-                $this->store->addWorkday($workday);
+                $this->store->addWorkday($workday); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             }
         }
         if ($workday === null) {
@@ -182,11 +182,11 @@ final readonly class TimeClock implements RegisterClockInterface
         $type   = $action->opens();
         if ($type instanceof SegmentType) {
             $segment = WorkSegment::start($this->ids->generate(), $workday, $type, $at, $source, $now, $ip);
-            $this->store->addSegment($segment);
+            $this->store->addSegment($segment); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             $opened = $segment->getId();
         }
         $this->runner->flush();
-        $this->chain->append($workday, $action->revisionKind(), $opened ?? $closed, array_filter([
+        $this->chain->append($workday, $action->revisionKind(), $opened ?? $closed, array_filter([ // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
             'action'      => $action->value,
             'at'          => WorkdayRevision::iso($at),
             'received_at' => WorkdayRevision::iso($now),

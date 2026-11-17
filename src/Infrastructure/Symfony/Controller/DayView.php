@@ -113,7 +113,7 @@ final class DayView
         $zone  = new DateTimeZone($timezone);
         $start = self::time($data['start'] ?? null, $date, $zone);
         $end   = self::time($data['end'] ?? null, $date, $zone);
-        if ($start !== null && $end !== null && $end <= $start) {
+        if ($start instanceof DateTimeImmutable && $end instanceof DateTimeImmutable && $end <= $start) {
             $end = $end->modify('+1 day');
         }
 
