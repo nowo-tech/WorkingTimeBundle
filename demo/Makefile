@@ -1,11 +1,12 @@
 # Makefile for Working Time Bundle demos (Symfony 8.1, FrankenPHP worker mode, MySQL, UiKit + FormKit)
-DEMOS := symfony8
+DEMOS := symfony7 symfony8
 
 .PHONY: help up down update-bundle demo-smoke release-check release-verify clean
 
 help:
 	@echo "Working Time Bundle - Demos"
 	@echo ""
+	@echo "  make up-symfony7 / down-symfony7   Symfony 7.4 demo (http://localhost:8240)"
 	@echo "  make up-symfony8 / down-symfony8   Symfony 8.1 demo (http://localhost:8241)"
 	@echo "  make up / down                     Symfony 8.1 demo (primary)"
 	@echo "  make build-<demo>                  Rebuild a demo image"

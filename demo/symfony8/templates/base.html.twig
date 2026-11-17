@@ -8,7 +8,22 @@
     <header class="nowo-ui-header" data-testid="demo-masthead">
         <a class="nowo-ui-brand" href="{{ path('demo_home') }}">Working Time Bundle · Symfony 8</a>
         <nav class="nowo-ui-menu" aria-label="Demo">
-            <a class="nowo-ui-link" href="{{ path('demo_home') }}" aria-current="page" data-testid="demo-nav-demo_home">Overview</a>
+            <a class="nowo-ui-link" href="{{ path('demo_home') }}" data-testid="demo-nav-demo_home">Overview</a>
+            {% if is_granted('ROLE_USER') %}
+                <a class="nowo-ui-link" href="/working-time" data-testid="demo-nav-register">Register</a>
+                {% if is_granted('ROLE_MANAGER') %}
+                    <a class="nowo-ui-link" href="/working-time/team" data-testid="demo-nav-team">Team</a>
+                    <a class="nowo-ui-link" href="/working-time/exports" data-testid="demo-nav-exports">Exports</a>
+                {% endif %}
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a class="nowo-ui-link" href="/working-time/settings" data-testid="demo-nav-settings">Settings</a>
+                {% endif %}
+                {{ working_time_header_clock() }}
+                <span class="nowo-ui-muted" data-testid="demo-user">{{ app.user.userIdentifier }}</span>
+                <a class="nowo-ui-link" href="{{ path('demo_logout') }}" data-testid="demo-logout">Sign out</a>
+            {% else %}
+                <a class="nowo-ui-link" href="{{ path('demo_login') }}" data-testid="demo-nav-login">Sign in</a>
+            {% endif %}
         </nav>
     </header>
 {% endblock %}

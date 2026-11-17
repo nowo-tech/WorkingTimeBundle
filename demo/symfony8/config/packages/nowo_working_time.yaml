@@ -1,7 +1,18 @@
-# Demo configuration (S0): the three parts as in the defaults (register on, holidays on, leave off). The demo keeps
-# the single default Doctrine connection and uses the default entity manager (explicit transactions, contract Q-O3a).
+# Demo configuration: the register on a private entity manager, UI routes on, exports built in the request (no Messenger).
 nowo_working_time:
     doctrine:
-        entity_manager: ~
+        entity_manager: nowo_working_time
+    worker_directory: App\WorkingTime\DemoWorkerDirectory
+    permissions:
+        roles:
+            clock: [ROLE_USER]
+            manage_team: [ROLE_MANAGER]
+            export: [ROLE_MANAGER]
+            manage_settings: [ROLE_ADMIN]
+    register:
+        enabled: true
+        export:
+            async: sync
+            formats: [pdf, csv]
     ui:
-        enabled: false
+        enabled: true
