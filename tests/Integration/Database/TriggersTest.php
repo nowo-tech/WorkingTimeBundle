@@ -71,6 +71,7 @@ final class TriggersTest extends RegisterTestCase
             $c->executeStatement('SET LOCAL ' . RegisterTriggerInstaller::PURGE_SETTING . " = '1'");
         }
         self::assertGreaterThan(0, $c->executeStatement('DELETE FROM nowo_working_time_revision'));
+        $this->insertAnchor($c);
         $this->assertRefused(static fn (): int|string => $c->executeStatement('DELETE FROM nowo_working_time_chain_anchor WHERE 1 = 1'), 'anchors are never deleted');
         $c->rollBack();
         if ($this->platform() === 'mysql') {
