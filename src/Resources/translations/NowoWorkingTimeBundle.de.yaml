@@ -1,0 +1,346 @@
+# Arbeitszeiterfassung (S1). Domäne NowoWorkingTimeBundle. Parameter: %name%.
+nav:
+    label: Arbeitszeit
+    today: Heute
+    month: Monat
+    exports: Exporte
+    team: Team
+    schedules: Arbeitszeitpläne
+    preferences: Einstellungen
+    settings: Konfiguration
+status:
+    idle: Nicht eingestempelt
+    working: Bei der Arbeit
+    on_break: In der Pause
+    closed: Tag abgeschlossen
+segment:
+    type:
+        work: Arbeit
+        break: Pause
+clock:
+    action:
+        clock_in: Einstempeln
+        break_start: Pause beginnen
+        break_end: Pause beenden
+        clock_out: Ausstempeln
+    done:
+        clock_in: Eingestempelt.
+        break_start: Pause begonnen.
+        break_end: Pause beendet.
+        clock_out: Ausgestempelt.
+    conflict:
+        not_allowed: Diese Aktion passt nicht zum aktuellen Stand Ihrer Stempelung; die Seite zeigt den aktuellen Stand.
+        earlier_than_last: Die Uhrzeit liegt vor der letzten erfassten Zeit des Tages.
+        concurrent: Eine andere Anfrage hat Ihre Stempelung im selben Moment geändert; die Seite zeigt den aktuellen Stand.
+today:
+    title: Arbeitszeit
+    intro: 'Ihre Arbeitszeiterfassung für den %date%. Sie ist die Aufzeichnung, die Ihr Arbeitgeber nach Art. 34.9 des spanischen Arbeitnehmerstatuts führt.'
+    status: Status
+    worked: Gearbeitet
+    breaks: Pausen
+    clock: Stempelung
+    segments: Abschnitte von heute
+    no_segments: Heute ist noch nichts erfasst.
+    open: offen
+    view_day: Tagesdetails
+    ip_notice: IP-Nachweis
+month:
+    title: 'Erfassung %month%'
+    intro: 'Gearbeitet %worked% von %expected% erwartet, %days% Tag(e) gearbeitet.'
+    previous: Vorheriger Monat
+    next: Nächster Monat
+    view_day: Tag ansehen
+    empty: In diesem Monat sind keine Tage erfasst.
+    col:
+        date: Datum
+        start: Erster Beginn
+        end: Letztes Ende
+        worked: Gearbeitet
+        expected: Erwartet
+        flags: Hinweise
+day:
+    title: 'Tag %date%'
+    back_to_month: Zurück zum Monat
+    date: Datum
+    timezone: Zeitzone
+    worked: Gearbeitet
+    breaks: Pausen
+    expected: Erwartet
+    flag: Hinweis
+    section:
+        summary: Zusammenfassung
+        segments: Abschnitte
+        trail: Verlauf
+flag:
+    missing_clock_out: Ausstempeln fehlt
+    late_entry: Verspäteter Beginn
+    overtime: Überstunden
+    long_day: Langer Tag
+    short_break: Kurze Pause
+    outside_band: Außerhalb des Gleitzeitrahmens
+    corrected: Korrigiert
+    pending_acknowledgement: Wartet auf Ihre Antwort
+    contested: Beanstandet
+    correction_pending: Korrektur ausstehend
+history:
+    clock_in: Einstempeln
+    break_start: Pausenbeginn
+    break_end: Pausenende
+    clock_out: Ausstempeln
+    correction: Korrektur genehmigt
+    recorded_correction: Korrektur von einer Führungskraft erfasst
+    acknowledged: Korrektur bestätigt
+    contested: Korrektur beanstandet
+correction:
+    form:
+        title: Korrektur beantragen
+        record_title: Korrektur erfassen
+        operation: Änderung
+        segment: Abschnitt
+        segment_none: '— keiner (Abschnitt hinzufügen) —'
+        segment_type: Art eines neuen Abschnitts
+        start: Beginn (Ortszeit)
+        end: Ende (Ortszeit)
+        reason: Grund
+        reason_help: 10 bis 500 Zeichen. Geben Sie keine Gesundheitsdaten an.
+        comment: Kommentar
+        answer: Ihre Antwort
+        submit: Senden
+    operation:
+        amend: Zeiten ändern
+        add: Fehlenden Abschnitt hinzufügen
+        void: Abschnitt stornieren
+    answer:
+        title: Eine Führungskraft hat diesen Tag korrigiert
+        acknowledge: Ich bestätige die Korrektur
+        contest: Ich beanstande die Korrektur
+        submit: Antworten
+    status:
+        pending: Korrektur beantragt
+        approved: Korrektur genehmigt
+        rejected: Korrektur abgelehnt
+    approve: Genehmigen
+    reject: Ablehnen
+    requested: Ihr Korrekturantrag wurde an Ihre Führungskräfte gesendet.
+    recorded: Die Korrektur wurde erfasst; die beschäftigte Person wird gebeten, sie zu bestätigen.
+    answered: Ihre Antwort wurde erfasst.
+    decided:
+        approved: Die Korrektur wurde genehmigt.
+        rejected: Die Korrektur wurde abgelehnt.
+    stale: Jemand hat diesen Antrag im selben Moment entschieden. Die Liste zeigt ihn im aktuellen Stand.
+    error:
+        future: Ein Tag in der Zukunft kann nicht korrigiert werden.
+        window: Dieser Tag liegt vor der Korrekturfrist.
+        reason: Der Grund muss 10 bis 500 Zeichen haben.
+        segment: Dieser Abschnitt existiert an diesem Tag nicht.
+        live_segment: Der laufende Abschnitt kann nicht korrigiert werden; stempeln Sie zuerst aus.
+        times: Die Zeiten sind nicht gültig (Beginn vor Ende, nicht in der Zukunft, höchstens die Stunden eines langen Tages).
+        own_day: Niemand entscheidet über Korrekturen des eigenen Tages oder erfasst sie.
+        already_decided: Dieser Antrag wurde bereits entschieden.
+        already_answered: Diese Korrektur wurde bereits beantwortet.
+team:
+    title: Team
+    intro: 'Die Arbeitszeiterfassung Ihres Teams am %date%.'
+    view_day: Tag ansehen
+    empty: Keine Beschäftigten anzuzeigen.
+    pending: Korrekturanträge
+    no_pending: Es warten keine Korrekturanträge.
+    day_title: '%worker% · %date%'
+    back: Zurück zum Team
+    col:
+        worker: Beschäftigte Person
+        status: Status
+        worked: Gearbeitet
+        flags: Hinweise
+schedule:
+    title: Arbeitszeitpläne
+    intro: Datierte Arbeitszeitpläne für die gesamte Organisation, eine Gruppe oder eine beschäftigte Person. Der eigene Plan einer Person geht dem der Gruppe vor, dieser dem der Organisation.
+    add: Arbeitszeitplan hinzufügen
+    save: Arbeitszeitplan speichern
+    saved: Der Arbeitszeitplan wurde gespeichert.
+    withdraw: Zurückziehen
+    withdraw_title: Noch nicht gültige Arbeitszeitpläne
+    withdrawn: Der Arbeitszeitplan wurde zurückgezogen.
+    empty: Noch keine Arbeitszeitpläne.
+    day:
+        mon: Montag
+        tue: Dienstag
+        wed: Mittwoch
+        thu: Donnerstag
+        fri: Freitag
+        sat: Samstag
+        sun: Sonntag
+    scope:
+        tenant: Gesamte Organisation
+        group: Gruppe
+        worker: Beschäftigte Person
+    col:
+        valid_from: Gültig ab
+        scope: Gilt für
+        target: Gruppe oder Person
+        timezone: Zeitzone
+        slots: Zeiten
+    form:
+        scope: Gilt für
+        group: Gruppe
+        worker: Beschäftigte Person
+        none: '— auswählen —'
+        valid_from: Gültig ab
+        timezone: Zeitzone
+        ranges_help: 'Zeiträume als HH:MM-HH:MM, durch Kommas getrennt; leer = freier Tag.'
+        daily_target: Tagesziel (Minuten, flexibler Plan)
+        weekly_target: Wochenziel (Minuten)
+        flex: Gleitzeitrahmen (Minuten)
+    error:
+        group: Wählen Sie eine Gruppe der Organisation.
+        worker: Wählen Sie eine beschäftigte Person.
+        past: Ein Arbeitszeitplan gilt ab heute oder später; vergangene Tage behalten den Plan, an dem sie gemessen wurden.
+        not_future: Nur ein noch nicht gültiger Arbeitszeitplan kann zurückgezogen werden.
+        invalid: Der Arbeitszeitplan ist nicht gültig (Zeitzone, Zeiträume ohne Überschneidungen, Ziele bis zu 12 Stunden pro Tag).
+export:
+    title: Exporte
+    intro: Ihre eigene Kopie Ihrer Arbeitszeiterfassung und Prüfexporte für alle, die sie erstellen dürfen. Dateien können 7 Tage lang heruntergeladen werden.
+    request: Export anfordern
+    submit: Anfordern
+    requested: Der Export wurde angefordert.
+    download: Herunterladen
+    empty: Noch keine Exporte.
+    format:
+        pdf: PDF
+        csv: CSV
+        zip: ZIP (Team)
+    scope:
+        own: Meine eigene Erfassung
+        worker: Eine beschäftigte Person
+        team: Das gesamte Team (ZIP)
+    form:
+        scope: Export
+        worker: Beschäftigte Person
+        none: '— auswählen —'
+        from: Erster Monat (YYYY-MM)
+        to: Letzter Monat (YYYY-MM)
+        format: Format
+    col:
+        created: Angefordert
+        period: Monate
+        scope: Umfang
+        format: Format
+        status: Status
+        sha256: SHA-256
+        date: Datum
+        start: Beginn
+        end: Ende
+        segments: Abschnitte
+        breaks: Pausen
+        worked: Gearbeitet
+        expected: Erwartet
+        overtime: Überstunden
+        flags: Hinweise
+        ip_prefix: IP-Präfix
+        change: Änderung
+        reason: Grund
+        by: Angefordert von
+        approved_by: Genehmigt von
+        when: Wann
+    error:
+        format: Dieses Format passt nicht zum Export (ein Team-Export ist ein ZIP; der einer Person ist ein PDF oder eine CSV).
+        period: 'Wählen Sie vergangene Monate oder den aktuellen Monat, den ersten vor dem letzten, höchstens 12.'
+        worker: Wählen Sie eine beschäftigte Person.
+    title_pdf: 'Arbeitszeiterfassung · %worker%'
+    header: '%organization% · %worker% · %period% · Kette %head%'
+    figure:
+        worker: Beschäftigte Person
+        period: Zeitraum
+        worked: Gearbeitet
+        expected: Erwartet
+        daily_overtime: Tägliche Überstunden
+        weekly_overtime: Wöchentliche Überstunden
+        days: Gearbeitete Tage
+        missing: Fehlendes Ausstempeln
+        corrections: Korrekturen
+        generated_at: Erstellt am
+        generated_by: Erstellt von
+        chain_head: Kettenkopf
+        integrity: Integritätsprüfung
+        file_hash: SHA-256 der Datei
+    section:
+        summary: Zusammenfassung
+        days: Tage
+        corrections: Korrekturen
+        integrity: Integrität
+    integrity_ok: Jedes Kettenglied wurde geprüft.
+    integrity_broken: 'Die Kette ist am Glied %seq% unterbrochen (%reason%).'
+    file_hash_note: Mit dem Export gespeichert und beim Herunterladen als X-Content-SHA256 gesendet.
+    legal_note: 'Arbeitszeiterfassung, geführt nach Art. 34.9 des spanischen Arbeitnehmerstatuts. Zeiten gelten in der Ortszeit der Zeitzone des jeweiligen Tages. Korrekturen ersetzen nie die ursprüngliche Aufzeichnung: beide werden aufgeführt.'
+    by_worker: Die beschäftigte Person
+    recorded_by_manager: Von einer Führungskraft erfasst
+    page: Seite
+settings:
+    title: Einstellungen zur Arbeitszeiterfassung
+    intro: Die Erfassung ist ausgeschaltet, bis Sie sie einschalten. Die Erfassung ist ein rechtlicher Nachweis; das Bundle ist keine Rechtsberatung.
+    save: Speichern
+    saved: Die Einstellungen wurden gespeichert.
+    stale: Jemand hat diese Einstellungen im selben Moment gespeichert. Das Formular zeigt sie im aktuellen Stand.
+    triggers_missing: 'In der Datenbank fehlen %count% Append-only-Trigger: Führen Sie nowo:working-time:triggers:install aus.'
+    section:
+        register: Erfassung
+        register_intro: Wie die Erfassung die Zeit misst und aufbewahrt.
+    form:
+        enabled: Arbeitszeiterfassung führen
+        enabled_help: Beschäftigte mit der Stempelberechtigung können ein- und ausstempeln.
+        breaks_counted: Pausen zählen als Arbeitszeit
+        flex: Gleitzeitrahmen (Minuten)
+        min_break: Mindestpause (Minuten)
+        min_break_help: Informativer Hinweis an Tagen mit mehr als sechs Stunden; blockiert das Stempeln nie.
+        daily_overtime: Schwelle für tägliche Überstunden (Minuten)
+        weekly_overtime: Schwelle für wöchentliche Überstunden (Minuten)
+        task_timer_link: Ausstempeln stoppt den Aufgaben-Timer
+        task_timer_link_help: Mit installiertem TimeTrack; die Aufgabenzeit bleibt eine getrennte Aufzeichnung.
+        reminders_allowed: Beschäftigte dürfen Stempel-Erinnerungen anfordern
+        summary_mandatory: Die Monatszusammenfassung kann nicht abgeschaltet werden
+        ip_evidence: Netzwerkpräfix jeder Stempelung aufzeichnen
+        ip_evidence_help: Nur das Präfix /24 (IPv4) oder /64 (IPv6), nie die Adresse, und nur mit dem Hinweis unten.
+        ip_notice: Hinweis für Beschäftigte
+        ip_notice_help: Erforderlich, um den IP-Nachweis aufzuzeichnen.
+        retention: Aufbewahrung (Jahre)
+        retention_help: Mindestens vier Jahre (Art. 34.9 des spanischen Arbeitnehmerstatuts); ältere Monate werden gelöscht.
+        correction_window: Korrekturfrist (Tage)
+    error:
+        flex: Der Gleitzeitrahmen beträgt 0 bis 240 Minuten.
+        min_break: Die Mindestpause beträgt 0 bis 120 Minuten.
+        daily_overtime: Die Tagesschwelle beträgt 1 bis 720 Minuten.
+        weekly_overtime: Die Wochenschwelle beträgt 1 bis 5040 Minuten.
+        retention: Die Aufbewahrung beträgt 4 bis 10 Jahre.
+        correction_window: Die Korrekturfrist beträgt 1 bis 31 Tage.
+        ip_notice: Der Hinweis hat höchstens 2000 Zeichen.
+        ip_notice_required: Für den IP-Nachweis ist der Hinweistext für Beschäftigte erforderlich.
+        ip_evidence_off: Der IP-Nachweis ist für diese Anwendung abgeschaltet.
+        triggers_missing: Die Erfassung kann nicht eingeschaltet werden, solange die Append-only-Trigger fehlen.
+preferences:
+    title: Meine Einstellungen zur Arbeitszeit
+    intro: Erinnerungen und die Monatszusammenfassung kommen nur innerhalb Ihrer Arbeitszeit.
+    reminders: Mich ans Ein- und Ausstempeln erinnern
+    reminders_help: Nur, wenn Ihre Organisation es erlaubt.
+    monthly_summary: Monatszusammenfassung senden
+    monthly_summary_help: Ihre Organisation kann sie verpflichtend machen.
+    save: Speichern
+    saved: Ihre Einstellungen wurden gespeichert.
+notice:
+    register_correction_requested:
+        subject: 'Korrekturantrag von %worker%'
+        body: '%worker% hat die Korrektur der Erfassung vom %date% beantragt.'
+    register_correction_decided:
+        subject: 'Ihre Korrektur vom %date%: %decision%'
+        body: '%actor% hat über Ihren Korrekturantrag vom %date% entschieden (%decision%).'
+    register_correction_recorded:
+        subject: 'Eine Führungskraft hat Ihre Erfassung vom %date% korrigiert'
+        body: '%actor% hat am %date% eine Korrektur erfasst. Bitte bestätigen oder beanstanden Sie sie.'
+    register_reminder_in:
+        subject: Zeit zum Einstempeln
+        body: 'Ihr Arbeitszeitplan beginnt jetzt (%date%).'
+    register_reminder_out:
+        subject: Zeit zum Ausstempeln
+        body: 'Ihr Arbeitszeitplan endet jetzt (%date%).'
+    register_monthly_summary:
+        subject: 'Ihre Arbeitszeit im %month%'
+        body: 'Gearbeitet %worked% von %expected% erwartet an %days% Tag(en); %missing% fehlende(s) Ausstempeln.'

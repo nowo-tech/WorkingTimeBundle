@@ -1,0 +1,55 @@
+{#- Inspection PDF of one worker's register (spec 198 FR-021 / FR-022). Rendered by the closed Dompdf renderer: no
+    remote resources, no scripts. Every value is an escaped string of the RegisterReport. -#}
+<!DOCTYPE html>
+<html lang="{{ report.locale }}">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report.title }}</title>
+    <style>
+        @page { margin: 22mm 12mm 14mm 12mm; }
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 8.5pt; color: {{ colors.text }}; }
+        header { position: fixed; top: -16mm; left: 0; right: 0; height: 12mm; border-bottom: 1px solid {{ colors.primary }}; font-size: 8pt; }
+        header strong { color: {{ colors.primaryDeep }}; }
+        h1 { font-size: 13pt; margin: 0 0 4mm; color: {{ colors.primaryDeep }}; }
+        h2 { font-size: 10pt; margin: 5mm 0 2mm; color: {{ colors.primaryDeep }}; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 0.5pt solid #cbd5e1; padding: 1.2mm 1.5mm; text-align: left; vertical-align: top; }
+        th { background: {{ colors.surface }}; }
+        .kv th { width: 35%; }
+        .note { margin-top: 5mm; font-size: 7.5pt; color: #475569; }
+        .hash { font-family: 'DejaVu Sans Mono', monospace; font-size: 7.5pt; }
+    </style>
+</head>
+<body>
+<header><strong>{{ brand.name }}</strong> · {{ report.header }}</header>
+<h1>{{ report.title }}</h1>
+
+<h2>{{ report.labels.summary|default('') }}</h2>
+<table class="kv">
+    {% for item in report.figures %}<tr><th>{{ item[0] }}</th><td>{{ item[1] }}</td></tr>{% endfor %}
+</table>
+
+<h2>{{ report.labels.days|default('') }}</h2>
+<table>
+    <thead><tr>{% for header in report.dayHeaders %}<th>{{ header }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in report.dayRows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% else %}<tr><td colspan="{{ report.dayHeaders|length }}">{{ report.labels.empty|default('') }}</td></tr>{% endfor %}
+    </tbody>
+</table>
+
+<h2>{{ report.labels.corrections|default('') }}</h2>
+<table>
+    <thead><tr>{% for header in report.correctionHeaders %}<th>{{ header }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for row in report.correctionRows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% else %}<tr><td colspan="{{ report.correctionHeaders|length }}">{{ report.labels.empty|default('') }}</td></tr>{% endfor %}
+    </tbody>
+</table>
+
+<h2>{{ report.labels.integrity|default('') }}</h2>
+<table class="kv">
+    {% for item in report.integrity %}<tr><th>{{ item[0] }}</th><td class="{{ loop.index == 3 ? 'hash' }}">{{ item[1] }}</td></tr>{% endfor %}
+</table>
+
+<p class="note">{{ report.legalNote }}</p>
+</body>
+</html>

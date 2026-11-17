@@ -1,0 +1,346 @@
+# Lanaldi-erregistroa (S1). NowoWorkingTimeBundle domeinua. Parametroak: %name%.
+nav:
+    label: Lanaldi-erregistroa
+    today: Gaur
+    month: Hilabetea
+    exports: Esportazioak
+    team: Taldea
+    schedules: Ordutegiak
+    preferences: Hobespenak
+    settings: Ezarpenak
+status:
+    idle: Fitxatu gabe
+    working: Lanean
+    on_break: Atsedenaldian
+    closed: Eguna itxita
+segment:
+    type:
+        work: Lana
+        break: Atsedenaldia
+clock:
+    action:
+        clock_in: Sarrera fitxatu
+        break_start: Atsedenaldia hasi
+        break_end: Atsedenaldia amaitu
+        clock_out: Irteera fitxatu
+    done:
+        clock_in: Sarrera fitxatuta.
+        break_start: Atsedenaldia hasita.
+        break_end: Atsedenaldia amaituta.
+        clock_out: Irteera fitxatuta.
+    conflict:
+        not_allowed: Ekintza horrek ez du zure fitxatzearen egungo egoerarekin bat egiten; orriak egungo egoera erakusten du.
+        earlier_than_last: Ordua egunaren azken erregistroa baino lehenagokoa da.
+        concurrent: Beste eskaera batek zure fitxatzea aldatu du une berean; orriak egungo egoera erakusten du.
+today:
+    title: Lanaldi-erregistroa
+    intro: 'Zure %date% datako erregistroa. Erregistroa zure enpresak Langileen Estatutuaren 34.9 artikuluaren arabera gordetzen duena da.'
+    status: Egoera
+    worked: Landuta
+    breaks: Atsedenaldiak
+    clock: Fitxatzea
+    segments: Gaurko tarteak
+    no_segments: Gaur ez dago ezer erregistratuta oraindik.
+    open: irekia
+    view_day: Egunaren xehetasunak
+    ip_notice: IP froga
+month:
+    title: '%month% erregistroa'
+    intro: '%expected% aurreikusitakotik %worked% landu da, %days% egun landuta.'
+    previous: Aurreko hilabetea
+    next: Hurrengo hilabetea
+    view_day: Eguna ikusi
+    empty: Hilabete honetan ez dago egunik erregistratuta.
+    col:
+        date: Data
+        start: Lehen sarrera
+        end: Azken irteera
+        worked: Landuta
+        expected: Aurreikusia
+        flags: Oharrak
+day:
+    title: '%date% eguna'
+    back_to_month: Hilabetera itzuli
+    date: Data
+    timezone: Ordu-zona
+    worked: Landuta
+    breaks: Atsedenaldiak
+    expected: Aurreikusia
+    flag: Oharra
+    section:
+        summary: Laburpena
+        segments: Tarteak
+        trail: Historia
+flag:
+    missing_clock_out: Irteera falta da
+    late_entry: Berandu sartzea
+    overtime: Ordu extrak
+    long_day: Egun luzea
+    short_break: Atsedenaldi laburra
+    outside_band: Banda malgutik kanpo
+    corrected: Zuzenduta
+    pending_acknowledgement: Zure erantzunaren zain
+    contested: Eztabaidatua
+    correction_pending: Zuzenketa zain
+history:
+    clock_in: Sarrera
+    break_start: Atsedenaldiaren hasiera
+    break_end: Atsedenaldiaren amaiera
+    clock_out: Irteera
+    correction: Zuzenketa onartuta
+    recorded_correction: Arduradun batek erregistratutako zuzenketa
+    acknowledged: Zuzenketa berretsita
+    contested: Zuzenketa eztabaidatuta
+correction:
+    form:
+        title: Zuzenketa eskatu
+        record_title: Zuzenketa erregistratu
+        operation: Aldaketa
+        segment: Tartea
+        segment_none: '— bat ere ez (tarte bat gehitu) —'
+        segment_type: Tarte berriaren mota
+        start: Hasiera (tokiko ordua)
+        end: Amaiera (tokiko ordua)
+        reason: Arrazoia
+        reason_help: 10 eta 500 karaktere artean. Ez sartu osasun-informaziorik.
+        comment: Iruzkina
+        answer: Zure erantzuna
+        submit: Bidali
+    operation:
+        amend: Orduak aldatu
+        add: Falta den tarte bat gehitu
+        void: Tarte bat baliogabetu
+    answer:
+        title: Arduradun batek egun hau zuzendu du
+        acknowledge: Zuzenketa berresten dut
+        contest: Zuzenketa eztabaidatzen dut
+        submit: Erantzun
+    status:
+        pending: Zuzenketa eskatuta
+        approved: Zuzenketa onartuta
+        rejected: Zuzenketa baztertuta
+    approve: Onartu
+    reject: Baztertu
+    requested: Zure zuzenketa-eskaera zure arduradunei bidali zaie.
+    recorded: Zuzenketa erregistratu da; langileari berresteko eskatzen zaio.
+    answered: Zure erantzuna erregistratu da.
+    decided:
+        approved: Zuzenketa onartu da.
+        rejected: Zuzenketa baztertu da.
+    stale: Norbaitek eskaera hau erabaki du une berean. Zerrendak orain dagoen bezala erakusten du.
+    error:
+        future: Etorkizuneko egun bat ezin da zuzendu.
+        window: Egun hau zuzenketa-epea baino zaharragoa da.
+        reason: Arrazoiak 10 eta 500 karaktere artean izan behar ditu.
+        segment: Tarte hori ez dago egun honetan.
+        live_segment: Martxan dagoen tartea ezin da zuzendu; fitxatu irteera lehenengo.
+        times: Orduak ez dira baliozkoak (hasiera amaiera baino lehen, etorkizunean ez, gehienez egun luze baten orduak).
+        own_day: Inork ez ditu bere egunaren zuzenketak erabakitzen edo erregistratzen.
+        already_decided: Eskaera hau jada erabakita dago.
+        already_answered: Zuzenketa hau jada erantzunda dago.
+team:
+    title: Taldea
+    intro: 'Zure taldearen %date% datako erregistroa.'
+    view_day: Eguna ikusi
+    empty: Ez dago langilerik erakusteko.
+    pending: Zuzenketa-eskaerak
+    no_pending: Ez dago zuzenketa-eskaerarik zain.
+    day_title: '%worker% · %date%'
+    back: Taldera itzuli
+    col:
+        worker: Langilea
+        status: Egoera
+        worked: Landuta
+        flags: Oharrak
+schedule:
+    title: Ordutegiak
+    intro: Data duten ordutegiak erakunde osorako, talde baterako edo langile baterako. Langile baten ordutegi propioak taldearena gainditzen du, eta honek erakundearena.
+    add: Ordutegi bat gehitu
+    save: Ordutegia gorde
+    saved: Ordutegia gorde da.
+    withdraw: Kendu
+    withdraw_title: Oraindik indarrean ez dauden ordutegiak
+    withdrawn: Ordutegia kendu da.
+    empty: Oraindik ez dago ordutegirik.
+    day:
+        mon: Astelehena
+        tue: Asteartea
+        wed: Asteazkena
+        thu: Osteguna
+        fri: Ostirala
+        sat: Larunbata
+        sun: Igandea
+    scope:
+        tenant: Erakunde osoa
+        group: Taldea
+        worker: Langilea
+    col:
+        valid_from: Indarrean noiztik
+        scope: Nori aplikatzen zaio
+        target: Taldea edo langilea
+        timezone: Ordu-zona
+        slots: Orduak
+    form:
+        scope: Nori aplikatzen zaio
+        group: Taldea
+        worker: Langilea
+        none: '— aukeratu —'
+        valid_from: Indarrean noiztik
+        timezone: Ordu-zona
+        ranges_help: 'Tarteak HH:MM-HH:MM formatuan, komaz bereizita; hutsik = lanik gabeko eguna.'
+        daily_target: Eguneko helburua (minutuak, ordutegi malgua)
+        weekly_target: Asteko helburua (minutuak)
+        flex: Banda malgua (minutuak)
+    error:
+        group: Aukeratu erakundeko talde bat.
+        worker: Aukeratu langile bat.
+        past: Ordutegi bat gaurtik aurrera dago indarrean; iraganeko egunek neurtu zitzaizkien ordutegia mantentzen dute.
+        not_future: Oraindik indarrean ez dagoen ordutegi bat soilik kendu daiteke.
+        invalid: Ordutegia ez da baliozkoa (ordu-zona, gainjartzerik gabeko tarteak, egunean 12 ordura arteko helburuak).
+export:
+    title: Esportazioak
+    intro: Zure erregistroaren zure kopia eta ikuskaritzarako esportazioak egin ditzaketenentzat. Fitxategiak 7 egunez deskarga daitezke.
+    request: Esportazio bat eskatu
+    submit: Eskatu
+    requested: Esportazioa eskatu da.
+    download: Deskargatu
+    empty: Oraindik ez dago esportaziorik.
+    format:
+        pdf: PDF
+        csv: CSV
+        zip: ZIP (taldea)
+    scope:
+        own: Nire erregistroa
+        worker: Langile bat
+        team: Talde osoa (ZIP)
+    form:
+        scope: Esportatu
+        worker: Langilea
+        none: '— aukeratu —'
+        from: Lehen hilabetea (YYYY-MM)
+        to: Azken hilabetea (YYYY-MM)
+        format: Formatua
+    col:
+        created: Eskatuta
+        period: Hilabeteak
+        scope: Irismena
+        format: Formatua
+        status: Egoera
+        sha256: SHA-256
+        date: Data
+        start: Hasiera
+        end: Amaiera
+        segments: Tarteak
+        breaks: Atsedenaldiak
+        worked: Landuta
+        expected: Aurreikusia
+        overtime: Ordu extrak
+        flags: Oharrak
+        ip_prefix: IP aurrizkia
+        change: Aldaketa
+        reason: Arrazoia
+        by: Nork eskatua
+        approved_by: Nork onartua
+        when: Noiz
+    error:
+        format: Formatu hori ez da esportaziorako egokia (talde-esportazioa ZIP bat da; langile batena PDF bat edo CSV bat).
+        period: 'Aukeratu iraganeko hilabeteak edo uneko hilabetea, lehena azkenaren aurretik, gehienez 12.'
+        worker: Aukeratu langile bat.
+    title_pdf: 'Lanaldi-erregistroa · %worker%'
+    header: '%organization% · %worker% · %period% · katea %head%'
+    figure:
+        worker: Langilea
+        period: Aldia
+        worked: Landuta
+        expected: Aurreikusia
+        daily_overtime: Eguneko ordu extrak
+        weekly_overtime: Asteko ordu extrak
+        days: Landutako egunak
+        missing: Fitxatu gabeko irteerak
+        corrections: Zuzenketak
+        generated_at: Sortze-data
+        generated_by: Nork sortua
+        chain_head: Kateko burua
+        integrity: Osotasun-egiaztapena
+        file_hash: Fitxategiaren SHA-256
+    section:
+        summary: Laburpena
+        days: Egunak
+        corrections: Zuzenketak
+        integrity: Osotasuna
+    integrity_ok: Kateko maila guztiak egiaztatu dira.
+    integrity_broken: 'Katea %seq% mailan hautsita dago (%reason%).'
+    file_hash_note: Esportazioarekin batera gordetzen da eta deskargatzean X-Content-SHA256 gisa bidaltzen da.
+    legal_note: 'Langileen Estatutuaren 34.9 artikuluaren arabera gordetako lanaldi-erregistroa. Orduak egun bakoitzaren ordu-zonako tokiko orduak dira. Zuzenketek ez dute inoiz jatorrizko erregistroa ordezkatzen: biak zerrendatzen dira.'
+    by_worker: Langilea
+    recorded_by_manager: Arduradun batek erregistratua
+    page: Orria
+settings:
+    title: Lanaldi-erregistroaren ezarpenak
+    intro: Erregistroa itzalita dago aktibatzen duzun arte. Erregistroa dokumentu legala da; bundlea ez da aholkularitza juridikoa.
+    save: Gorde
+    saved: Ezarpenak gorde dira.
+    stale: Norbaitek ezarpen hauek gorde ditu une berean. Formularioak orain dauden bezala erakusten ditu.
+    triggers_missing: 'Datu-basean %count% gehitzeko-soilik abiarazle falta dira: exekutatu nowo:working-time:triggers:install.'
+    section:
+        register: Erregistroa
+        register_intro: Erregistroak denbora nola neurtzen eta gordetzen duen.
+    form:
+        enabled: Lanaldi-erregistroa eraman
+        enabled_help: Fitxatzeko baimena duten langileek sarrera eta irteera fitxatu dezakete.
+        breaks_counted: Atsedenaldiak lan-denbora gisa zenbatzen dira
+        flex: Banda malgua (minutuak)
+        min_break: Gutxieneko atsedenaldia (minutuak)
+        min_break_help: Sei ordu baino gehiagoko egunetan ohar informatiboa; ez du inoiz fitxatzea blokeatzen.
+        daily_overtime: Eguneko ordu extren muga (minutuak)
+        weekly_overtime: Asteko ordu extren muga (minutuak)
+        task_timer_link: Irteera fitxatzeak zeregin-tenporizadorea gelditzen du
+        task_timer_link_help: TimeTrack instalatuta dagoenean; zereginen denbora erregistro bereizia izaten jarraitzen du.
+        reminders_allowed: Langileek fitxatzeko gogorarazpenak eska ditzakete
+        summary_mandatory: Hileko laburpena ezin da desaktibatu
+        ip_evidence: Fitxatze bakoitzaren sare-aurrizkia erregistratu
+        ip_evidence_help: /24 (IPv4) edo /64 (IPv6) aurrizkia soilik, ez helbidea inoiz, eta beheko oharrarekin bakarrik.
+        ip_notice: Langileei erakutsitako oharra
+        ip_notice_help: IP froga erregistratzeko beharrezkoa.
+        retention: Gordetzea (urteak)
+        retention_help: Gutxienez lau urte (Langileen Estatutuaren 34.9 artikulua); hilabete zaharrenak ezabatzen dira.
+        correction_window: Zuzenketa-epea (egunak)
+    error:
+        flex: Banda malgua 0 eta 240 minutu artekoa da.
+        min_break: Gutxieneko atsedenaldia 0 eta 120 minutu artekoa da.
+        daily_overtime: Eguneko muga 1 eta 720 minutu artekoa da.
+        weekly_overtime: Asteko muga 1 eta 5040 minutu artekoa da.
+        retention: Gordetzea 4 eta 10 urte artekoa da.
+        correction_window: Zuzenketa-epea 1 eta 31 egun artekoa da.
+        ip_notice: Oharrak gehienez 2000 karaktere ditu.
+        ip_notice_required: IP froga erregistratzeko langileei erakutsitako oharraren testua behar da.
+        ip_evidence_off: IP froga desaktibatuta dago aplikazio honetan.
+        triggers_missing: Erregistroa ezin da aktibatu gehitzeko-soilik abiarazleak falta diren bitartean.
+preferences:
+    title: Nire lanaldi-hobespenak
+    intro: Gogorarazpenak eta hileko laburpena zure lanorduen barruan bakarrik iristen dira.
+    reminders: Sarrera eta irteera fitxatzeko gogorarazi
+    reminders_help: Zure erakundeak onartzen duenean bakarrik.
+    monthly_summary: Hileko laburpena bidali
+    monthly_summary_help: Zure erakundeak derrigorrezko egin dezake.
+    save: Gorde
+    saved: Zure hobespenak gorde dira.
+notice:
+    register_correction_requested:
+        subject: '%worker%(r)en zuzenketa-eskaera'
+        body: '%worker%(e)k %date% datako bere erregistroa zuzentzeko eskatu du.'
+    register_correction_decided:
+        subject: 'Zure %date% datako zuzenketa: %decision%'
+        body: '%actor%(e)k zure %date% datako zuzenketa-eskaera erabaki du (%decision%).'
+    register_correction_recorded:
+        subject: 'Arduradun batek zure %date% datako erregistroa zuzendu du'
+        body: '%actor%(e)k %date% egunean zuzenketa bat erregistratu du. Berretsi edo eztabaidatu.'
+    register_reminder_in:
+        subject: Sarrera fitxatzeko ordua
+        body: 'Zure ordutegia orain hasten da (%date%).'
+    register_reminder_out:
+        subject: Irteera fitxatzeko ordua
+        body: 'Zure ordutegia orain amaitzen da (%date%).'
+    register_monthly_summary:
+        subject: 'Zure lanaldia %month% hilabetean'
+        body: '%expected% aurreikusitakotik %worked% landu da %days% egunetan; fitxatu gabeko %missing% irteera.'

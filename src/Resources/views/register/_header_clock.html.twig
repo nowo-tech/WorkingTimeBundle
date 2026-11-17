@@ -1,0 +1,6 @@
+{#- Header quick action (contract section 11.1): one button with the next action and the day's worked time; links to
+    today's page (the action itself is a POST there). Variables: state (ClockState), href. No layout shift: fixed text. -#}
+{%- set _d = 'NowoWorkingTimeBundle' -%}
+<a class="{{ nowo_ui_class('btn_secondary') }} nowo-working-time-header-clock" href="{{ href }}" data-testid="wt-header-clock" data-status="{{ state.status.value }}">
+    {{ ('clock.action.' ~ state.primaryAction.key)|trans({}, _d) }} · {{ (state.workedSeconds // 60)|working_time_format_minutes }}
+</a>

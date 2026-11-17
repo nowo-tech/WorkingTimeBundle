@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings" table="working_time_settings">
+        <id name="tenantId" column="tenant_id" type="string" length="128"><generator strategy="NONE"/></id>
+        <field name="enabled" column="enabled" type="boolean"/>
+        <field name="breaksCounted" column="breaks_counted" type="boolean"/>
+        <field name="flexMinutes" column="flex_minutes" type="smallint"/>
+        <field name="minBreakMinutes" column="min_break_minutes" type="smallint"/>
+        <field name="dailyOvertimeMinutes" column="daily_overtime_minutes" type="smallint" nullable="true"/>
+        <field name="weeklyOvertimeMinutes" column="weekly_overtime_minutes" type="smallint" nullable="true"/>
+        <field name="taskTimerLink" column="task_timer_link" type="boolean"/>
+        <field name="remindersAllowed" column="reminders_allowed" type="boolean"/>
+        <field name="monthlySummaryMandatory" column="monthly_summary_mandatory" type="boolean"/>
+        <field name="ipEvidence" column="ip_evidence" type="boolean"/>
+        <field name="ipNotices" column="ip_notices" type="json"/>
+        <field name="ipNoticeLocale" column="ip_notice_locale" type="string" length="8" nullable="true"/>
+        <field name="retentionYears" column="retention_years" type="smallint"/>
+        <field name="correctionWindowDays" column="correction_window_days" type="smallint"/>
+        <field name="version" column="version" type="integer" version="true"/>
+        <field name="updatedById" column="updated_by_id" type="string" length="128" nullable="true"/>
+        <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+    </entity>
+</doctrine-mapping>

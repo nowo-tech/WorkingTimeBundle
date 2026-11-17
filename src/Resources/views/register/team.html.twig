@@ -1,0 +1,35 @@
+{#
+  The team's day (contract section 11.1, manage_team): UiKit list scaffold, one row per managed worker (status, worked,
+  flags; link to their day), then the pending correction requests with approve / reject forms that carry the version
+  shown (a stale one answers 409 with this page and a flash). Variables: page (ListPage), decisions (list of
+  {request, name, form, date, change}), decision_action (callable id, decision => URL).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-pending-corrections">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'team.pending'|trans({}, _d) }}</h2>
+            {% for decision in decisions %}
+                <article class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-pending-{{ decision.request.id }}">
+                    <div class="{{ nowo_ui_class('card_body', _b) }}">
+                        <p><strong>{{ decision.name }}</strong> · {{ decision.date }} · {{ ('correction.operation.' ~ decision.request.operation.value)|trans({}, _d) }}</p>
+                        <p>{{ decision.change }}</p>
+                        <p>{{ decision.request.reason }}</p>
+                        {{ form_start(decision.form, {action: decision_action(decision.request.id, 'approve'), attr: {'data-testid': 'wt-decide-' ~ decision.request.id}}) }}
+                        {% for child in decision.form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+                        <div class="{{ nowo_ui_class('form_actions', _b) }}">
+                            <button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }}" data-testid="wt-approve">{{ 'correction.approve'|trans({}, _d) }}</button>
+                            <button type="submit" class="{{ nowo_ui_class('btn_danger', _b) }}" formaction="{{ decision_action(decision.request.id, 'reject') }}" data-testid="wt-reject">{{ 'correction.reject'|trans({}, _d) }}</button>
+                        </div>
+                        {{ form_end(decision.form) }}
+                    </div>
+                </article>
+            {% else %}
+                <p class="{{ nowo_ui_class('text_muted', _b) }}">{{ 'team.no_pending'|trans({}, _d) }}</p>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

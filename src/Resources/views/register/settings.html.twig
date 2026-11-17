@@ -1,0 +1,16 @@
+{#
+  Register settings (contract section 11.1, manage_settings): UiKit settings scaffold with one section (the settings
+  form with the version the admin saw), after a warning while the append-only triggers are missing. Variables: page
+  (SettingsPage), missing_triggers (list of names).
+#}
+{% extends '@NowoUiKit/page/settings.html.twig' %}
+
+{% block nowo_ui_settings_section %}
+    {% if missing_triggers is not empty %}
+        <div class="{{ nowo_ui_class('flash_warning', page.bundle) }}" role="status" data-testid="wt-triggers-missing">{{ 'settings.triggers_missing'|trans({'%count%': missing_triggers|length}, 'NowoWorkingTimeBundle') }}</div>
+    {% endif %}
+    {% if section.form and section.form.vars.errors|length > 0 %}
+        <div class="{{ nowo_ui_class('flash_error', page.bundle) }}" role="alert" data-testid="wt-settings-errors">{{ form_errors(section.form) }}</div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

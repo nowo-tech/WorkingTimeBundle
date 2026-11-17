@@ -1,0 +1,11 @@
+{#- One working-time notice e-mail (MailerNotifier): subject, body and the action link. Plain, branded, escaped. -#}
+<!DOCTYPE html>
+<html lang="{{ locale|default('en') }}">
+<head><meta charset="UTF-8"><title>{{ subject }}</title></head>
+<body style="font-family: sans-serif; color: {{ brand.colors().text }};">
+<p style="font-weight: bold; color: {{ brand.colors().primaryDeep }};">{{ brand.name }}</p>
+<h1 style="font-size: 18px;">{{ subject }}</h1>
+<p>{{ body }}</p>
+{% if action %}<p><a href="{{ action }}">{{ action }}</a></p>{% endif %}
+</body>
+</html>

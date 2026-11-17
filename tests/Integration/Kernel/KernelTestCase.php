@@ -32,11 +32,13 @@ abstract class KernelTestCase extends TestCase
     /**
      * @param array<string, mixed> $config `nowo_working_time` configuration
      * @param Closure(ContainerConfigurator, string): void|null $configure host configuration; null = the standard host
+     * @param bool $full SecurityBundle, UiKit and FormKit registered (false: Framework, Doctrine and Twig only)
+     * @param bool $transactionBundle NowoTransactionDoctrineBundle registered
      */
-    protected function bootKernel(array $config = [], ?Closure $configure = null): TestKernel
+    protected function bootKernel(array $config = [], ?Closure $configure = null, bool $full = true, bool $transactionBundle = true): TestKernel
     {
         $id              = (string) preg_replace('/\W+/', '_', static::class . '_' . $this->name() . '_' . count($this->kernels));
-        $kernel          = new TestKernel($id, $config, $configure ?? Host::standard()->configure());
+        $kernel          = new TestKernel($id, $config, $configure ?? Host::standard()->configure(), $full, $transactionBundle);
         $this->kernels[] = $kernel;
         $kernel->boot();
 

@@ -1,0 +1,21 @@
+{#
+  Exports (contract section 11.1): UiKit list scaffold of the exports the actor may see (download while the window
+  lasts), then the request form (own copy; with `export`, a worker's or the team's inspection export). Variables:
+  page (ListPage), form (FormView of ExportType).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-export-form">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'export.request'|trans({}, _d) }}</h2>
+            {{ form_start(form) }}
+            {% if form.vars.errors|length > 0 %}<div class="{{ nowo_ui_class('flash_error', _b) }}" role="alert">{{ form_errors(form) }}</div>{% endif %}
+            {% for child in form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+            <div class="{{ nowo_ui_class('form_actions', _b) }}"><button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }}">{{ 'export.submit'|trans({}, _d) }}</button></div>
+            {{ form_end(form) }}
+        </div>
+    </section>
+{% endblock %}

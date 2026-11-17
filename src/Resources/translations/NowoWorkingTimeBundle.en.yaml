@@ -1,0 +1,346 @@
+# Working-time register (S1). Domain NowoWorkingTimeBundle. Parameters: %name%.
+nav:
+    label: Working time
+    today: Today
+    month: Month
+    exports: Exports
+    team: Team
+    schedules: Schedules
+    preferences: Preferences
+    settings: Settings
+status:
+    idle: Not clocked in
+    working: Working
+    on_break: On a break
+    closed: Day closed
+segment:
+    type:
+        work: Work
+        break: Break
+clock:
+    action:
+        clock_in: Clock in
+        break_start: Start a break
+        break_end: End the break
+        clock_out: Clock out
+    done:
+        clock_in: Clocked in.
+        break_start: Break started.
+        break_end: Break ended.
+        clock_out: Clocked out.
+    conflict:
+        not_allowed: That action does not fit where your clock stands now; the page shows the current state.
+        earlier_than_last: The time is earlier than the day's last recorded time.
+        concurrent: Another request changed your clock at the same moment; the page shows the current state.
+today:
+    title: Working time
+    intro: 'Your register for %date%. The register is the record your employer keeps under art. 34.9 of the Workers'' Statute.'
+    status: Status
+    worked: Worked
+    breaks: Breaks
+    clock: Clock
+    segments: Today's segments
+    no_segments: Nothing recorded today yet.
+    open: open
+    view_day: Day details
+    ip_notice: IP evidence
+month:
+    title: 'Register %month%'
+    intro: 'Worked %worked% of %expected% expected, %days% day(s) worked.'
+    previous: Previous month
+    next: Next month
+    view_day: View day
+    empty: No days recorded this month.
+    col:
+        date: Date
+        start: First start
+        end: Last end
+        worked: Worked
+        expected: Expected
+        flags: Flags
+day:
+    title: 'Day %date%'
+    back_to_month: Back to the month
+    date: Date
+    timezone: Time zone
+    worked: Worked
+    breaks: Breaks
+    expected: Expected
+    flag: Flag
+    section:
+        summary: Summary
+        segments: Segments
+        trail: History
+flag:
+    missing_clock_out: Missing clock-out
+    late_entry: Late entry
+    overtime: Overtime
+    long_day: Long day
+    short_break: Short break
+    outside_band: Outside the flexible band
+    corrected: Corrected
+    pending_acknowledgement: Waiting for your answer
+    contested: Contested
+    correction_pending: Correction pending
+history:
+    clock_in: Clock in
+    break_start: Break start
+    break_end: Break end
+    clock_out: Clock out
+    correction: Correction approved
+    recorded_correction: Correction recorded by a manager
+    acknowledged: Correction acknowledged
+    contested: Correction contested
+correction:
+    form:
+        title: Ask for a correction
+        record_title: Record a correction
+        operation: Change
+        segment: Segment
+        segment_none: '— none (add a segment) —'
+        segment_type: Type of a new segment
+        start: Start (local time)
+        end: End (local time)
+        reason: Reason
+        reason_help: 10 to 500 characters. Do not include health information.
+        comment: Comment
+        answer: Your answer
+        submit: Send
+    operation:
+        amend: Change times
+        add: Add a missing segment
+        void: Void a segment
+    answer:
+        title: A manager corrected this day
+        acknowledge: I acknowledge the correction
+        contest: I contest the correction
+        submit: Answer
+    status:
+        pending: Correction requested
+        approved: Correction approved
+        rejected: Correction rejected
+    approve: Approve
+    reject: Reject
+    requested: Your correction request was sent to your managers.
+    recorded: The correction was recorded; the worker is asked to acknowledge it.
+    answered: Your answer was recorded.
+    decided:
+        approved: The correction was approved.
+        rejected: The correction was rejected.
+    stale: Someone decided this request at the same moment. The list shows it as it is now.
+    error:
+        future: A day in the future cannot be corrected.
+        window: This day is older than the correction window.
+        reason: The reason must have 10 to 500 characters.
+        segment: That segment does not exist on this day.
+        live_segment: The running segment cannot be corrected; clock out first.
+        times: The times are not valid (start before end, not in the future, at most the long-day hours).
+        own_day: Nobody decides or records corrections on their own day.
+        already_decided: This request was already decided.
+        already_answered: This correction was already answered.
+team:
+    title: Team
+    intro: 'Your team''s register on %date%.'
+    view_day: View day
+    empty: No workers to show.
+    pending: Correction requests
+    no_pending: No correction requests are waiting.
+    day_title: '%worker% · %date%'
+    back: Back to the team
+    col:
+        worker: Worker
+        status: Status
+        worked: Worked
+        flags: Flags
+schedule:
+    title: Schedules
+    intro: Dated schedules for the whole organisation, a group or one worker. A worker's own schedule wins over the group's, which wins over the organisation's.
+    add: Add a schedule
+    save: Save the schedule
+    saved: The schedule was saved.
+    withdraw: Withdraw
+    withdraw_title: Schedules not valid yet
+    withdrawn: The schedule was withdrawn.
+    empty: No schedules yet.
+    day:
+        mon: Monday
+        tue: Tuesday
+        wed: Wednesday
+        thu: Thursday
+        fri: Friday
+        sat: Saturday
+        sun: Sunday
+    scope:
+        tenant: Whole organisation
+        group: Group
+        worker: Worker
+    col:
+        valid_from: Valid from
+        scope: Applies to
+        target: Group or worker
+        timezone: Time zone
+        slots: Hours
+    form:
+        scope: Applies to
+        group: Group
+        worker: Worker
+        none: '— choose —'
+        valid_from: Valid from
+        timezone: Time zone
+        ranges_help: 'Ranges as HH:MM-HH:MM, separated by commas; empty = day off.'
+        daily_target: Daily target (minutes, flexible schedule)
+        weekly_target: Weekly target (minutes)
+        flex: Flexible band (minutes)
+    error:
+        group: Choose a group of the organisation.
+        worker: Choose a worker.
+        past: A schedule is valid from today or later; past days keep the schedule they were measured against.
+        not_future: Only a schedule that is not valid yet can be withdrawn.
+        invalid: The schedule is not valid (time zone, ranges without overlaps, targets up to 12 hours a day).
+export:
+    title: Exports
+    intro: Your own copy of your register, and inspection exports for those who may make them. Files can be downloaded for 7 days.
+    request: Ask for an export
+    submit: Ask
+    requested: The export was requested.
+    download: Download
+    empty: No exports yet.
+    format:
+        pdf: PDF
+        csv: CSV
+        zip: ZIP (team)
+    scope:
+        own: My own register
+        worker: One worker
+        team: The whole team (ZIP)
+    form:
+        scope: Export
+        worker: Worker
+        none: '— choose —'
+        from: First month (YYYY-MM)
+        to: Last month (YYYY-MM)
+        format: Format
+    col:
+        created: Requested
+        period: Months
+        scope: Scope
+        format: Format
+        status: Status
+        sha256: SHA-256
+        date: Date
+        start: Start
+        end: End
+        segments: Segments
+        breaks: Breaks
+        worked: Worked
+        expected: Expected
+        overtime: Overtime
+        flags: Flags
+        ip_prefix: IP prefix
+        change: Change
+        reason: Reason
+        by: Asked by
+        approved_by: Approved by
+        when: When
+    error:
+        format: That format does not fit the export (a team export is a ZIP; one worker's is a PDF or a CSV).
+        period: 'Choose months in the past or the current month, the first before the last, at most 12.'
+        worker: Choose a worker.
+    title_pdf: 'Working-hours register · %worker%'
+    header: '%organization% · %worker% · %period% · chain %head%'
+    figure:
+        worker: Worker
+        period: Period
+        worked: Worked
+        expected: Expected
+        daily_overtime: Daily overtime
+        weekly_overtime: Weekly overtime
+        days: Days worked
+        missing: Missing clock-outs
+        corrections: Corrections
+        generated_at: Generated at
+        generated_by: Generated by
+        chain_head: Chain head
+        integrity: Integrity check
+        file_hash: File SHA-256
+    section:
+        summary: Summary
+        days: Days
+        corrections: Corrections
+        integrity: Integrity
+    integrity_ok: Every link of the chain verified.
+    integrity_broken: 'The chain is broken at link %seq% (%reason%).'
+    file_hash_note: Stored with the export and sent as X-Content-SHA256 on download.
+    legal_note: 'Working-hours register kept under art. 34.9 of the Workers'' Statute. Times are local to each day''s time zone. Corrections never replace the original record: both are listed.'
+    by_worker: The worker
+    recorded_by_manager: Recorded by a manager
+    page: Page
+settings:
+    title: Working-time settings
+    intro: The register is off until you turn it on. The register is a legal record; the bundle is not legal advice.
+    save: Save
+    saved: The settings were saved.
+    stale: Someone saved these settings at the same moment. The form shows them as they are now.
+    triggers_missing: '%count% append-only trigger(s) are missing in the database: run nowo:working-time:triggers:install.'
+    section:
+        register: Register
+        register_intro: How the register measures and keeps the time.
+    form:
+        enabled: Keep the working-hours register
+        enabled_help: Workers with the clock permission can clock in and out.
+        breaks_counted: Breaks count as worked time
+        flex: Flexible band (minutes)
+        min_break: Minimum break (minutes)
+        min_break_help: Informational flag on days of more than six hours; never blocks clocking.
+        daily_overtime: Daily overtime threshold (minutes)
+        weekly_overtime: Weekly overtime threshold (minutes)
+        task_timer_link: Clocking out stops the task timer
+        task_timer_link_help: With TimeTrack installed; the task time stays a separate record.
+        reminders_allowed: Workers may ask for clock reminders
+        summary_mandatory: The monthly summary cannot be turned off
+        ip_evidence: Record the network prefix of each clock action
+        ip_evidence_help: Only the /24 (IPv4) or /64 (IPv6) prefix, never the address, and only with the notice below.
+        ip_notice: Notice shown to workers
+        ip_notice_help: Required to record IP evidence.
+        retention: Retention (years)
+        retention_help: At least four years (art. 34.9 ET); older months are deleted.
+        correction_window: Correction window (days)
+    error:
+        flex: The flexible band is 0 to 240 minutes.
+        min_break: The minimum break is 0 to 120 minutes.
+        daily_overtime: The daily threshold is 1 to 720 minutes.
+        weekly_overtime: The weekly threshold is 1 to 5040 minutes.
+        retention: The retention is 4 to 10 years.
+        correction_window: The correction window is 1 to 31 days.
+        ip_notice: The notice has at most 2000 characters.
+        ip_notice_required: Recording IP evidence needs the notice text shown to workers.
+        ip_evidence_off: IP evidence is turned off for this application.
+        triggers_missing: The register cannot be turned on while the append-only triggers are missing.
+preferences:
+    title: My working-time preferences
+    intro: Reminders and the monthly summary arrive only inside your working hours.
+    reminders: Remind me to clock in and out
+    reminders_help: Only when your organisation allows it.
+    monthly_summary: Send me the monthly summary
+    monthly_summary_help: Your organisation may make it mandatory.
+    save: Save
+    saved: Your preferences were saved.
+notice:
+    register_correction_requested:
+        subject: 'Correction request from %worker%'
+        body: '%worker% asked to correct their register on %date%.'
+    register_correction_decided:
+        subject: 'Your correction for %date% was %decision%'
+        body: '%actor% %decision% your correction request for %date%.'
+    register_correction_recorded:
+        subject: 'A manager corrected your register on %date%'
+        body: '%actor% recorded a correction on %date%. Please acknowledge it or contest it.'
+    register_reminder_in:
+        subject: Time to clock in
+        body: 'Your schedule starts now (%date%).'
+    register_reminder_out:
+        subject: Time to clock out
+        body: 'Your schedule ends now (%date%).'
+    register_monthly_summary:
+        subject: 'Your working time in %month%'
+        body: 'Worked %worked% of %expected% expected over %days% day(s); %missing% missing clock-out(s).'

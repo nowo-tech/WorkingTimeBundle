@@ -1,0 +1,12 @@
+{#
+  A managed worker's date (contract section 11.1, manage_team): UiKit show scaffold with the day's sections and, unless
+  it is the manager's own day, the manager-recorded correction form. Variables: page (ShowPage), correction (FormView
+  or null), correction_action.
+#}
+{% extends '@NowoUiKit/page/show.html.twig' %}
+
+{% block nowo_ui_show_after %}
+    {% if correction %}
+        {{ include('@NowoWorkingTime/register/_correction_form.html.twig', {form: correction, action: correction_action, title: 'correction.form.record_title', bundle: page.bundle}) }}
+    {% endif %}
+{% endblock %}

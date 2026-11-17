@@ -1,0 +1,346 @@
+# Registre de jornada (S1). Domini NowoWorkingTimeBundle. Paràmetres: %name%.
+nav:
+    label: Registre de jornada
+    today: Avui
+    month: Mes
+    exports: Exportacions
+    team: Equip
+    schedules: Horaris
+    preferences: Preferències
+    settings: Configuració
+status:
+    idle: Sense fitxar
+    working: Treballant
+    on_break: En pausa
+    closed: Jornada tancada
+segment:
+    type:
+        work: Feina
+        break: Pausa
+clock:
+    action:
+        clock_in: Fitxar l'entrada
+        break_start: Començar una pausa
+        break_end: Acabar la pausa
+        clock_out: Fitxar la sortida
+    done:
+        clock_in: Entrada fitxada.
+        break_start: Pausa començada.
+        break_end: Pausa acabada.
+        clock_out: Sortida fitxada.
+    conflict:
+        not_allowed: Aquesta acció no encaixa amb l'estat actual del teu fitxatge; la pàgina mostra l'estat actual.
+        earlier_than_last: L'hora és anterior a l'últim registre del dia.
+        concurrent: Una altra petició ha canviat el teu fitxatge al mateix moment; la pàgina mostra l'estat actual.
+today:
+    title: Registre de jornada
+    intro: 'El teu registre del %date%. El registre és el que la teva empresa conserva segons l''art. 34.9 de l''Estatut dels Treballadors.'
+    status: Estat
+    worked: Treballat
+    breaks: Pauses
+    clock: Fitxatge
+    segments: Trams d'avui
+    no_segments: Encara no hi ha res registrat avui.
+    open: obert
+    view_day: Detall del dia
+    ip_notice: Evidència d'IP
+month:
+    title: 'Registre %month%'
+    intro: 'Treballat %worked% de %expected% previstes, %days% dia/dies treballat(s).'
+    previous: Mes anterior
+    next: Mes següent
+    view_day: Veure el dia
+    empty: No hi ha dies registrats aquest mes.
+    col:
+        date: Data
+        start: Primera entrada
+        end: Última sortida
+        worked: Treballat
+        expected: Previst
+        flags: Avisos
+day:
+    title: 'Dia %date%'
+    back_to_month: Tornar al mes
+    date: Data
+    timezone: Zona horària
+    worked: Treballat
+    breaks: Pauses
+    expected: Previst
+    flag: Avís
+    section:
+        summary: Resum
+        segments: Trams
+        trail: Historial
+flag:
+    missing_clock_out: Falta la sortida
+    late_entry: Entrada tardana
+    overtime: Hores extra
+    long_day: Jornada llarga
+    short_break: Pausa curta
+    outside_band: Fora de la banda flexible
+    corrected: Corregit
+    pending_acknowledgement: Esperant la teva resposta
+    contested: Impugnat
+    correction_pending: Correcció pendent
+history:
+    clock_in: Entrada
+    break_start: Inici de pausa
+    break_end: Fi de pausa
+    clock_out: Sortida
+    correction: Correcció aprovada
+    recorded_correction: Correcció registrada per un responsable
+    acknowledged: Correcció confirmada
+    contested: Correcció impugnada
+correction:
+    form:
+        title: Sol·licitar una correcció
+        record_title: Registrar una correcció
+        operation: Canvi
+        segment: Tram
+        segment_none: '— cap (afegir un tram) —'
+        segment_type: Tipus d'un tram nou
+        start: Inici (hora local)
+        end: Fi (hora local)
+        reason: Motiu
+        reason_help: De 10 a 500 caràcters. No hi incloguis informació de salut.
+        comment: Comentari
+        answer: La teva resposta
+        submit: Envia
+    operation:
+        amend: Canviar les hores
+        add: Afegir un tram que falta
+        void: Anul·lar un tram
+    answer:
+        title: Un responsable ha corregit aquest dia
+        acknowledge: Confirmo la correcció
+        contest: Impugno la correcció
+        submit: Respon
+    status:
+        pending: Correcció sol·licitada
+        approved: Correcció aprovada
+        rejected: Correcció rebutjada
+    approve: Aprova
+    reject: Rebutja
+    requested: La teva sol·licitud de correcció s'ha enviat als teus responsables.
+    recorded: La correcció s'ha registrat; es demana a la persona treballadora que la confirmi.
+    answered: La teva resposta s'ha registrat.
+    decided:
+        approved: La correcció s'ha aprovat.
+        rejected: La correcció s'ha rebutjat.
+    stale: Algú ha resolt aquesta sol·licitud al mateix moment. La llista la mostra tal com és ara.
+    error:
+        future: No es pot corregir un dia futur.
+        window: Aquest dia és anterior al termini de correcció.
+        reason: El motiu ha de tenir entre 10 i 500 caràcters.
+        segment: Aquest tram no existeix en aquest dia.
+        live_segment: No es pot corregir el tram en curs; fitxa primer la sortida.
+        times: Les hores no són vàlides (inici abans del fi, no en el futur, com a màxim les hores de jornada llarga).
+        own_day: Ningú resol ni registra correccions en el seu propi dia.
+        already_decided: Aquesta sol·licitud ja s'ha resolt.
+        already_answered: Aquesta correcció ja s'ha respost.
+team:
+    title: Equip
+    intro: 'El registre del teu equip del %date%.'
+    view_day: Veure el dia
+    empty: No hi ha persones per mostrar.
+    pending: Sol·licituds de correcció
+    no_pending: No hi ha sol·licituds de correcció pendents.
+    day_title: '%worker% · %date%'
+    back: Tornar a l'equip
+    col:
+        worker: Persona treballadora
+        status: Estat
+        worked: Treballat
+        flags: Avisos
+schedule:
+    title: Horaris
+    intro: Horaris amb data per a tota l'organització, un grup o una persona. L'horari propi d'una persona preval sobre el del grup, que preval sobre el de l'organització.
+    add: Afegir un horari
+    save: Desar l'horari
+    saved: L'horari s'ha desat.
+    withdraw: Retirar
+    withdraw_title: Horaris que encara no són vigents
+    withdrawn: L'horari s'ha retirat.
+    empty: Encara no hi ha horaris.
+    day:
+        mon: Dilluns
+        tue: Dimarts
+        wed: Dimecres
+        thu: Dijous
+        fri: Divendres
+        sat: Dissabte
+        sun: Diumenge
+    scope:
+        tenant: Tota l'organització
+        group: Grup
+        worker: Persona treballadora
+    col:
+        valid_from: Vigent des de
+        scope: S'aplica a
+        target: Grup o persona
+        timezone: Zona horària
+        slots: Hores
+    form:
+        scope: S'aplica a
+        group: Grup
+        worker: Persona treballadora
+        none: '— triar —'
+        valid_from: Vigent des de
+        timezone: Zona horària
+        ranges_help: 'Franges com HH:MM-HH:MM, separades per comes; buit = dia lliure.'
+        daily_target: Objectiu diari (minuts, horari flexible)
+        weekly_target: Objectiu setmanal (minuts)
+        flex: Banda flexible (minuts)
+    error:
+        group: Tria un grup de l'organització.
+        worker: Tria una persona treballadora.
+        past: Un horari és vigent des d'avui o més tard; els dies passats conserven l'horari amb què es van mesurar.
+        not_future: Només es pot retirar un horari que encara no és vigent.
+        invalid: L'horari no és vàlid (zona horària, franges sense solapaments, objectius de fins a 12 hores al dia).
+export:
+    title: Exportacions
+    intro: La teva pròpia còpia del registre i les exportacions d'inspecció per a qui les pot fer. Els fitxers es poden baixar durant 7 dies.
+    request: Sol·licitar una exportació
+    submit: Sol·licita
+    requested: L'exportació s'ha sol·licitat.
+    download: Baixa
+    empty: Encara no hi ha exportacions.
+    format:
+        pdf: PDF
+        csv: CSV
+        zip: ZIP (equip)
+    scope:
+        own: El meu propi registre
+        worker: Una persona treballadora
+        team: Tot l'equip (ZIP)
+    form:
+        scope: Exporta
+        worker: Persona treballadora
+        none: '— triar —'
+        from: Primer mes (YYYY-MM)
+        to: Últim mes (YYYY-MM)
+        format: Format
+    col:
+        created: Sol·licitada
+        period: Mesos
+        scope: Abast
+        format: Format
+        status: Estat
+        sha256: SHA-256
+        date: Data
+        start: Inici
+        end: Fi
+        segments: Trams
+        breaks: Pauses
+        worked: Treballat
+        expected: Previst
+        overtime: Hores extra
+        flags: Avisos
+        ip_prefix: Prefix IP
+        change: Canvi
+        reason: Motiu
+        by: Sol·licitada per
+        approved_by: Aprovada per
+        when: Quan
+    error:
+        format: Aquest format no serveix per a l'exportació (la d'un equip és un ZIP; la d'una persona és un PDF o un CSV).
+        period: 'Tria mesos passats o el mes actual, el primer abans de l''últim, com a màxim 12.'
+        worker: Tria una persona treballadora.
+    title_pdf: 'Registre de jornada · %worker%'
+    header: '%organization% · %worker% · %period% · cadena %head%'
+    figure:
+        worker: Persona treballadora
+        period: Període
+        worked: Treballat
+        expected: Previst
+        daily_overtime: Hores extra diàries
+        weekly_overtime: Hores extra setmanals
+        days: Dies treballats
+        missing: Sortides sense fitxar
+        corrections: Correccions
+        generated_at: Generat el
+        generated_by: Generat per
+        chain_head: Capçalera de la cadena
+        integrity: Comprovació d'integritat
+        file_hash: SHA-256 del fitxer
+    section:
+        summary: Resum
+        days: Dies
+        corrections: Correccions
+        integrity: Integritat
+    integrity_ok: Totes les anelles de la cadena s'han verificat.
+    integrity_broken: 'La cadena es trenca a l''anella %seq% (%reason%).'
+    file_hash_note: Es desa amb l'exportació i s'envia com a X-Content-SHA256 en baixar.
+    legal_note: 'Registre de jornada conservat segons l''art. 34.9 de l''Estatut dels Treballadors. Les hores són locals a la zona horària de cada dia. Les correccions mai no substitueixen el registre original: es llisten tots dos.'
+    by_worker: La persona treballadora
+    recorded_by_manager: Registrat per un responsable
+    page: Pàgina
+settings:
+    title: Configuració del registre de jornada
+    intro: El registre està desactivat fins que l'activis. El registre és un document legal; el bundle no és assessorament jurídic.
+    save: Desa
+    saved: La configuració s'ha desat.
+    stale: Algú ha desat aquesta configuració al mateix moment. El formulari la mostra tal com és ara.
+    triggers_missing: 'Falten %count% disparador(s) de només afegir a la base de dades: executa nowo:working-time:triggers:install.'
+    section:
+        register: Registre
+        register_intro: Com mesura i conserva el temps el registre.
+    form:
+        enabled: Portar el registre de jornada
+        enabled_help: Les persones amb el permís de fitxatge poden fitxar entrada i sortida.
+        breaks_counted: Les pauses compten com a temps treballat
+        flex: Banda flexible (minuts)
+        min_break: Pausa mínima (minuts)
+        min_break_help: Avís informatiu en dies de més de sis hores; mai no bloqueja el fitxatge.
+        daily_overtime: Llindar d'hores extra diàries (minuts)
+        weekly_overtime: Llindar d'hores extra setmanals (minuts)
+        task_timer_link: Fitxar la sortida atura el cronòmetre de tasques
+        task_timer_link_help: Amb TimeTrack instal·lat; el temps de les tasques continua sent un registre a part.
+        reminders_allowed: Les persones poden demanar recordatoris de fitxatge
+        summary_mandatory: El resum mensual no es pot desactivar
+        ip_evidence: Registrar el prefix de xarxa de cada fitxatge
+        ip_evidence_help: Només el prefix /24 (IPv4) o /64 (IPv6), mai l'adreça, i només amb l'avís de sota.
+        ip_notice: Avís mostrat a les persones
+        ip_notice_help: Necessari per registrar l'evidència d'IP.
+        retention: Conservació (anys)
+        retention_help: Almenys quatre anys (art. 34.9 de l'Estatut dels Treballadors); els mesos més antics s'eliminen.
+        correction_window: Termini de correcció (dies)
+    error:
+        flex: La banda flexible és de 0 a 240 minuts.
+        min_break: La pausa mínima és de 0 a 120 minuts.
+        daily_overtime: El llindar diari és d'1 a 720 minuts.
+        weekly_overtime: El llindar setmanal és d'1 a 5040 minuts.
+        retention: La conservació és de 4 a 10 anys.
+        correction_window: El termini de correcció és d'1 a 31 dies.
+        ip_notice: L'avís té com a màxim 2000 caràcters.
+        ip_notice_required: Registrar l'evidència d'IP requereix el text de l'avís mostrat a les persones.
+        ip_evidence_off: L'evidència d'IP està desactivada per a aquesta aplicació.
+        triggers_missing: El registre no es pot activar mentre manquin els disparadors de només afegir.
+preferences:
+    title: Les meves preferències de registre de jornada
+    intro: Els recordatoris i el resum mensual arriben només dins del teu horari de treball.
+    reminders: Recorda'm fitxar entrada i sortida
+    reminders_help: Només quan la teva organització ho permet.
+    monthly_summary: Envia'm el resum mensual
+    monthly_summary_help: La teva organització pot fer-lo obligatori.
+    save: Desa
+    saved: Les teves preferències s'han desat.
+notice:
+    register_correction_requested:
+        subject: 'Sol·licitud de correcció de %worker%'
+        body: '%worker% ha demanat corregir el seu registre del %date%.'
+    register_correction_decided:
+        subject: 'La teva correcció del %date%: %decision%'
+        body: '%actor% ha resolt (%decision%) la teva sol·licitud de correcció del %date%.'
+    register_correction_recorded:
+        subject: 'Un responsable ha corregit el teu registre del %date%'
+        body: '%actor% ha registrat una correcció el %date%. Confirma-la o impugna-la.'
+    register_reminder_in:
+        subject: Hora de fitxar l'entrada
+        body: 'El teu horari comença ara (%date%).'
+    register_reminder_out:
+        subject: Hora de fitxar la sortida
+        body: 'El teu horari acaba ara (%date%).'
+    register_monthly_summary:
+        subject: 'La teva jornada al %month%'
+        body: 'Treballat %worked% de %expected% previstes en %days% dia/dies; %missing% sortida/sortides sense fitxar.'

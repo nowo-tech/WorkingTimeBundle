@@ -1,0 +1,15 @@
+{#- The correction form card (request or record). Variables: form (FormView of CorrectionType), action (URL), title
+    (translation key), bundle. -#}
+{%- set _d = 'NowoWorkingTimeBundle' -%}
+<section class="{{ nowo_ui_class('card', bundle) }}" data-testid="wt-correction-form">
+    <div class="{{ nowo_ui_class('card_body', bundle) }}">
+        <h2 class="{{ nowo_ui_class('card_title', bundle) }}">{{ title|trans({}, _d) }}</h2>
+        {{ form_start(form, {action: action, attr: {class: nowo_ui_class('form', bundle)}}) }}
+        {% if form.vars.errors|length > 0 %}<div class="{{ nowo_ui_class('flash_error', bundle) }}" role="alert">{{ form_errors(form) }}</div>{% endif %}
+        {% for child in form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+        <div class="{{ nowo_ui_class('form_actions', bundle) }}">
+            <button type="submit" class="{{ nowo_ui_class('btn_primary', bundle) }}">{{ 'correction.form.submit'|trans({}, _d) }}</button>
+        </div>
+        {{ form_end(form) }}
+    </div>
+</section>

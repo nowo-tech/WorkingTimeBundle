@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- INSERT only (append-only triggers). Table and index names get doctrine.table_prefix. -->
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\Workday" table="working_time_workday" read-only="true">
+        <unique-constraints>
+            <unique-constraint name="wt_workday_day" columns="tenant_id,worker_id,local_date"/>
+        </unique-constraints>
+        <indexes>
+            <index name="wt_workday_date" columns="tenant_id,local_date"/>
+            <index name="wt_workday_worker" columns="worker_id"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="workerId" column="worker_id" type="string" length="128"/>
+        <field name="workerName" column="worker_name" type="string" length="180"/>
+        <field name="localDate" column="local_date" type="date_immutable"/>
+        <field name="schedule" column="schedule" type="json"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="legacyId" column="legacy_id" type="bigint" nullable="true"/>
+    </entity>
+</doctrine-mapping>

@@ -38,6 +38,7 @@ final class ConfigurationTree
         }
         $children->scalarNode('notifier')->defaultValue('auto')->info('auto | null | <service id>')->end();
         $children->scalarNode('audit_sink')->defaultValue('auto')->info('auto | <service id>')->end();
+        $children->scalarNode('notifier_from')->defaultValue('no-reply@localhost')->info('Sender address of the default Mailer notifier.')->end();
         self::permissions($children);
         self::doctrine($children);
         self::integrity($children);
@@ -255,7 +256,7 @@ final class ConfigurationTree
             ->end();
         }
         $ui->integerNode('page_size')->defaultValue(25)->min(10)->max(100)->end();
-        $ui->scalarNode('layout')->defaultValue('@NowoUiKit/layout/app.html.twig')->end();
+        $ui->scalarNode('layout')->defaultNull()->info('Layout of the pages; null = UiKit\'s nowo_ui_layout.admin (the host\'s configured layout).')->end();
         $ui->end()->end();
     }
 
