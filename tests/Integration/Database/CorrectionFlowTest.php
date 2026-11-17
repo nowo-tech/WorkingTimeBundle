@@ -40,7 +40,7 @@ final class CorrectionFlowTest extends RegisterTestCase
         $request = $this->requestOnFirstSegment();
         $this->actAs('mia', 'manage_team:ana', 'manage_team');
         $this->ctx()->manages['acme']['mia'] = ['ana'];
-        $notices = $this->noticeCount();
+        $notices                             = $this->noticeCount();
 
         $decided = $this->corrections()->decide($request->getId(), true, 'ok', $request->getVersion());
 
@@ -124,9 +124,9 @@ final class CorrectionFlowTest extends RegisterTestCase
     public function testAnAddedSegmentAndAVoidedOneAreApplied(): void
     {
         $this->bootWithDay();
-        $day     = $this->day('ana');
-        $add     = $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Add, null, SegmentType::Work, new DateTimeImmutable('2026-11-18 06:00:00 UTC'), new DateTimeImmutable('2026-11-18 07:00:00 UTC'), 'Worked from home in the morning'));
-        $void    = $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Void, $day->segments[1]->id, null, null, null, 'The break was not a break'));
+        $day  = $this->day('ana');
+        $add  = $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Add, null, SegmentType::Work, new DateTimeImmutable('2026-11-18 06:00:00 UTC'), new DateTimeImmutable('2026-11-18 07:00:00 UTC'), 'Worked from home in the morning'));
+        $void = $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Void, $day->segments[1]->id, null, null, null, 'The break was not a break'));
         $this->actAs('mia', 'manage_team');
         $this->corrections()->decide($add->getId(), true, null, $add->getVersion());
         $this->corrections()->decide($void->getId(), true, null, $void->getVersion());
@@ -162,7 +162,7 @@ final class CorrectionFlowTest extends RegisterTestCase
     {
         $this->bootWithDay();
         $this->actAs('mia', 'manage_team');
-        $recorded = $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-17'), new CorrectionInput(CorrectionOperation::Add, null, SegmentType::Work, new DateTimeImmutable('2026-11-17 08:00:00 UTC'), new DateTimeImmutable('2026-11-17 16:00:00 UTC'), 'Worked but forgot the app'));
+        $recorded           = $this->corrections()->record(new WorkerRef('ana'), new LocalDate('2026-11-17'), new CorrectionInput(CorrectionOperation::Add, null, SegmentType::Work, new DateTimeImmutable('2026-11-17 08:00:00 UTC'), new DateTimeImmutable('2026-11-17 16:00:00 UTC'), 'Worked but forgot the app'));
         $this->ctx()->actor = 'ana';
         $this->corrections()->answer($recorded->getId(), false, null);
 
@@ -210,7 +210,7 @@ final class CorrectionFlowTest extends RegisterTestCase
         $this->bootWithDay();
         $this->ctx()->member('acme', 'mia', 'Mia');
         $this->ctx()->manages['acme']['mia'] = ['ana'];
-        $first = $this->day('ana')->segments[0]->id;
+        $first                               = $this->day('ana')->segments[0]->id;
 
         return $this->corrections()->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Change, $first, null, new DateTimeImmutable('2026-11-18 07:30:00 UTC'), null, 'I came in earlier than clocked'));
     }

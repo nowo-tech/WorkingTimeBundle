@@ -51,6 +51,14 @@ final class NowoWorkingTimeBundle extends AbstractBundle
     protected string $extensionAlias = self::ALIAS;
 
     /**
+     * The bundle's resources live in `src/Resources` (`@NowoWorkingTime` templates, translations).
+     */
+    public function getPath(): string
+    {
+        return __DIR__;
+    }
+
+    /**
      * Adds the compiler passes (private entity manager check, ports and optional infrastructure).
      */
     public function build(ContainerBuilder $container): void
