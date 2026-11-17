@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\ScheduleAssignment" table="working_time_schedule">
+        <indexes>
+            <index name="wt_schedule_target" columns="tenant_id,scope,target_id,valid_from"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="scope" column="scope" type="string" length="8" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\ScheduleScope"/>
+        <field name="targetId" column="target_id" type="string" length="128" nullable="true"/>
+        <field name="validFrom" column="valid_from" type="date_immutable"/>
+        <field name="definition" column="definition" type="json"/>
+        <field name="workCentreId" column="work_centre_id" type="string" length="36" nullable="true"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="createdById" column="created_by_id" type="string" length="128" nullable="true"/>
+    </entity>
+</doctrine-mapping>

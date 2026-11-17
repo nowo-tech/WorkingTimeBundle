@@ -1,0 +1,27 @@
+# Demo only: three in-memory users (password "demo", plaintext) and the form login of the demo.
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\InMemoryUser: plaintext
+    providers:
+        demo_users:
+            memory:
+                users:
+                    ana:   { password: demo, roles: [ROLE_USER] }
+                    mia:   { password: demo, roles: [ROLE_USER, ROLE_MANAGER] }
+                    admin: { password: demo, roles: [ROLE_USER, ROLE_MANAGER, ROLE_ADMIN] }
+    firewalls:
+        main:
+            lazy: true
+            provider: demo_users
+            form_login:
+                login_path: demo_login
+                check_path: demo_login
+                default_target_path: demo_home
+                enable_csrf: false
+            logout:
+                path: demo_logout
+                target: demo_home
+    # The bundle answers 404 to a request without a signed-in person (it never says whether the register exists): the
+    # host sends anonymous visitors to the login instead.
+    access_control:
+        - { path: '^/working-time(/|$)', roles: IS_AUTHENTICATED_FULLY }

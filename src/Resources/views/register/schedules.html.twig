@@ -1,0 +1,34 @@
+{#
+  Dated schedules (contract section 11.1, manage_team): UiKit list scaffold of the tenant's rows, the withdraw buttons
+  of the rows that are not valid yet, then the form to add a row. Variables: page (ListPage), form (FormView of
+  ScheduleType), withdraws (list of {form, action, valid_from}: rows not valid yet).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    {% if withdraws is not empty %}
+        <section class="{{ nowo_ui_class('card', _b) }}">
+            <div class="{{ nowo_ui_class('card_body', _b) }}">
+                <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'schedule.withdraw_title'|trans({}, _d) }}</h2>
+                {% for withdraw in withdraws %}
+                    {{ form_start(withdraw.form, {action: withdraw.action, attr: {'data-testid': 'wt-withdraw'}}) }}
+                    {{ form_widget(withdraw.form) }}
+                    <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'schedule.withdraw'|trans({}, _d) }} · {{ withdraw.valid_from }}</button>
+                    {{ form_end(withdraw.form) }}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+    <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-schedule-form">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'schedule.add'|trans({}, _d) }}</h2>
+            {{ form_start(form) }}
+            {% if form.vars.errors|length > 0 %}<div class="{{ nowo_ui_class('flash_error', _b) }}" role="alert">{{ form_errors(form) }}</div>{% endif %}
+            {% for child in form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+            <div class="{{ nowo_ui_class('form_actions', _b) }}"><button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }}">{{ 'schedule.save'|trans({}, _d) }}</button></div>
+            {{ form_end(form) }}
+        </div>
+    </section>
+{% endblock %}

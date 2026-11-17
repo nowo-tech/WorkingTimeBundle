@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterExport" table="working_time_export">
+        <indexes>
+            <index name="wt_export_created" columns="tenant_id,created_at"/>
+            <index name="wt_export_status" columns="status,expires_at"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="requestedById" column="requested_by_id" type="string" length="128"/>
+        <field name="requestedByName" column="requested_by_name" type="string" length="180"/>
+        <field name="workerId" column="worker_id" type="string" length="128" nullable="true"/>
+        <field name="groupId" column="group_id" type="string" length="128" nullable="true"/>
+        <field name="ownCopy" column="own_copy" type="boolean"/>
+        <field name="monthFrom" column="month_from" type="date_immutable"/>
+        <field name="monthTo" column="month_to" type="date_immutable"/>
+        <field name="format" column="format" type="string" length="8" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\ExportFormat"/>
+        <field name="locale" column="locale" type="string" length="8" nullable="true"/>
+        <field name="status" column="status" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\ExportStatus"/>
+        <field name="fileName" column="file_name" type="string" length="200" nullable="true"/>
+        <field name="contentType" column="content_type" type="string" length="80" nullable="true"/>
+        <field name="sha256" column="sha256" type="string" length="64" nullable="true"/>
+        <field name="chainHeads" column="chain_heads" type="json"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="readyAt" column="ready_at" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="expiresAt" column="expires_at" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="errorCode" column="error_code" type="string" length="120" nullable="true"/>
+    </entity>
+</doctrine-mapping>

@@ -1,3 +1,7 @@
 controllers:
     resource: ../src/Controller/
     type: attribute
+
+nowo_working_time:
+    resource: '.'
+    type: nowo_working_time_ui

@@ -9,7 +9,7 @@ COMPOSE_BIN := $(shell $(DOCKER_BIN) compose version >/dev/null 2>&1 && echo "$(
 COMPOSE     := $(COMPOSE_BIN) -f $(COMPOSE_FILE)
 SERVICE_PHP := php
 
-.PHONY: help up down down-dev build shell install ensure-up test test-coverage test-coverage-100 coverage-check validate-phpdoc coverage-php-percent cs-check cs-fix qa clean release-check release-check-demos demo-smoke composer-sync rector rector-dry phpstan igor update validate assets setup-hooks check-no-cursor-coauthor check-open-prs check-no-raw-html-form check-twig-extra validate-translations db-up test-with-db test-coverage-with-db update-deps strip-cursor-coauthor-from-history
+.PHONY: help up down down-dev build shell install ensure-up test test-coverage test-coverage-100 coverage-check validate-phpdoc coverage-php-percent cs-check cs-fix qa clean release-check release-check-demos demo-smoke test-e2e demo-screenshots composer-sync rector rector-dry phpstan igor update validate assets setup-hooks check-no-cursor-coauthor check-open-prs check-no-raw-html-form check-twig-extra validate-translations db-up test-with-db test-coverage-with-db update-deps strip-cursor-coauthor-from-history
 
 help:
 	@echo "Working Time Bundle - Development Commands"
@@ -60,6 +60,8 @@ help:
 	@echo "  setup-hooks            Install git hooks (REQ-GIT-001)"
 	@echo ""
 	@echo "Demos:"
+	@echo "  test-e2e      Playwright e2e against demo/symfony8 (start it first: make -C demo up-symfony8)"
+	@echo "  demo-screenshots  Refresh docs/images/demo/*.webp from the running demo/symfony8"
 	@echo "  demo-smoke    REQ-TEST-011: boot demo + HTTP 200 (make -C demo demo-smoke)"
 	@echo "  make -C demo  up-symfony8, down-symfony8, demo-smoke, release-check, update-deps-all"
 	@echo ""
@@ -199,6 +201,13 @@ check-no-raw-html-form:
 
 release-check-demos:
 	@if [ -f demo/Makefile ]; then $(MAKE) -C demo release-check; else echo "No demo/Makefile — skip release-check-demos"; fi
+
+# REQ-DEMO-013: Playwright e2e + README screenshots against the running demo/symfony8 (make -C demo up-symfony8 first).
+test-e2e:
+	$(MAKE) -C demo/symfony8 test-e2e
+
+demo-screenshots:
+	$(MAKE) -C demo/symfony8 demo-screenshots
 
 # REQ-TEST-011: demo smoke (HTTP 200); also part of demo release-check
 demo-smoke:

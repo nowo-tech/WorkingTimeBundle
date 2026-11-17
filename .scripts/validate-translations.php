@@ -9,7 +9,8 @@ use Symfony\Component\Yaml\Yaml;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
-$requiredLocales = ['en', 'es', 'it', 'fr', 'pt', 'de', 'nl'];
+// House set (REQ-I18N-002) plus the Spanish co-official languages (coordinator decision for S1).
+$requiredLocales = ['en', 'es', 'it', 'fr', 'pt', 'de', 'nl', 'ca', 'eu', 'gl'];
 $domain          = 'NowoWorkingTimeBundle';
 $dir             = dirname(__DIR__) . '/src/Resources/translations';
 

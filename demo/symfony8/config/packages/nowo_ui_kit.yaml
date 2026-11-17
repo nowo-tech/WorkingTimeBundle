@@ -2,3 +2,6 @@
 nowo_ui_kit:
     css_framework: custom
     icon_set: none
+    # The bundle's pages extend this layout: the demo shell carries the navigation and the header clock.
+    layouts:
+        admin: base.html.twig

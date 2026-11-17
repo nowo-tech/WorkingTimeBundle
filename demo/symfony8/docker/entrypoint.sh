@@ -45,6 +45,10 @@ fi
 
 php /app/bin/console assets:install public --no-interaction >/dev/null 2>&1 || true
 php /app/bin/console doctrine:database:create --if-not-exists --no-interaction 2>/dev/null || true
-# S0: the bundle owns no table yet (the schema arrives with the register slice).
+# The bundle's private entity manager owns the register tables; the host's default manager has no entity.
+php /app/bin/console doctrine:schema:update --force --em=nowo_working_time --no-interaction || echo "schema update (nowo_working_time) failed"
+php /app/bin/console doctrine:schema:update --force --em=default --no-interaction 2>/dev/null || true
+# Append-only triggers of the register (idempotent).
+php /app/bin/console nowo:working-time:triggers:install --no-interaction || echo "trigger install failed"
 
 exec frankenphp run --config /etc/frankenphp/Caddyfile --adapter caddyfile

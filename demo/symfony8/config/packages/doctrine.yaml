@@ -1,5 +1,12 @@
 doctrine:
   dbal:
     url: '%env(resolve:DATABASE_URL)%'
-  # The bundle maps its own entity (XML mapping, prepended by the bundle); the demo has no entity of its own.
-  orm: {}
+  orm:
+    default_entity_manager: default
+    entity_managers:
+      # The host's own manager (the demo has no entity of its own).
+      default:
+        connection: default
+      # The bundle's private manager (its mapping is prepended by the bundle; see the Flex recipe).
+      nowo_working_time:
+        connection: default

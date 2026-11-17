@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- INSERT only, by the purge (triggers: no UPDATE, no DELETE). -->
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\ChainAnchor" table="working_time_chain_anchor" read-only="true">
+        <unique-constraints>
+            <unique-constraint name="wt_anchor_seq" columns="tenant_id,worker_id,first_kept_seq"/>
+        </unique-constraints>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="workerId" column="worker_id" type="string" length="128"/>
+        <field name="firstKeptSeq" column="first_kept_seq" type="integer"/>
+        <field name="anchorHash" column="anchor_hash" type="string" length="64">
+            <options><option name="fixed">true</option></options>
+        </field>
+        <field name="purgedLinks" column="purged_links" type="integer"/>
+        <field name="purgedAt" column="purged_at" type="nowo_wt_utc_datetime"/>
+        <field name="purgeRunId" column="purge_run_id" type="string" length="36"/>
+        <field name="firstKeptDate" column="first_kept_date" type="date_immutable" nullable="true"/>
+    </entity>
+</doctrine-mapping>

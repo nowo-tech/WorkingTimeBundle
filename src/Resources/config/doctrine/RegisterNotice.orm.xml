@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterNotice" table="working_time_notice">
+        <unique-constraints>
+            <unique-constraint name="wt_notice_dedupe" columns="dedupe_key"/>
+        </unique-constraints>
+        <indexes>
+            <index name="wt_notice_due" columns="sent_at,deliverable_from"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="workerId" column="worker_id" type="string" length="128"/>
+        <field name="kind" column="kind" type="string" length="48"/>
+        <field name="params" column="params" type="json"/>
+        <field name="actionPath" column="action_path" type="string" length="255" nullable="true"/>
+        <field name="dedupeKey" column="dedupe_key" type="string" length="120"/>
+        <field name="deliverableFrom" column="deliverable_from" type="nowo_wt_utc_datetime"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="sentAt" column="sent_at" type="nowo_wt_utc_datetime" nullable="true"/>
+    </entity>
+</doctrine-mapping>

@@ -1,0 +1,25 @@
+{#
+  One day of the worker's register (contract section 11.1): UiKit show scaffold with the summary, the effective
+  segments (corrected and voided marked) and the trail (chain links and correction requests). After the sections:
+  the answer forms of the manager-recorded corrections waiting for the worker, and the correction request form.
+  Variables: page (ShowPage), correction (FormView), correction_action, answers (list of {form, action}).
+#}
+{% extends '@NowoUiKit/page/show.html.twig' %}
+
+{% block nowo_ui_show_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    {% for answer in answers %}
+        {%- set form = answer.form -%}
+        <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-answer-form">
+            <div class="{{ nowo_ui_class('card_body', _b) }}">
+                <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'correction.answer.title'|trans({}, _d) }}</h2>
+                {{ form_start(form, {action: answer.action}) }}
+                {% for child in form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+                <div class="{{ nowo_ui_class('form_actions', _b) }}"><button type="submit" class="{{ nowo_ui_class('btn_primary', _b) }}">{{ 'correction.answer.submit'|trans({}, _d) }}</button></div>
+                {{ form_end(form) }}
+            </div>
+        </section>
+    {% endfor %}
+    {{ include('@NowoWorkingTime/register/_correction_form.html.twig', {form: correction, action: correction_action, title: 'correction.form.title', bundle: _b}) }}
+{% endblock %}

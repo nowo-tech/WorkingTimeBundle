@@ -4,6 +4,8 @@ nowo_working_time:
         entity_manager: nowo_working_time   # declared in nowo_working_time_doctrine.yaml; null = the default entity manager
     register:
         enabled: true
+        export:
+            formats: [csv]                  # add pdf after `composer require dompdf/dompdf` (closed renderer)
     holidays:
         enabled: true
     leave:

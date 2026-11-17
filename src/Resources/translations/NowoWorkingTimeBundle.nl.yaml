@@ -1,0 +1,346 @@
+# Urenregistratie (S1). Domein NowoWorkingTimeBundle. Parameters: %name%.
+nav:
+    label: Werktijd
+    today: Vandaag
+    month: Maand
+    exports: Exports
+    team: Team
+    schedules: Roosters
+    preferences: Voorkeuren
+    settings: Instellingen
+status:
+    idle: Niet ingeklokt
+    working: Aan het werk
+    on_break: In pauze
+    closed: Dag afgesloten
+segment:
+    type:
+        work: Werk
+        break: Pauze
+clock:
+    action:
+        clock_in: Inklokken
+        break_start: Pauze starten
+        break_end: Pauze beëindigen
+        clock_out: Uitklokken
+    done:
+        clock_in: Ingeklokt.
+        break_start: Pauze gestart.
+        break_end: Pauze beëindigd.
+        clock_out: Uitgeklokt.
+    conflict:
+        not_allowed: Die actie past niet bij de huidige stand van je klokken; de pagina toont de huidige stand.
+        earlier_than_last: De tijd ligt vóór de laatst geregistreerde tijd van de dag.
+        concurrent: Een ander verzoek heeft je klokken op hetzelfde moment gewijzigd; de pagina toont de huidige stand.
+today:
+    title: Werktijd
+    intro: 'Je registratie van %date%. De registratie is het dossier dat je werkgever bijhoudt volgens art. 34.9 van het Spaanse werknemersstatuut.'
+    status: Status
+    worked: Gewerkt
+    breaks: Pauzes
+    clock: Klokken
+    segments: Segmenten van vandaag
+    no_segments: Vandaag is nog niets geregistreerd.
+    open: open
+    view_day: Dagdetails
+    ip_notice: IP-bewijs
+month:
+    title: 'Registratie %month%'
+    intro: 'Gewerkt %worked% van %expected% verwacht, %days% dag(en) gewerkt.'
+    previous: Vorige maand
+    next: Volgende maand
+    view_day: Dag bekijken
+    empty: Geen dagen geregistreerd in deze maand.
+    col:
+        date: Datum
+        start: Eerste start
+        end: Laatste einde
+        worked: Gewerkt
+        expected: Verwacht
+        flags: Markeringen
+day:
+    title: 'Dag %date%'
+    back_to_month: Terug naar de maand
+    date: Datum
+    timezone: Tijdzone
+    worked: Gewerkt
+    breaks: Pauzes
+    expected: Verwacht
+    flag: Markering
+    section:
+        summary: Samenvatting
+        segments: Segmenten
+        trail: Geschiedenis
+flag:
+    missing_clock_out: Uitklokken ontbreekt
+    late_entry: Te laat gestart
+    overtime: Overuren
+    long_day: Lange dag
+    short_break: Korte pauze
+    outside_band: Buiten de flexibele band
+    corrected: Gecorrigeerd
+    pending_acknowledgement: Wacht op je antwoord
+    contested: Betwist
+    correction_pending: Correctie in behandeling
+history:
+    clock_in: Inklokken
+    break_start: Start pauze
+    break_end: Einde pauze
+    clock_out: Uitklokken
+    correction: Correctie goedgekeurd
+    recorded_correction: Correctie vastgelegd door een leidinggevende
+    acknowledged: Correctie bevestigd
+    contested: Correctie betwist
+correction:
+    form:
+        title: Een correctie aanvragen
+        record_title: Een correctie vastleggen
+        operation: Wijziging
+        segment: Segment
+        segment_none: '— geen (segment toevoegen) —'
+        segment_type: Type van een nieuw segment
+        start: Start (lokale tijd)
+        end: Einde (lokale tijd)
+        reason: Reden
+        reason_help: 10 tot 500 tekens. Vermeld geen gezondheidsgegevens.
+        comment: Opmerking
+        answer: Je antwoord
+        submit: Verzenden
+    operation:
+        amend: Tijden wijzigen
+        add: Een ontbrekend segment toevoegen
+        void: Een segment ongeldig maken
+    answer:
+        title: Een leidinggevende heeft deze dag gecorrigeerd
+        acknowledge: Ik bevestig de correctie
+        contest: Ik betwist de correctie
+        submit: Beantwoorden
+    status:
+        pending: Correctie aangevraagd
+        approved: Correctie goedgekeurd
+        rejected: Correctie afgewezen
+    approve: Goedkeuren
+    reject: Afwijzen
+    requested: Je correctieverzoek is naar je leidinggevenden gestuurd.
+    recorded: De correctie is vastgelegd; de werknemer wordt gevraagd haar te bevestigen.
+    answered: Je antwoord is vastgelegd.
+    decided:
+        approved: De correctie is goedgekeurd.
+        rejected: De correctie is afgewezen.
+    stale: Iemand heeft over dit verzoek beslist op hetzelfde moment. De lijst toont het zoals het nu is.
+    error:
+        future: Een dag in de toekomst kan niet worden gecorrigeerd.
+        window: Deze dag is ouder dan de correctietermijn.
+        reason: De reden moet 10 tot 500 tekens hebben.
+        segment: Dat segment bestaat niet op deze dag.
+        live_segment: Het lopende segment kan niet worden gecorrigeerd; klok eerst uit.
+        times: De tijden zijn niet geldig (start voor einde, niet in de toekomst, hoogstens de uren van een lange dag).
+        own_day: Niemand beslist over of legt correcties vast op de eigen dag.
+        already_decided: Over dit verzoek is al beslist.
+        already_answered: Deze correctie is al beantwoord.
+team:
+    title: Team
+    intro: 'De registratie van je team op %date%.'
+    view_day: Dag bekijken
+    empty: Geen werknemers om te tonen.
+    pending: Correctieverzoeken
+    no_pending: Er wachten geen correctieverzoeken.
+    day_title: '%worker% · %date%'
+    back: Terug naar het team
+    col:
+        worker: Werknemer
+        status: Status
+        worked: Gewerkt
+        flags: Markeringen
+schedule:
+    title: Roosters
+    intro: Roosters met een datum voor de hele organisatie, een groep of één werknemer. Het eigen rooster van een werknemer gaat voor het rooster van de groep, dat weer voor dat van de organisatie gaat.
+    add: Een rooster toevoegen
+    save: Het rooster opslaan
+    saved: Het rooster is opgeslagen.
+    withdraw: Intrekken
+    withdraw_title: Roosters die nog niet gelden
+    withdrawn: Het rooster is ingetrokken.
+    empty: Nog geen roosters.
+    day:
+        mon: Maandag
+        tue: Dinsdag
+        wed: Woensdag
+        thu: Donderdag
+        fri: Vrijdag
+        sat: Zaterdag
+        sun: Zondag
+    scope:
+        tenant: Hele organisatie
+        group: Groep
+        worker: Werknemer
+    col:
+        valid_from: Geldig vanaf
+        scope: Geldt voor
+        target: Groep of werknemer
+        timezone: Tijdzone
+        slots: Uren
+    form:
+        scope: Geldt voor
+        group: Groep
+        worker: Werknemer
+        none: '— kies —'
+        valid_from: Geldig vanaf
+        timezone: Tijdzone
+        ranges_help: 'Bereiken als HH:MM-HH:MM, gescheiden door komma''s; leeg = vrije dag.'
+        daily_target: Dagdoel (minuten, flexibel rooster)
+        weekly_target: Weekdoel (minuten)
+        flex: Flexibele band (minuten)
+    error:
+        group: Kies een groep van de organisatie.
+        worker: Kies een werknemer.
+        past: Een rooster geldt vanaf vandaag of later; verstreken dagen behouden het rooster waaraan ze zijn gemeten.
+        not_future: Alleen een rooster dat nog niet geldt kan worden ingetrokken.
+        invalid: Het rooster is niet geldig (tijdzone, bereiken zonder overlap, doelen tot 12 uur per dag).
+export:
+    title: Exports
+    intro: Je eigen kopie van je registratie en inspectie-exports voor wie ze mag maken. Bestanden kunnen 7 dagen worden gedownload.
+    request: Een export aanvragen
+    submit: Aanvragen
+    requested: De export is aangevraagd.
+    download: Downloaden
+    empty: Nog geen exports.
+    format:
+        pdf: PDF
+        csv: CSV
+        zip: ZIP (team)
+    scope:
+        own: Mijn eigen registratie
+        worker: Eén werknemer
+        team: Het hele team (ZIP)
+    form:
+        scope: Export
+        worker: Werknemer
+        none: '— kies —'
+        from: Eerste maand (YYYY-MM)
+        to: Laatste maand (YYYY-MM)
+        format: Formaat
+    col:
+        created: Aangevraagd
+        period: Maanden
+        scope: Bereik
+        format: Formaat
+        status: Status
+        sha256: SHA-256
+        date: Datum
+        start: Start
+        end: Einde
+        segments: Segmenten
+        breaks: Pauzes
+        worked: Gewerkt
+        expected: Verwacht
+        overtime: Overuren
+        flags: Markeringen
+        ip_prefix: IP-prefix
+        change: Wijziging
+        reason: Reden
+        by: Aangevraagd door
+        approved_by: Goedgekeurd door
+        when: Wanneer
+    error:
+        format: Dat formaat past niet bij de export (een teamexport is een ZIP; die van één werknemer is een PDF of een CSV).
+        period: 'Kies maanden in het verleden of de huidige maand, de eerste voor de laatste, hoogstens 12.'
+        worker: Kies een werknemer.
+    title_pdf: 'Urenregistratie · %worker%'
+    header: '%organization% · %worker% · %period% · keten %head%'
+    figure:
+        worker: Werknemer
+        period: Periode
+        worked: Gewerkt
+        expected: Verwacht
+        daily_overtime: Overuren per dag
+        weekly_overtime: Overuren per week
+        days: Gewerkte dagen
+        missing: Ontbrekende uitklokken
+        corrections: Correcties
+        generated_at: Gegenereerd op
+        generated_by: Gegenereerd door
+        chain_head: Kop van de keten
+        integrity: Integriteitscontrole
+        file_hash: SHA-256 van het bestand
+    section:
+        summary: Samenvatting
+        days: Dagen
+        corrections: Correcties
+        integrity: Integriteit
+    integrity_ok: Elke schakel van de keten is gecontroleerd.
+    integrity_broken: 'De keten is verbroken bij schakel %seq% (%reason%).'
+    file_hash_note: Opgeslagen met de export en bij het downloaden verzonden als X-Content-SHA256.
+    legal_note: 'Urenregistratie bijgehouden volgens art. 34.9 van het Spaanse werknemersstatuut. Tijden zijn lokaal in de tijdzone van elke dag. Correcties vervangen nooit de oorspronkelijke registratie: beide worden vermeld.'
+    by_worker: De werknemer
+    recorded_by_manager: Vastgelegd door een leidinggevende
+    page: Pagina
+settings:
+    title: Instellingen voor urenregistratie
+    intro: De registratie staat uit tot je haar inschakelt. De registratie is een juridisch dossier; de bundle is geen juridisch advies.
+    save: Opslaan
+    saved: De instellingen zijn opgeslagen.
+    stale: Iemand heeft deze instellingen op hetzelfde moment opgeslagen. Het formulier toont ze zoals ze nu zijn.
+    triggers_missing: 'In de database ontbreken %count% append-only trigger(s): voer nowo:working-time:triggers:install uit.'
+    section:
+        register: Registratie
+        register_intro: Hoe de registratie de tijd meet en bewaart.
+    form:
+        enabled: De urenregistratie bijhouden
+        enabled_help: Werknemers met de klokrechten kunnen in- en uitklokken.
+        breaks_counted: Pauzes tellen als gewerkte tijd
+        flex: Flexibele band (minuten)
+        min_break: Minimale pauze (minuten)
+        min_break_help: Informatieve markering op dagen van meer dan zes uur; blokkeert het klokken nooit.
+        daily_overtime: Drempel voor overuren per dag (minuten)
+        weekly_overtime: Drempel voor overuren per week (minuten)
+        task_timer_link: Uitklokken stopt de taaktimer
+        task_timer_link_help: Met TimeTrack geïnstalleerd; de taaktijd blijft een aparte registratie.
+        reminders_allowed: Werknemers mogen klokherinneringen aanvragen
+        summary_mandatory: De maandsamenvatting kan niet worden uitgezet
+        ip_evidence: Het netwerkprefix van elke kloktransactie vastleggen
+        ip_evidence_help: Alleen het prefix /24 (IPv4) of /64 (IPv6), nooit het adres, en alleen met de melding hieronder.
+        ip_notice: Melding aan werknemers
+        ip_notice_help: Vereist om IP-bewijs vast te leggen.
+        retention: Bewaartermijn (jaren)
+        retention_help: Minstens vier jaar (art. 34.9 van het Spaanse werknemersstatuut); oudere maanden worden verwijderd.
+        correction_window: Correctietermijn (dagen)
+    error:
+        flex: De flexibele band is 0 tot 240 minuten.
+        min_break: De minimale pauze is 0 tot 120 minuten.
+        daily_overtime: De dagdrempel is 1 tot 720 minuten.
+        weekly_overtime: De weekdrempel is 1 tot 5040 minuten.
+        retention: De bewaartermijn is 4 tot 10 jaar.
+        correction_window: De correctietermijn is 1 tot 31 dagen.
+        ip_notice: De melding heeft hoogstens 2000 tekens.
+        ip_notice_required: IP-bewijs vastleggen vereist de meldingstekst die aan werknemers wordt getoond.
+        ip_evidence_off: IP-bewijs staat uit voor deze toepassing.
+        triggers_missing: De registratie kan niet worden ingeschakeld zolang de append-only triggers ontbreken.
+preferences:
+    title: Mijn voorkeuren voor werktijd
+    intro: Herinneringen en de maandsamenvatting komen alleen binnen je werktijd.
+    reminders: Herinner me aan in- en uitklokken
+    reminders_help: Alleen als je organisatie het toestaat.
+    monthly_summary: Stuur me de maandsamenvatting
+    monthly_summary_help: Je organisatie kan haar verplicht stellen.
+    save: Opslaan
+    saved: Je voorkeuren zijn opgeslagen.
+notice:
+    register_correction_requested:
+        subject: 'Correctieverzoek van %worker%'
+        body: '%worker% heeft gevraagd de registratie van %date% te corrigeren.'
+    register_correction_decided:
+        subject: 'Je correctie van %date%: %decision%'
+        body: '%actor% heeft over je correctieverzoek van %date% beslist (%decision%).'
+    register_correction_recorded:
+        subject: 'Een leidinggevende heeft je registratie van %date% gecorrigeerd'
+        body: '%actor% heeft op %date% een correctie vastgelegd. Bevestig of betwist haar.'
+    register_reminder_in:
+        subject: Tijd om in te klokken
+        body: 'Je rooster begint nu (%date%).'
+    register_reminder_out:
+        subject: Tijd om uit te klokken
+        body: 'Je rooster eindigt nu (%date%).'
+    register_monthly_summary:
+        subject: 'Je werktijd in %month%'
+        body: 'Gewerkt %worked% van %expected% verwacht over %days% dag(en); %missing% ontbrekend(e) uitklok(ken).'

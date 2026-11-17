@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Overview{% endblock %}
+
+{% block nowo_ui_page_header %}
+    {{ include(nowo_ui_partial('page_header'), {
+        title: 'Working Time Bundle',
+        intro: 'A working-hours register with a tamper-evident hash chain. Sign in as one of the demo people (password "demo").',
+    }) }}
+{% endblock %}
+
+{% block body %}
+    <section class="nowo-ui-card" data-testid="demo-people">
+        <div class="nowo-ui-card__body">
+            <table class="nowo-ui-data-table">
+                <thead><tr><th scope="col">User</th><th scope="col">Person</th><th scope="col">What they can do</th></tr></thead>
+                <tbody>
+                    {% for person in people %}
+                        <tr><th scope="row"><code class="nowo-ui-code">{{ person.user }}</code></th><td>{{ person.name }}</td><td>{{ person.roles }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p>
+                <a class="nowo-ui-link" href="{{ path('demo_login') }}" data-testid="demo-login">Sign in</a>
+                · <a class="nowo-ui-link" href="/working-time" data-testid="demo-open-register">Register (today)</a>
+                · <a class="nowo-ui-link" href="/working-time/team">Team</a>
+                · <a class="nowo-ui-link" href="/working-time/exports">Exports</a>
+                · <a class="nowo-ui-link" href="/working-time/settings">Settings</a>
+            </p>
+            <p class="nowo-ui-muted">The register starts off: Ada turns it on in the settings page. FrankenPHP: {{ worker ? 'worker mode (kernel kept alive, not reset)' : 'classic mode' }}.</p>
+        </div>
+    </section>
+{% endblock %}

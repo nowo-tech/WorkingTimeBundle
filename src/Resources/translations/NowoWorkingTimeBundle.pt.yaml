@@ -1,0 +1,346 @@
+# Registo de tempo de trabalho (S1). Domínio NowoWorkingTimeBundle. Parâmetros: %name%.
+nav:
+    label: Tempo de trabalho
+    today: Hoje
+    month: Mês
+    exports: Exportações
+    team: Equipa
+    schedules: Horários
+    preferences: Preferências
+    settings: Definições
+status:
+    idle: Sem registo de entrada
+    working: A trabalhar
+    on_break: Em pausa
+    closed: Dia encerrado
+segment:
+    type:
+        work: Trabalho
+        break: Pausa
+clock:
+    action:
+        clock_in: Registar entrada
+        break_start: Iniciar uma pausa
+        break_end: Terminar a pausa
+        clock_out: Registar saída
+    done:
+        clock_in: Entrada registada.
+        break_start: Pausa iniciada.
+        break_end: Pausa terminada.
+        clock_out: Saída registada.
+    conflict:
+        not_allowed: Esta ação não é compatível com o estado atual do seu registo; a página mostra o estado atual.
+        earlier_than_last: A hora é anterior ao último registo do dia.
+        concurrent: Outro pedido alterou o seu registo no mesmo momento; a página mostra o estado atual.
+today:
+    title: Tempo de trabalho
+    intro: 'O seu registo de %date%. O registo é o documento que a sua entidade empregadora conserva ao abrigo do art. 34.9 do Estatuto dos Trabalhadores espanhol.'
+    status: Estado
+    worked: Trabalhado
+    breaks: Pausas
+    clock: Registo de ponto
+    segments: Períodos de hoje
+    no_segments: Ainda não há nada registado hoje.
+    open: em curso
+    view_day: Detalhe do dia
+    ip_notice: Prova de IP
+month:
+    title: 'Registo %month%'
+    intro: 'Trabalhado %worked% de %expected% previstas, %days% dia(s) trabalhado(s).'
+    previous: Mês anterior
+    next: Mês seguinte
+    view_day: Ver dia
+    empty: Não há dias registados neste mês.
+    col:
+        date: Data
+        start: Primeira entrada
+        end: Última saída
+        worked: Trabalhado
+        expected: Previsto
+        flags: Alertas
+day:
+    title: 'Dia %date%'
+    back_to_month: Voltar ao mês
+    date: Data
+    timezone: Fuso horário
+    worked: Trabalhado
+    breaks: Pausas
+    expected: Previsto
+    flag: Alerta
+    section:
+        summary: Resumo
+        segments: Períodos
+        trail: Histórico
+flag:
+    missing_clock_out: Falta a saída
+    late_entry: Entrada tardia
+    overtime: Horas extraordinárias
+    long_day: Dia longo
+    short_break: Pausa curta
+    outside_band: Fora da banda flexível
+    corrected: Corrigido
+    pending_acknowledgement: A aguardar a sua resposta
+    contested: Contestado
+    correction_pending: Correção pendente
+history:
+    clock_in: Entrada
+    break_start: Início de pausa
+    break_end: Fim de pausa
+    clock_out: Saída
+    correction: Correção aprovada
+    recorded_correction: Correção registada por um responsável
+    acknowledged: Correção confirmada
+    contested: Correção contestada
+correction:
+    form:
+        title: Pedir uma correção
+        record_title: Registar uma correção
+        operation: Alteração
+        segment: Período
+        segment_none: '— nenhum (adicionar um período) —'
+        segment_type: Tipo de um novo período
+        start: Início (hora local)
+        end: Fim (hora local)
+        reason: Motivo
+        reason_help: De 10 a 500 caracteres. Não inclua informações de saúde.
+        comment: Comentário
+        answer: A sua resposta
+        submit: Enviar
+    operation:
+        amend: Alterar horas
+        add: Adicionar um período em falta
+        void: Anular um período
+    answer:
+        title: Um responsável corrigiu este dia
+        acknowledge: Confirmo a correção
+        contest: Contesto a correção
+        submit: Responder
+    status:
+        pending: Correção pedida
+        approved: Correção aprovada
+        rejected: Correção rejeitada
+    approve: Aprovar
+    reject: Rejeitar
+    requested: O seu pedido de correção foi enviado aos seus responsáveis.
+    recorded: A correção foi registada; o trabalhador é convidado a confirmá-la.
+    answered: A sua resposta foi registada.
+    decided:
+        approved: A correção foi aprovada.
+        rejected: A correção foi rejeitada.
+    stale: Alguém decidiu este pedido no mesmo momento. A lista mostra-o como está agora.
+    error:
+        future: Não é possível corrigir um dia futuro.
+        window: Este dia é anterior ao prazo de correção.
+        reason: O motivo deve ter entre 10 e 500 caracteres.
+        segment: Esse período não existe neste dia.
+        live_segment: O período em curso não pode ser corrigido; registe primeiro a saída.
+        times: As horas não são válidas (início antes do fim, não no futuro, no máximo as horas de um dia longo).
+        own_day: Ninguém decide nem regista correções no seu próprio dia.
+        already_decided: Este pedido já foi decidido.
+        already_answered: Esta correção já foi respondida.
+team:
+    title: Equipa
+    intro: 'O registo da sua equipa em %date%.'
+    view_day: Ver dia
+    empty: Não há trabalhadores para mostrar.
+    pending: Pedidos de correção
+    no_pending: Não há pedidos de correção pendentes.
+    day_title: '%worker% · %date%'
+    back: Voltar à equipa
+    col:
+        worker: Trabalhador
+        status: Estado
+        worked: Trabalhado
+        flags: Alertas
+schedule:
+    title: Horários
+    intro: Horários com data para toda a organização, um grupo ou um trabalhador. O horário próprio de um trabalhador prevalece sobre o do grupo, que prevalece sobre o da organização.
+    add: Adicionar um horário
+    save: Guardar o horário
+    saved: O horário foi guardado.
+    withdraw: Retirar
+    withdraw_title: Horários ainda não em vigor
+    withdrawn: O horário foi retirado.
+    empty: Ainda não há horários.
+    day:
+        mon: Segunda-feira
+        tue: Terça-feira
+        wed: Quarta-feira
+        thu: Quinta-feira
+        fri: Sexta-feira
+        sat: Sábado
+        sun: Domingo
+    scope:
+        tenant: Toda a organização
+        group: Grupo
+        worker: Trabalhador
+    col:
+        valid_from: Em vigor desde
+        scope: Aplica-se a
+        target: Grupo ou trabalhador
+        timezone: Fuso horário
+        slots: Horas
+    form:
+        scope: Aplica-se a
+        group: Grupo
+        worker: Trabalhador
+        none: '— escolher —'
+        valid_from: Em vigor desde
+        timezone: Fuso horário
+        ranges_help: 'Intervalos como HH:MM-HH:MM, separados por vírgulas; vazio = dia de folga.'
+        daily_target: Objetivo diário (minutos, horário flexível)
+        weekly_target: Objetivo semanal (minutos)
+        flex: Banda flexível (minutos)
+    error:
+        group: Escolha um grupo da organização.
+        worker: Escolha um trabalhador.
+        past: Um horário vigora a partir de hoje ou mais tarde; os dias passados mantêm o horário segundo o qual foram medidos.
+        not_future: Só se pode retirar um horário que ainda não está em vigor.
+        invalid: O horário não é válido (fuso horário, intervalos sem sobreposições, objetivos até 12 horas por dia).
+export:
+    title: Exportações
+    intro: A sua própria cópia do registo e as exportações de inspeção para quem as pode fazer. Os ficheiros podem ser descarregados durante 7 dias.
+    request: Pedir uma exportação
+    submit: Pedir
+    requested: A exportação foi pedida.
+    download: Descarregar
+    empty: Ainda não há exportações.
+    format:
+        pdf: PDF
+        csv: CSV
+        zip: ZIP (equipa)
+    scope:
+        own: O meu próprio registo
+        worker: Um trabalhador
+        team: Toda a equipa (ZIP)
+    form:
+        scope: Exportar
+        worker: Trabalhador
+        none: '— escolher —'
+        from: Primeiro mês (YYYY-MM)
+        to: Último mês (YYYY-MM)
+        format: Formato
+    col:
+        created: Pedida
+        period: Meses
+        scope: Âmbito
+        format: Formato
+        status: Estado
+        sha256: SHA-256
+        date: Data
+        start: Início
+        end: Fim
+        segments: Períodos
+        breaks: Pausas
+        worked: Trabalhado
+        expected: Previsto
+        overtime: Horas extraordinárias
+        flags: Alertas
+        ip_prefix: Prefixo IP
+        change: Alteração
+        reason: Motivo
+        by: Pedida por
+        approved_by: Aprovada por
+        when: Quando
+    error:
+        format: Esse formato não serve para a exportação (a de uma equipa é um ZIP; a de um trabalhador é um PDF ou um CSV).
+        period: 'Escolha meses passados ou o mês atual, o primeiro antes do último, no máximo 12.'
+        worker: Escolha um trabalhador.
+    title_pdf: 'Registo de tempo de trabalho · %worker%'
+    header: '%organization% · %worker% · %period% · cadeia %head%'
+    figure:
+        worker: Trabalhador
+        period: Período
+        worked: Trabalhado
+        expected: Previsto
+        daily_overtime: Horas extraordinárias diárias
+        weekly_overtime: Horas extraordinárias semanais
+        days: Dias trabalhados
+        missing: Saídas por registar
+        corrections: Correções
+        generated_at: Gerado em
+        generated_by: Gerado por
+        chain_head: Cabeça da cadeia
+        integrity: Verificação de integridade
+        file_hash: SHA-256 do ficheiro
+    section:
+        summary: Resumo
+        days: Dias
+        corrections: Correções
+        integrity: Integridade
+    integrity_ok: Todos os elos da cadeia foram verificados.
+    integrity_broken: 'A cadeia está quebrada no elo %seq% (%reason%).'
+    file_hash_note: Guardado com a exportação e enviado como X-Content-SHA256 ao descarregar.
+    legal_note: 'Registo de tempo de trabalho conservado ao abrigo do art. 34.9 do Estatuto dos Trabalhadores espanhol. As horas são locais ao fuso horário de cada dia. As correções nunca substituem o registo original: ambos são listados.'
+    by_worker: O trabalhador
+    recorded_by_manager: Registado por um responsável
+    page: Página
+settings:
+    title: Definições do tempo de trabalho
+    intro: O registo fica desativado até o ativar. O registo é um documento legal; o bundle não constitui aconselhamento jurídico.
+    save: Guardar
+    saved: As definições foram guardadas.
+    stale: Alguém guardou estas definições no mesmo momento. O formulário mostra-as como estão agora.
+    triggers_missing: 'Faltam %count% acionador(es) de apenas adição na base de dados: execute nowo:working-time:triggers:install.'
+    section:
+        register: Registo
+        register_intro: Como o registo mede e conserva o tempo.
+    form:
+        enabled: Manter o registo de tempo de trabalho
+        enabled_help: Os trabalhadores com a permissão de registo de ponto podem registar entrada e saída.
+        breaks_counted: As pausas contam como tempo trabalhado
+        flex: Banda flexível (minutos)
+        min_break: Pausa mínima (minutos)
+        min_break_help: Alerta informativo em dias com mais de seis horas; nunca bloqueia o registo.
+        daily_overtime: Limiar de horas extraordinárias diárias (minutos)
+        weekly_overtime: Limiar de horas extraordinárias semanais (minutos)
+        task_timer_link: Registar a saída pára o cronómetro das tarefas
+        task_timer_link_help: Com o TimeTrack instalado; o tempo das tarefas continua a ser um registo separado.
+        reminders_allowed: Os trabalhadores podem pedir lembretes de registo
+        summary_mandatory: O resumo mensal não pode ser desativado
+        ip_evidence: Registar o prefixo de rede de cada registo de ponto
+        ip_evidence_help: Apenas o prefixo /24 (IPv4) ou /64 (IPv6), nunca o endereço, e só com o aviso abaixo.
+        ip_notice: Aviso mostrado aos trabalhadores
+        ip_notice_help: Necessário para registar a prova de IP.
+        retention: Conservação (anos)
+        retention_help: Pelo menos quatro anos (art. 34.9 do Estatuto dos Trabalhadores espanhol); os meses mais antigos são eliminados.
+        correction_window: Prazo de correção (dias)
+    error:
+        flex: A banda flexível vai de 0 a 240 minutos.
+        min_break: A pausa mínima vai de 0 a 120 minutos.
+        daily_overtime: O limiar diário vai de 1 a 720 minutos.
+        weekly_overtime: O limiar semanal vai de 1 a 5040 minutos.
+        retention: A conservação vai de 4 a 10 anos.
+        correction_window: O prazo de correção vai de 1 a 31 dias.
+        ip_notice: O aviso tem no máximo 2000 caracteres.
+        ip_notice_required: Registar a prova de IP exige o texto do aviso mostrado aos trabalhadores.
+        ip_evidence_off: A prova de IP está desativada para esta aplicação.
+        triggers_missing: O registo não pode ser ativado enquanto faltarem os acionadores de apenas adição.
+preferences:
+    title: As minhas preferências de tempo de trabalho
+    intro: Os lembretes e o resumo mensal chegam apenas dentro do seu horário de trabalho.
+    reminders: Lembrar-me de registar entrada e saída
+    reminders_help: Apenas quando a sua organização o permite.
+    monthly_summary: Enviar-me o resumo mensal
+    monthly_summary_help: A sua organização pode torná-lo obrigatório.
+    save: Guardar
+    saved: As suas preferências foram guardadas.
+notice:
+    register_correction_requested:
+        subject: 'Pedido de correção de %worker%'
+        body: '%worker% pediu para corrigir o seu registo de %date%.'
+    register_correction_decided:
+        subject: 'A sua correção de %date%: %decision%'
+        body: '%actor% decidiu (%decision%) o seu pedido de correção de %date%.'
+    register_correction_recorded:
+        subject: 'Um responsável corrigiu o seu registo de %date%'
+        body: '%actor% registou uma correção em %date%. Confirme-a ou conteste-a.'
+    register_reminder_in:
+        subject: Hora de registar a entrada
+        body: 'O seu horário começa agora (%date%).'
+    register_reminder_out:
+        subject: Hora de registar a saída
+        body: 'O seu horário termina agora (%date%).'
+    register_monthly_summary:
+        subject: 'O seu tempo de trabalho em %month%'
+        body: 'Trabalhado %worked% de %expected% previstas em %days% dia(s); %missing% saída(s) por registar.'

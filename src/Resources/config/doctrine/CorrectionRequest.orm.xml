@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionRequest" table="working_time_correction">
+        <indexes>
+            <index name="wt_correction_status" columns="tenant_id,status"/>
+            <index name="wt_correction_workday" columns="workday_id"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="workerId" column="worker_id" type="string" length="128"/>
+        <field name="workdayId" column="workday_id" type="string" length="36"/>
+        <field name="operation" column="operation" type="string" length="8" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\CorrectionOperation"/>
+        <field name="segmentId" column="segment_id" type="string" length="36" nullable="true"/>
+        <field name="segmentType" column="segment_type" type="string" length="8" nullable="true" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType"/>
+        <field name="newStart" column="new_start" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="newEnd" column="new_end" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="reason" column="reason" type="text"/>
+        <field name="status" column="status" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\CorrectionStatus"/>
+        <field name="decidedById" column="decided_by_id" type="string" length="128" nullable="true"/>
+        <field name="decidedByName" column="decided_by_name" type="string" length="180" nullable="true"/>
+        <field name="decidedAt" column="decided_at" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="decisionComment" column="decision_comment" type="text" nullable="true"/>
+        <field name="revisionId" column="revision_id" type="string" length="36" nullable="true"/>
+        <field name="version" column="version" type="integer" version="true"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+    </entity>
+</doctrine-mapping>

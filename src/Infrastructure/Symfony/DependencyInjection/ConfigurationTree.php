@@ -12,6 +12,7 @@ use function array_unique;
 use function count;
 use function is_array;
 use function is_string;
+use function preg_match;
 use function str_starts_with;
 
 /**
@@ -38,6 +39,7 @@ final class ConfigurationTree
         }
         $children->scalarNode('notifier')->defaultValue('auto')->info('auto | null | <service id>')->end();
         $children->scalarNode('audit_sink')->defaultValue('auto')->info('auto | <service id>')->end();
+        $children->scalarNode('notifier_from')->defaultValue('no-reply@localhost')->info('Sender address of the default Mailer notifier.')->end();
         self::permissions($children);
         self::doctrine($children);
         self::integrity($children);
@@ -89,8 +91,8 @@ final class ConfigurationTree
         $children->arrayNode('integrity')
             ->addDefaultsIfNotSet()
             ->validate()
-                ->ifTrue(static fn (array $v): bool => $v['purge_guard'] === 'db_user' && ($v['purge_db_user'] ?? null) === null)
-                ->thenInvalid('integrity.purge_db_user is required when integrity.purge_guard is "db_user".')
+                ->ifTrue(static fn (array $v): bool => $v['purge_guard'] === 'db_user' && (($v['purge_db_user'] ?? null) === null || ($v['purge_connection'] ?? null) === null))
+                ->thenInvalid('integrity.purge_db_user and integrity.purge_connection (the DBAL connection of that database user) are required when integrity.purge_guard is "db_user".')
             ->end()
             ->children()
                 ->enumNode('triggers')->values(['warn', 'require', 'off'])->defaultValue('warn')->end()
@@ -120,6 +122,9 @@ final class ConfigurationTree
         $register->integerNode('ipv6_prefix')->defaultValue(64)->min(64)->max(64)->end();
         $register->arrayNode('reminders')->addDefaultsIfNotSet()->children()
             ->integerNode('window_minutes')->defaultValue(15)->min(1)->end()
+            ->scalarNode('default_hours')->defaultValue('09:00-18:00')->info('Hours (Monday–Friday) notices go out for workers whose schedule has no ranges.')
+                ->validate()->ifTrue(static fn (string $v): bool => preg_match('/^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/D', $v) !== 1)->thenInvalid('register.reminders.default_hours is "HH:MM-HH:MM".')->end()
+            ->end()
         ->end()->end();
         $register->arrayNode('monthly_summary')->addDefaultsIfNotSet()->children()
             ->booleanNode('enabled')->defaultTrue()->end()
@@ -131,7 +136,7 @@ final class ConfigurationTree
         $export->enumNode('async')->values(['auto', 'sync', 'messenger'])->defaultValue('auto')->end();
         self::pdf($export);
         $export->end()->end();
-        $register->enumNode('task_timer_link')->values(['auto', 'off'])->defaultValue('auto')->end();
+        $register->scalarNode('task_timer_link')->defaultValue('auto')->cannotBeEmpty()->info('auto (TimeTrack bridge when installed) | off | <service id of a TaskTimerLinkInterface>')->end();
         $register->end()->end();
     }
 
@@ -255,7 +260,7 @@ final class ConfigurationTree
             ->end();
         }
         $ui->integerNode('page_size')->defaultValue(25)->min(10)->max(100)->end();
-        $ui->scalarNode('layout')->defaultValue('@NowoUiKit/layout/app.html.twig')->end();
+        $ui->scalarNode('layout')->defaultNull()->info('Layout of the pages; null = UiKit\'s nowo_ui_layout.admin (the host\'s configured layout).')->end();
         $ui->end()->end();
     }
 

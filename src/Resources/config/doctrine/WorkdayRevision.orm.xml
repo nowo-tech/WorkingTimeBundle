@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- INSERT only (triggers): one chain per (tenant, worker), never forked (unique seq), idempotent (unique request key). -->
+    <entity name="Nowo\WorkingTimeBundle\Domain\Register\Model\WorkdayRevision" table="working_time_revision" read-only="true">
+        <unique-constraints>
+            <unique-constraint name="wt_revision_seq" columns="tenant_id,worker_id,seq"/>
+            <unique-constraint name="wt_revision_request" columns="tenant_id,worker_id,request_key"/>
+        </unique-constraints>
+        <indexes>
+            <index name="wt_revision_workday" columns="workday_id"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="workerId" column="worker_id" type="string" length="128"/>
+        <field name="workdayId" column="workday_id" type="string" length="36"/>
+        <field name="seq" column="seq" type="integer"/>
+        <field name="kind" column="kind" type="string" length="24" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\RevisionKind"/>
+        <field name="segmentId" column="segment_id" type="string" length="36" nullable="true"/>
+        <field name="payload" column="payload" type="json"/>
+        <field name="reason" column="reason" type="text" nullable="true"/>
+        <field name="authorId" column="author_id" type="string" length="128" nullable="true"/>
+        <field name="authorName" column="author_name" type="string" length="180"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="requestKey" column="request_key" type="string" length="80" nullable="true"/>
+        <field name="prevHash" column="prev_hash" type="string" length="64">
+            <options><option name="fixed">true</option></options>
+        </field>
+        <field name="hash" column="hash" type="string" length="64">
+            <options><option name="fixed">true</option></options>
+        </field>
+        <field name="chainFormat" column="chain_format" type="smallint" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\ChainFormat"/>
+        <field name="legacyRefs" column="legacy_refs" type="json" nullable="true"/>
+    </entity>
+</doctrine-mapping>

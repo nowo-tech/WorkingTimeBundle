@@ -1,0 +1,47 @@
+{#
+  Today (contract section 11.1): UiKit dashboard scaffold. Variables: page (DashboardPage: status, worked and break
+  KPI tiles), state (ClockState), forms (action value => FormView of ClockType: one POST button per allowed action,
+  each with its CSRF token and idempotency key), segments (today's segments: type, start, end), ip_notice (the
+  tenant's IP-evidence notice, null when it collects no prefixes).
+#}
+{% extends '@NowoUiKit/page/dashboard.html.twig' %}
+
+{% block nowo_ui_dashboard_cards %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    <section class="{{ nowo_ui_class('card', _b) }} nowo-working-time-clock" data-testid="wt-clock" data-status="{{ state.status.value }}">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'today.clock'|trans({}, _d) }}</h2>
+            <div class="{{ nowo_ui_class('toolbar', _b) }}">
+                {% for action, form in forms %}
+                    {{ form_start(form, {attr: {class: 'nowo-working-time-clock__form', 'data-testid': 'wt-clock-' ~ action}}) }}
+                    {{ form_widget(form) }}
+                    <button type="submit" class="{{ nowo_ui_class(loop.first ? 'btn_primary' : 'btn_secondary', _b) }}">{{ ('clock.action.' ~ action|replace({'-': '_'}))|trans({}, _d) }}</button>
+                    {{ form_end(form) }}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-today-segments">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'today.segments'|trans({}, _d) }}</h2>
+            {% if segments is empty %}
+                <p class="{{ nowo_ui_class('muted', _b) }}">{{ 'today.no_segments'|trans({}, _d) }}</p>
+            {% else %}
+                <ul class="{{ nowo_ui_class('detail_list', _b) }}">
+                    {% for segment in segments %}
+                        <li class="{{ nowo_ui_class('detail_item', _b) }}">{{ ('segment.type.' ~ segment.type)|trans({}, _d) }}: {{ segment.start }} – {{ segment.end ?: 'today.open'|trans({}, _d) }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </section>
+    {% if ip_notice %}
+        <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-ip-notice">
+            <div class="{{ nowo_ui_class('card_body', _b) }}">
+                <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'today.ip_notice'|trans({}, _d) }}</h2>
+                <p>{{ ip_notice }}</p>
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}
