@@ -22,8 +22,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [0.1.0] - 2026-11-17
 
-x
-
 ### Added
 
 - **Working-hours register** (contract S1, Beacon spec 198): workdays, work / break segments and append-only chain
