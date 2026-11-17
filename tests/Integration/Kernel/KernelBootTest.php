@@ -7,9 +7,13 @@ namespace Nowo\WorkingTimeBundle\Tests\Integration\Kernel;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
+use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
 use Symfony\Component\Yaml\Yaml;
 
 use function dirname;
@@ -102,6 +106,26 @@ final class KernelBootTest extends KernelTestCase
         $this->expectExceptionMessage('requires nowo_working_time.register.enabled');
 
         $this->bootKernel(['leave' => ['enabled' => true], 'register' => ['enabled' => false]]);
+    }
+
+    public function testAConfiguredDefaultScheduleIsCheckedAtBoot(): void
+    {
+        $container = $this->bootKernel(['register' => ['schedule' => ['default' => ['timezone' => 'Europe/Madrid', 'ranges' => ['mon' => ['09:00-14:00']]]]]])->getContainer();
+        self::assertIsArray($container->getParameter('nowo_working_time.register.schedule.default'));
+
+        $this->expectException(InvalidConfigurationException::class);
+        $this->expectExceptionMessage('register.schedule.default is invalid');
+        $this->bootKernel(['register' => ['schedule' => ['default' => ['ranges' => ['mon' => ['nine to five']]]]]]);
+    }
+
+    public function testWithoutDoctrineNothingIsPrepended(): void
+    {
+        $builder    = new ContainerBuilder();
+        $bundle     = new NowoWorkingTimeBundle();
+        $loader     = new PhpFileLoader($builder, new FileLocator(__DIR__));
+        $instanceof = [];
+        $bundle->prependExtension(new ContainerConfigurator($builder, $loader, $instanceof, __FILE__, __FILE__), $builder);
+        self::assertSame([], $builder->getExtensionConfig('doctrine'));
     }
 
     public function testTheThreePartsCanBeSwitchedSeparately(): void

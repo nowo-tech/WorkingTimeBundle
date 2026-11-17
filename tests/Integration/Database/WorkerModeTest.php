@@ -48,6 +48,6 @@ final class WorkerModeTest extends UiTestCase
         self::assertLessThan($baseline + 8 * 1024 * 1024, memory_get_usage(), 'flat memory');
         $rows = $this->connection()->fetchAllAssociative('SELECT DISTINCT tenant_id, worker_id FROM nowo_working_time_revision ORDER BY tenant_id');
         self::assertSame([['tenant_id' => 'acme', 'worker_id' => 'ana'], ['tenant_id' => 'beta', 'worker_id' => 'bob']], $rows);
-        self::assertSame(0, (int) $this->connection()->fetchOne("SELECT COUNT(*) FROM nowo_working_time_segment s INNER JOIN nowo_working_time_workday w ON w.id = s.workday_id WHERE w.tenant_id = 'acme' AND s.start_ip_prefix IS NOT NULL"), 'acme collects no IP evidence');
+        self::assertSame(0, $this->int("SELECT COUNT(*) FROM nowo_working_time_segment s INNER JOIN nowo_working_time_workday w ON w.id = s.workday_id WHERE w.tenant_id = 'acme' AND s.start_ip_prefix IS NOT NULL"), 'acme collects no IP evidence');
     }
 }

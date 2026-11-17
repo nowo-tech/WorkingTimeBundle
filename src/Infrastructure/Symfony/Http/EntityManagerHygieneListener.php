@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http;
 
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
-use Throwable;
 
 /**
  * Worker mode (contract section 16, REQ-RUNTIME-002): clears the bundle's entity manager at the end of every request
@@ -26,10 +25,6 @@ final readonly class EntityManagerHygieneListener
      */
     public function clear(): void
     {
-        try {
-            $this->runner->manager()->clear();
-        } catch (Throwable) {
-            // A manager that cannot be reached is reset on the next unit.
-        }
+        $this->runner->manager()->clear();
     }
 }

@@ -132,7 +132,7 @@ final class ConfigurationTree
         $export->enumNode('async')->values(['auto', 'sync', 'messenger'])->defaultValue('auto')->end();
         self::pdf($export);
         $export->end()->end();
-        $register->enumNode('task_timer_link')->values(['auto', 'off'])->defaultValue('auto')->end();
+        $register->scalarNode('task_timer_link')->defaultValue('auto')->cannotBeEmpty()->info('auto (TimeTrack bridge when installed) | off | <service id of a TaskTimerLinkInterface>')->end();
         $register->end()->end();
     }
 

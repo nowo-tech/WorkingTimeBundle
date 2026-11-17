@@ -58,7 +58,7 @@ final class ClockRulesTest extends RegisterTestCase
         $again = $this->clockService()->act(null, ClockAction::ClockIn, null, $key, SegmentSource::Web, null);
 
         self::assertSame($first->status, $again->status);
-        self::assertSame(1, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_revision'));
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_revision'));
     }
 
     public function testAnOfflineClientTimeIsLateAndNeverEarlierThanTheLast(): void
@@ -89,7 +89,7 @@ final class ClockRulesTest extends RegisterTestCase
 
         $row = $this->connection()->fetchAssociative('SELECT start_ip_prefix, end_ip_prefix FROM nowo_working_time_segment');
         self::assertSame(['start_ip_prefix' => '203.0.113.0/24', 'end_ip_prefix' => '2001:db8:1:2::/64'], $row);
-        self::assertStringNotContainsString('203.0.113.77', (string) $this->connection()->fetchOne('SELECT payload FROM nowo_working_time_revision WHERE seq = 1'));
+        self::assertStringNotContainsString('203.0.113.77', $this->text('SELECT payload FROM nowo_working_time_revision WHERE seq = 1'));
 
         $this->boot();
         $this->enable();
@@ -108,7 +108,7 @@ final class ClockRulesTest extends RegisterTestCase
         $next = $this->act(ClockAction::ClockIn);
 
         self::assertSame('2026-11-19', $next->date->value);
-        self::assertSame(2, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_workday'));
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'));
     }
 
     public function testTheScheduleEndPlusGraceMarksAMissingClockOut(): void

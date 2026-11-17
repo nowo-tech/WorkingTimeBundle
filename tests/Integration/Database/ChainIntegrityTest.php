@@ -52,11 +52,11 @@ final class ChainIntegrityTest extends RegisterTestCase
         self::assertTrue($report->isIntact(), (string) json_encode($report->broken));
         self::assertSame(3, $report->links);
         $rows = $this->connection()->fetchAllAssociative('SELECT seq, chain_format, prev_hash, hash FROM nowo_working_time_revision ORDER BY seq');
-        self::assertSame([1, 1, 2], [(int) $rows[0]['chain_format'], (int) $rows[1]['chain_format'], (int) $rows[2]['chain_format']]);
+        self::assertSame([1, 1, 2], [is_numeric($rows[0]['chain_format']) ? (int) $rows[0]['chain_format'] : 0, is_numeric($rows[1]['chain_format']) ? (int) $rows[1]['chain_format'] : 0, is_numeric($rows[2]['chain_format']) ? (int) $rows[2]['chain_format'] : 0]);
         self::assertSame($second->getHash(), $rows[2]['prev_hash']);
         self::assertSame($first->getHash(), $rows[0]['hash'], 'never re-hashed');
         self::assertSame($rows[2]['hash'], $verifier->head(new TenantRef('acme'), new WorkerRef('ana')));
-        self::assertSame(ChainFormat::Bundle->value, (int) $rows[2]['chain_format']);
+        self::assertSame(ChainFormat::Bundle->value, is_numeric($rows[2]['chain_format']) ? (int) $rows[2]['chain_format'] : 0);
     }
 
     /**

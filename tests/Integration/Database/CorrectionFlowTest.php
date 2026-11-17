@@ -58,7 +58,7 @@ final class CorrectionFlowTest extends RegisterTestCase
         $request = $this->requestOnFirstSegment();
         $this->actAs('mia', 'manage_team');
         $this->corrections()->decide($request->getId(), false, null, $request->getVersion());
-        $links   = (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_revision');
+        $links   = $this->int('SELECT COUNT(*) FROM nowo_working_time_revision');
         $notices = $this->noticeCount();
         $this->ctx()->member('acme', 'leo', 'Leo');
         $this->actAs('leo', 'manage_team');
@@ -67,10 +67,10 @@ final class CorrectionFlowTest extends RegisterTestCase
             $this->corrections()->decide($request->getId(), true, null, $request->getVersion());
             self::fail('A stale decision must be refused.');
         } catch (StaleCorrectionDecisionException $e) {
-            self::assertSame('correction_decision_stale', $e::ERROR_CODE);
+            self::assertSame('Stale version.', $e->getMessage());
         }
 
-        self::assertSame($links, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_revision'));
+        self::assertSame($links, $this->int('SELECT COUNT(*) FROM nowo_working_time_revision'));
         self::assertSame($notices, $this->noticeCount());
         self::assertSame('rejected', $this->connection()->fetchOne('SELECT status FROM nowo_working_time_correction'));
     }
@@ -93,7 +93,7 @@ final class CorrectionFlowTest extends RegisterTestCase
         }
 
         self::assertSame(['stored', 'stale'], $results);
-        self::assertSame(1, (int) $this->connection()->fetchOne("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'correction'"));
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'correction'"));
     }
 
     public function testNobodyDecidesOnTheirOwnDayOrAnotherTenantsRequest(): void
@@ -239,7 +239,7 @@ final class CorrectionFlowTest extends RegisterTestCase
 
     private function noticeCount(): int
     {
-        return (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_notice');
+        return $this->int('SELECT COUNT(*) FROM nowo_working_time_notice');
     }
 
     /**

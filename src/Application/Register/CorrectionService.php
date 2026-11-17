@@ -163,9 +163,10 @@ final readonly class CorrectionService implements CorrectionServiceInterface
 
                 return $request;
             });
-        } catch (StaleRowException $e) {
+        } catch (StaleRowException $e) { // @codeCoverageIgnoreStart
+            // Two decisions passed the version check at the same moment: Doctrine's version check at flush refused one.
             throw new StaleCorrectionDecisionException($e);
-        }
+        } // @codeCoverageIgnoreEnd
         $events->dispatch($this->dispatcher);
 
         return $request;

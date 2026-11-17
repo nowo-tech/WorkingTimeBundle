@@ -10,6 +10,8 @@ use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionInput;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettingsInput;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\CorrectionServiceInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
+use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 use Twig\Environment;
@@ -42,7 +44,7 @@ final class UiFlowTest extends UiTestCase
         $this->client->submit($form);
         $this->client->submit($form);
         self::assertSame(303, $this->client->getResponse()->getStatusCode(), 'the same key acts once');
-        self::assertSame(2, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_revision'));
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM nowo_working_time_revision'));
         $crawler = $this->client->request('GET', '/working-time');
         $this->clock()->modify('+10 minutes');
         $this->client->submit($crawler->filter('form[data-testid="wt-clock-clock-out"]')->form());
@@ -53,8 +55,8 @@ final class UiFlowTest extends UiTestCase
         self::assertStringContainsString('2026-11-18', $crawler->text());
         $crawler = $this->client->request('GET', '/working-time/date/2026-11-18');
         self::assertStringContainsString('192.0.2.0/24', $crawler->text());
-        self::assertSame(2, $crawler->filter('[data-testid="wt-segment"]')->count());
-        $id = (string) $this->connection()->fetchOne('SELECT id FROM nowo_working_time_workday');
+        self::assertCount(2, $crawler->filter('[data-testid="wt-segment"]'));
+        $id = $this->text('SELECT id FROM nowo_working_time_workday');
         $this->client->request('GET', '/working-time/day/' . $id);
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertSame(404, $this->statusOf('GET', '/working-time/month/2026-13'));
@@ -90,8 +92,10 @@ final class UiFlowTest extends UiTestCase
         $this->client->submit($crawler->filter('[data-testid="wt-correction-form"] form')->form(), ['wt_correction[operation]' => 'amend', 'wt_correction[reason]' => '']);
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
 
+        $this->ctx()->members['acme']['gone'] = new WorkerProfile(new WorkerRef('gone'), 'Gone', null, null, false);
         $this->actAs('mia', 'manage_team');
         $team = $this->client->request('GET', '/working-time/team?date=2026-11-18');
+        self::assertStringNotContainsString('Gone', $team->text(), 'not an active member');
         self::assertStringContainsString('Ana', $team->text());
         $decide = $team->filter('form[data-testid^="wt-decide-"]')->form();
         $this->client->submit($decide);
@@ -99,7 +103,7 @@ final class UiFlowTest extends UiTestCase
         $this->client->submit($decide);
         self::assertSame(409, $this->client->getResponse()->getStatusCode());
         self::assertSame('1', $this->client->getResponse()->headers->get('Retry-After'));
-        self::assertSame(1, (int) $this->connection()->fetchOne("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'correction'"));
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'correction'"));
         $this->client->request('POST', '/working-time/requests/01900000-0000-7000-8000-000000000000/approve', []);
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
         self::assertSame(404, $this->statusOf('GET', '/working-time/team?date=nope'));
@@ -110,10 +114,11 @@ final class UiFlowTest extends UiTestCase
         $this->bootDay();
         $request = $this->service(CorrectionServiceInterface::class)->request(new LocalDate('2026-11-18'), new CorrectionInput(CorrectionOperation::Void, $this->firstSegment(), null, null, null, 'Voiding the first segment'));
         $this->actAs('mia', 'manage_team');
-        $team = $this->client->request('GET', '/working-time/team');
-        $form = $team->filter('form[data-testid^="wt-decide-"]')->form();
-        $name = 'wt_decision_' . $request->getId();
-        $this->client->request('POST', '/working-time/requests/' . $request->getId() . '/reject', [$name => ['version' => (string) $form->get($name . '[version]')->getValue(), 'comment' => 'No', '_token' => (string) $form->get($name . '[_token]')->getValue()]]);
+        $team   = $this->client->request('GET', '/working-time/team');
+        $form   = $team->filter('form[data-testid^="wt-decide-"]')->form();
+        $name   = 'wt_decision_' . $request->getId();
+        $values = $form->getValues();
+        $this->client->request('POST', '/working-time/requests/' . $request->getId() . '/reject', [$name => ['version' => $values[$name . '[version]'] ?? '', 'comment' => 'No', '_token' => $values[$name . '[_token]'] ?? '']]);
         self::assertSame(303, $this->client->getResponse()->getStatusCode());
         self::assertSame('rejected', $this->connection()->fetchOne('SELECT status FROM nowo_working_time_correction'));
     }
@@ -132,11 +137,11 @@ final class UiFlowTest extends UiTestCase
         $this->client->request('POST', '/working-time/team/record?worker=ana&date=2026-11-18', []);
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
         self::assertSame(404, $this->statusOf('GET', '/working-time/team/day?worker=&date=2026-11-18'));
-        $id = (string) $this->connection()->fetchOne('SELECT id FROM nowo_working_time_workday');
+        $id = $this->text('SELECT id FROM nowo_working_time_workday');
         $this->client->request('GET', '/working-time/day/' . $id);
         self::assertSame(303, $this->client->getResponse()->getStatusCode(), 'a manager is sent to the team day');
         $this->client->request('GET', '/working-time/team/day?worker=mia&date=2026-11-18');
-        self::assertSame(0, $this->client->getCrawler()->filter('[data-testid="wt-correction-form"]')->count(), 'never on one\'s own day');
+        self::assertCount(0, $this->client->getCrawler()->filter('[data-testid="wt-correction-form"]'), 'never on one\'s own day');
 
         $this->ctx()->actor = 'ana';
         $day                = $this->client->request('GET', '/working-time/date/2026-11-18');
@@ -145,7 +150,7 @@ final class UiFlowTest extends UiTestCase
         self::assertSame(303, $this->client->getResponse()->getStatusCode());
         $this->client->submit($form, [$form->getName() . '[answer]' => 'acknowledge']);
         self::assertSame(303, $this->client->getResponse()->getStatusCode());
-        self::assertSame(1, (int) $this->connection()->fetchOne("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'acknowledged'"));
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'acknowledged'"));
         $this->client->request('POST', (string) $form->getUri(), []);
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
         $this->client->request('POST', '/working-time/corrections/01900000-0000-7000-8000-000000000000/answer', []);
@@ -194,6 +199,7 @@ final class UiFlowTest extends UiTestCase
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
         $this->client->submit($form, ['wt_settings[retentionYears]' => '5', 'wt_settings[ipEvidence]' => false]);
         self::assertSame(303, $this->client->getResponse()->getStatusCode());
+        self::assertStringContainsString('The settings were saved.', $this->client->followRedirect()->text());
         $this->client->submit($form, ['wt_settings[retentionYears]' => '6']);
         self::assertSame(409, $this->client->getResponse()->getStatusCode(), 'stale version');
         self::assertSame('1', $this->client->getResponse()->headers->get('Retry-After'));
@@ -234,6 +240,6 @@ final class UiFlowTest extends UiTestCase
 
     private function firstSegment(): string
     {
-        return (string) $this->connection()->fetchOne('SELECT id FROM nowo_working_time_segment ORDER BY started_at');
+        return $this->text('SELECT id FROM nowo_working_time_segment ORDER BY started_at');
     }
 }

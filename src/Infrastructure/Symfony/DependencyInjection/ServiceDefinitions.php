@@ -381,8 +381,8 @@ final class ServiceDefinitions
         if (interface_exists(PersonalDataEraserInterface::class)) {
             $s->set($p . 'default.worker_of_user', IdentifierWorkerOfUser::class);
             $s->alias(WorkerOfUserInterface::class, $p . 'default.worker_of_user');
-            $s->set(UserKitRegisterExportProvider::class)->args([service(RegisterPersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.export_provider');
-            $s->set(UserKitRegisterEraser::class)->args([service(RegisterPersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.eraser');
+            $s->set(UserKitRegisterExportProvider::class)->args([service(RegisterPersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.export_provider')->public();
+            $s->set(UserKitRegisterEraser::class)->args([service(RegisterPersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.eraser')->public();
         }
     }
 }

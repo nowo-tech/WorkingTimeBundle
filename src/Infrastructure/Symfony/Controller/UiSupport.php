@@ -112,13 +112,13 @@ final readonly class UiSupport
     }
 
     /**
-     * Adds a flash (translation key of the bundle).
+     * Adds a flash, translated in the request's locale (translation key of the bundle).
      */
     public function flash(Request $request, string $type, string $key): void
     {
         $session = $request->hasSession() ? $request->getSession() : null;
         if ($session instanceof FlashBagAwareSessionInterface) {
-            $session->getFlashBag()->add($type, $key);
+            $session->getFlashBag()->add($type, $this->trans($key));
         }
     }
 

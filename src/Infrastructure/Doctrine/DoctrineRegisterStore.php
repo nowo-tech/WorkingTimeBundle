@@ -301,10 +301,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         /** @var list<array{tenant: mixed, worker: mixed}> $rows */
         $rows = $qb->getQuery()->getArrayResult();
         foreach ($rows as $row) {
-            if (!is_string($row['tenant']) || !is_string($row['worker']) || ($tenant !== null && $row['tenant'] !== $tenant->value) || ($worker !== null && $row['worker'] !== $worker->value)) {
-                continue;
+            if (is_string($row['tenant']) && is_string($row['worker']) && ($tenant === null || $row['tenant'] === $tenant->value) && ($worker === null || $row['worker'] === $worker->value)) {
+                $chains[] = [new TenantRef($row['tenant']), new WorkerRef($row['worker'])];
             }
-            $chains[] = [new TenantRef($row['tenant']), new WorkerRef($row['worker'])];
         }
 
         return $chains;

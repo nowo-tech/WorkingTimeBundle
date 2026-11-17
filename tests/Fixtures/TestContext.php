@@ -21,6 +21,9 @@ final class TestContext
 {
     public ?string $tenant = 'acme';
 
+    /** Racing writers the RaceInjector still simulates. */
+    public int $races = 0;
+
     public ?string $actor = null;
 
     /** @var array<string, array<string, WorkerProfile>> tenant => worker => profile */

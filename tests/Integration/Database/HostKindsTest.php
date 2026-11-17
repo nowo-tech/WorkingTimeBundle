@@ -32,7 +32,7 @@ final class HostKindsTest extends RegisterTestCase
         $this->workDay();
 
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
-        self::assertSame(4, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM ddd_working_time_revision'));
+        self::assertSame(4, $this->int('SELECT COUNT(*) FROM ddd_working_time_revision'));
         self::assertSame([], $this->installer()->missing($this->connection()));
     }
 

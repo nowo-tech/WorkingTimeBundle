@@ -26,9 +26,12 @@ use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\KernelTestCase;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\TestKernel;
 use Symfony\Component\Clock\MockClock;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 use function array_replace_recursive;
 use function bin2hex;
+use function is_numeric;
+use function is_scalar;
 use function random_bytes;
 use function sprintf;
 use function str_starts_with;
@@ -70,7 +73,7 @@ abstract class RegisterTestCase extends KernelTestCase
     {
         $host = $this->host();
         /** @var array<string, mixed> $merged */
-        $merged       = array_replace_recursive(TestServices::PORTS + ['ui' => ['enabled' => true], 'register' => ['export' => ['async' => 'sync']]], $config);
+        $merged       = array_replace_recursive(TestServices::PORTS, ['ui' => ['enabled' => true], 'register' => ['export' => ['async' => 'sync']]], $config);
         $this->kernel = $this->bootKernel($host->bundleConfig($merged), $host->configure());
         $this->schema($triggers);
     }
@@ -105,6 +108,30 @@ abstract class RegisterTestCase extends KernelTestCase
     protected function connection(): Connection
     {
         return $this->em()->getConnection();
+    }
+
+    /**
+     * An integer the query returns (a COUNT, a seq).
+     *
+     * @param list<mixed> $params
+     */
+    protected function int(string $sql, array $params = []): int
+    {
+        $value = $this->connection()->fetchOne($sql, $params);
+
+        return is_numeric($value) ? (int) $value : -1;
+    }
+
+    /**
+     * A string the query returns ('' when none).
+     *
+     * @param list<mixed> $params
+     */
+    protected function text(string $sql, array $params = []): string
+    {
+        $value = $this->connection()->fetchOne($sql, $params);
+
+        return is_scalar($value) ? (string) $value : '';
     }
 
     protected function installer(): RegisterTriggerInstaller
@@ -148,7 +175,9 @@ abstract class RegisterTestCase extends KernelTestCase
      */
     protected function service(string $id): object
     {
-        $service = $this->kernel->getContainer()->get($id);
+        $container = $this->kernel->getContainer()->get('test.service_container');
+        self::assertInstanceOf(ContainerInterface::class, $container);
+        $service = $container->get($id);
         self::assertInstanceOf($id, $service);
 
         return $service;

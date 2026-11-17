@@ -195,8 +195,14 @@ final class WorkingTimePortsPass implements CompilerPassInterface
 
     private function timerLink(ContainerBuilder $container): void
     {
-        $p = ServiceDefinitions::P;
-        if ($container->getParameter($p . 'register.task_timer_link') === 'auto' && class_exists(TimerService::class) && $container->has(TimerService::class) && $container->has('security.token_storage')) {
+        $p       = ServiceDefinitions::P;
+        $setting = $container->getParameter($p . 'register.task_timer_link');
+        if (is_string($setting) && $setting !== 'auto' && $setting !== 'off') {
+            $container->setAlias(TaskTimerLinkInterface::class, $setting);
+
+            return;
+        }
+        if ($setting === 'auto' && class_exists(TimerService::class) && $container->has(TimerService::class) && $container->has('security.token_storage')) {
             $container->setDefinition(TaskTimerLinkInterface::class, (new Definition(TimeTrackTaskTimerLink::class))->setArguments([
                 new Reference(TimerService::class),
                 new Reference('security.token_storage'),

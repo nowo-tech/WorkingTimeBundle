@@ -47,9 +47,9 @@ final class PurgeTest extends RegisterTestCase
         self::assertSame('2022-11-01', $result['tenants']['acme']['first_kept']);
         self::assertSame(2, $result['tenants']['acme']['workdays']);
         self::assertSame(8, $result['tenants']['acme']['revisions']);
-        self::assertSame(1, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_workday'));
-        self::assertSame(1, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_chain_anchor'));
-        self::assertSame(5, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_revision'), 'four kept links and the late correction');
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'));
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_chain_anchor'));
+        self::assertSame(5, $this->int('SELECT COUNT(*) FROM nowo_working_time_revision'), 'four kept links and the late correction');
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
         self::assertContains('working_time.register_purged', $this->recorder()->auditKeys());
         if ($this->platform() === 'mysql') {
@@ -63,11 +63,11 @@ final class PurgeTest extends RegisterTestCase
         $this->dayAt('2021-03-01 08:00:00');
         $this->clock()->modify('2026-11-18 10:00:00');
         $this->service(RegisterPurger::class)->purge();
-        self::assertSame(0, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_revision'));
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM nowo_working_time_revision'));
 
         $this->act(ClockAction::ClockIn);
 
-        self::assertSame(5, (int) $this->connection()->fetchOne('SELECT seq FROM nowo_working_time_revision'));
+        self::assertSame(5, $this->int('SELECT seq FROM nowo_working_time_revision'));
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
     }
 
@@ -80,10 +80,10 @@ final class PurgeTest extends RegisterTestCase
 
         self::assertSame(0, $tester->execute(['--dry-run' => true]));
         self::assertStringContainsString('1 workday(s)', $tester->getDisplay());
-        self::assertSame(1, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_workday'));
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'));
         self::assertSame(0, $tester->execute([]));
         self::assertStringContainsString('export file(s) expired', $tester->getDisplay());
-        self::assertSame(0, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_workday'));
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'));
     }
 
     public function testTheTriggersRefuseAPurgeWithoutTheGuard(): void
@@ -100,7 +100,7 @@ final class PurgeTest extends RegisterTestCase
             return;
         }
         self::assertSame(2, $tester->execute([]));
-        self::assertSame(1, (int) $this->connection()->fetchOne('SELECT COUNT(*) FROM nowo_working_time_workday'), 'nothing deleted');
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'), 'nothing deleted');
     }
 
     public function testAFailureExitsOne(): void

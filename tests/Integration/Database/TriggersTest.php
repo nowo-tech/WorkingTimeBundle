@@ -37,7 +37,7 @@ final class TriggersTest extends RegisterTestCase
             $this->assertRefused(static fn () => $c->executeStatement("DELETE FROM nowo_working_time_{$table}"), $table . ' delete');
         }
         $this->assertRefused(static fn () => $c->executeStatement('DELETE FROM nowo_working_time_segment'), 'segment delete');
-        self::assertSame(1, (int) $c->fetchOne('SELECT COUNT(*) FROM nowo_working_time_workday'));
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM nowo_working_time_workday'));
     }
 
     public function testASegmentClosesOnceAndNothingElseChanges(): void
@@ -84,7 +84,7 @@ final class TriggersTest extends RegisterTestCase
         $this->bootWithDay();
         $c = $this->connection();
         if ($this->platform() !== 'mysql') {
-            self::assertSame('ok', 'ok');
+            self::assertSame(0, $this->int('SELECT 0'), 'MySQL / MariaDB only');
 
             return;
         }
@@ -97,7 +97,7 @@ final class TriggersTest extends RegisterTestCase
     {
         $this->bootWithDay();
         if ($this->platform() !== 'postgresql') {
-            self::assertSame('ok', 'ok');
+            self::assertSame(0, $this->int('SELECT 0'), 'PostgreSQL only');
 
             return;
         }
@@ -143,7 +143,7 @@ final class TriggersTest extends RegisterTestCase
 
     private function insertAnchor(Connection $c): int
     {
-        return $c->insert('nowo_working_time_chain_anchor', [
+        return (int) $c->insert('nowo_working_time_chain_anchor', [
             'id'             => '01900000-0000-7000-8000-' . substr(bin2hex(random_bytes(6)), 0, 12),
             'tenant_id'      => 'acme',
             'worker_id'      => 'zed',

@@ -124,14 +124,15 @@ final readonly class NoticeDispatcher
 
     private function firstWorkingDay(RegisterSettings $settings, WorkerProfile $worker, LocalDate $date): bool
     {
-        $first = new LocalDate($date->month() . '-01');
-        foreach ($this->schedules->range($settings, $worker, $first, $date) as $day => $schedule) {
+        $first = null;
+        foreach ($this->schedules->range($settings, $worker, new LocalDate($date->month() . '-01'), $date) as $day => $schedule) {
             if ($schedule->isWorkingDay()) {
-                return $day === $date->value;
+                $first = $day;
+                break;
             }
         }
 
-        return false;
+        return $first === $date->value;
     }
 
     private function summary(RegisterSettings $settings, WorkerProfile $worker, LocalDate $date, DateTimeImmutable $now): bool
