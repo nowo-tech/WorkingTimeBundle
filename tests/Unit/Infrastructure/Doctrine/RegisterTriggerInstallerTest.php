@@ -46,7 +46,7 @@ final class RegisterTriggerInstallerTest extends TestCase
         self::assertStringContainsString("SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'nowo_working_time_revision is append-only'", $sql);
         self::assertStringContainsString('CREATE TRIGGER nowo_wt_segment_no_update BEFORE UPDATE ON nowo_working_time_segment', $sql);
         self::assertStringContainsString('NOT (NEW.`workday_id` <=> OLD.`workday_id`)', $sql);
-        self::assertStringNotContainsString('CURRENT_USER()', $sql);
+        self::assertStringNotContainsString('USER()', $sql);
         // The chain anchor is never deletable, not even by the purge.
         self::assertStringContainsString('CREATE TRIGGER nowo_wt_chain_anchor_no_delete BEFORE DELETE ON nowo_working_time_chain_anchor FOR EACH ROW BEGIN SIGNAL', $sql);
     }
@@ -56,7 +56,7 @@ final class RegisterTriggerInstallerTest extends TestCase
     {
         $sql = implode("\n", (new RegisterTriggerInstaller('x_', 'purge.user-1$'))->statements($platform));
 
-        self::assertStringContainsString("SUBSTRING_INDEX(CURRENT_USER(), '@', 1) <> 'purge.user-1\$'", $sql);
+        self::assertStringContainsString("SUBSTRING_INDEX(USER(), '@', 1) <> 'purge.user-1\$'", $sql);
         self::assertStringNotContainsString('@nowo_working_time_purge', $sql);
         self::assertStringContainsString('CREATE TRIGGER x_wt_workday_no_delete', $sql);
     }

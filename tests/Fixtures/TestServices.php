@@ -40,6 +40,6 @@ final class TestServices
         $s->set('test.directory', TestDirectory::class)->args([service('test.context')])->public();
         $s->set('test.recorder', TestRecorder::class)->public();
         $s->set('test.clock', MockClock::class)->args(['2026-11-18 10:00:00', 'UTC'])->public();
-        $s->set('test.race', RaceInjector::class)->args([service('test.context')])->tag('doctrine.event_listener', ['event' => 'prePersist']);
+        $s->set('test.race', RaceInjector::class)->args([service('test.context')])->tag('doctrine.event_listener', ['event' => 'prePersist'])->tag('doctrine.event_listener', ['event' => 'preUpdate']);
     }
 }

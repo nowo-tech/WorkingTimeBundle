@@ -16,8 +16,8 @@
         <field name="params" column="params" type="json"/>
         <field name="actionPath" column="action_path" type="string" length="255" nullable="true"/>
         <field name="dedupeKey" column="dedupe_key" type="string" length="120"/>
-        <field name="deliverableFrom" column="deliverable_from" type="datetime_immutable"/>
-        <field name="createdAt" column="created_at" type="datetime_immutable"/>
-        <field name="sentAt" column="sent_at" type="datetime_immutable" nullable="true"/>
+        <field name="deliverableFrom" column="deliverable_from" type="nowo_wt_utc_datetime"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="sentAt" column="sent_at" type="nowo_wt_utc_datetime" nullable="true"/>
     </entity>
 </doctrine-mapping>

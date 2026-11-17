@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle;
 
 use InvalidArgumentException;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\ScheduleDefinition;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Type\UtcDateTimeImmutableType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\PrivateEntityManagerPass;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\WorkingTimePortsPass;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ConfigurationTree;
@@ -106,6 +107,7 @@ final class NowoWorkingTimeBundle extends AbstractBundle
                 $manager = is_string($doctrine['entity_manager']) && $doctrine['entity_manager'] !== '' ? $doctrine['entity_manager'] : 'default';
             }
         }
+        $builder->prependExtensionConfig('doctrine', ['dbal' => ['types' => [UtcDateTimeImmutableType::NAME => UtcDateTimeImmutableType::class]]]);
         if ($manager !== 'default' && !$this->declares($builder, $manager)) {
             // The private entity manager is the host's to declare (the Flex recipe does): PrivateEntityManagerPass
             // fails the build with the fix instead of creating one silently.

@@ -88,7 +88,7 @@ final class ConfigurationTreeTest extends TestCase
     {
         $config = $this->process([
             'leave'     => ['attachments' => ['enabled' => true, 'store' => 'app.store']],
-            'integrity' => ['purge_guard' => 'db_user', 'purge_db_user' => 'purger'],
+            'integrity' => ['purge_guard' => 'db_user', 'purge_db_user' => 'purger', 'purge_connection' => 'purge'],
         ]);
 
         self::assertSame('app.store', $this->at($config, 'leave.attachments')['store']);
@@ -120,6 +120,7 @@ final class ConfigurationTreeTest extends TestCase
         yield 'attachments without store' => [['leave' => ['attachments' => ['enabled' => true]]], 'leave.attachments.store'];
         yield 'retention below four years' => [['register' => ['retention_years' => 3]], 'retention_years'];
         yield 'db_user guard without user' => [['integrity' => ['purge_guard' => 'db_user']], 'purge_db_user'];
+        yield 'db_user guard without its connection' => [['integrity' => ['purge_guard' => 'db_user', 'purge_db_user' => 'purger']], 'purge_connection'];
         yield 'pdf remote resources' => [['register' => ['export' => ['pdf' => ['remote_resources' => true]]]], 'PDF renderer is closed'];
         yield 'pdf javascript' => [['register' => ['export' => ['pdf' => ['javascript' => true]]]], 'PDF renderer is closed'];
         yield 'pdf php' => [['register' => ['export' => ['pdf' => ['php' => true]]]], 'PDF renderer is closed'];

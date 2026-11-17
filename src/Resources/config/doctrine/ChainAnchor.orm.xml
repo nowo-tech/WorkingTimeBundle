@@ -15,7 +15,7 @@
             <options><option name="fixed">true</option></options>
         </field>
         <field name="purgedLinks" column="purged_links" type="integer"/>
-        <field name="purgedAt" column="purged_at" type="datetime_immutable"/>
+        <field name="purgedAt" column="purged_at" type="nowo_wt_utc_datetime"/>
         <field name="purgeRunId" column="purge_run_id" type="string" length="36"/>
     </entity>
 </doctrine-mapping>

@@ -17,7 +17,7 @@
         <field name="workerName" column="worker_name" type="string" length="180"/>
         <field name="localDate" column="local_date" type="date_immutable"/>
         <field name="schedule" column="schedule" type="json"/>
-        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
         <field name="legacyId" column="legacy_id" type="bigint" nullable="true"/>
     </entity>
 </doctrine-mapping>

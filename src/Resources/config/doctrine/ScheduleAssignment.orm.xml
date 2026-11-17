@@ -13,7 +13,7 @@
         <field name="validFrom" column="valid_from" type="date_immutable"/>
         <field name="definition" column="definition" type="json"/>
         <field name="workCentreId" column="work_centre_id" type="string" length="36" nullable="true"/>
-        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
         <field name="createdById" column="created_by_id" type="string" length="128" nullable="true"/>
     </entity>
 </doctrine-mapping>

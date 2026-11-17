@@ -6,6 +6,8 @@ namespace Nowo\WorkingTimeBundle\Tests\Fixtures;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionRequest;
+use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\WorkdayRevision;
 
 use function str_pad;
@@ -25,16 +27,44 @@ final class RaceInjector
     }
 
     /**
+     * Another writer saved first: the row's version moves under our flush.
+     *
+     * @param LifecycleEventArgs<EntityManagerInterface> $args
+     */
+    public function preUpdate(LifecycleEventArgs $args): void
+    {
+        $em     = $args->getObjectManager();
+        $object = $args->getObject();
+        if (($object instanceof RegisterSettings || $object instanceof CorrectionRequest) && $this->context->bumpVersions) {
+            $this->context->bumpVersions = false;
+            $em->getConnection()->executeStatement('UPDATE ' . $em->getClassMetadata($object::class)->getTableName() . ' SET version = version + 1');
+        }
+    }
+
+    /**
      * @param LifecycleEventArgs<EntityManagerInterface> $args
      */
     public function prePersist(LifecycleEventArgs $args): void
     {
-        $revision = $args->getObject();
+        $em     = $args->getObjectManager();
+        $object = $args->getObject();
+        if ($object instanceof RegisterSettings && $this->context->settingsRace) {
+            $this->context->settingsRace = false;
+            $em->getConnection()->insert($em->getClassMetadata(RegisterSettings::class)->getTableName(), [
+                'tenant_id'       => $object->getTenantId(), 'enabled' => 0, 'breaks_counted' => 0, 'flex_minutes' => 0, 'min_break_minutes' => 0,
+                'task_timer_link' => 0, 'reminders_allowed' => 0, 'monthly_summary_mandatory' => 0, 'ip_evidence' => 0, 'ip_notices' => '[]',
+                'retention_years' => 4, 'correction_window_days' => 31, 'version' => 1, 'updated_at' => '2026-11-18 10:00:00',
+            ]);
+        }
+        if ($object instanceof WorkdayRevision && $this->context->bumpVersions) {
+            $this->context->bumpVersions = false;
+            $em->getConnection()->executeStatement('UPDATE ' . $em->getClassMetadata(CorrectionRequest::class)->getTableName() . ' SET version = version + 1');
+        }
+        $revision = $object;
         if (!$revision instanceof WorkdayRevision || $this->context->races <= 0) {
             return;
         }
         --$this->context->races;
-        $em = $args->getObjectManager();
         $em->getConnection()->insert($em->getClassMetadata(WorkdayRevision::class)->getTableName(), [
             'id'           => '01900000-0000-7000-8000-' . str_pad((string) $this->context->races, 12, '0', STR_PAD_LEFT),
             'tenant_id'    => $revision->getTenantId(),

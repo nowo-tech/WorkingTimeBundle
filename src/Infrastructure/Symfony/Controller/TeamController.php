@@ -102,7 +102,7 @@ final readonly class TeamController
     public function decide(Request $request, string $id, string $decision): Response
     {
         return $this->ui->guard(function () use ($request, $id, $decision): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
-            $this->access->context(WorkingTimePermission::ManageTeam);
+            $this->access->context(null);
             $form = $this->ui->form(DecisionType::class, null, [], 'wt_decision_' . $id);
             $form->handleRequest($request);
             /** @var array{version: mixed, comment: mixed}|null $data */
@@ -162,10 +162,13 @@ final readonly class TeamController
      */
     private function teamPage(Request $request, int $status, array $headers = []): Response
     {
-        $context = $this->access->context(WorkingTimePermission::ManageTeam);
+        $context = $this->access->context(null);
         $date    = $this->date($request, $context);
         $workers = $this->managed($context);
-        $refs    = [];
+        if ($workers === [] && !$this->access->can(WorkingTimePermission::ManageTeam)) {
+            throw new PermissionDeniedException();
+        }
+        $refs = [];
         foreach ($workers as $worker) {
             $refs[] = $worker->worker;
         }

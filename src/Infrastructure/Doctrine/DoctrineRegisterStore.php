@@ -22,6 +22,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Model\WorkSegment;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Type\UtcDateTimeImmutableType;
 
 use function array_filter;
 use function array_map;
@@ -495,7 +496,7 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         /** @var list<RegisterExport> $rows */
         $rows = $this->em()->createQueryBuilder()->select('e')->from(RegisterExport::class, 'e')
             ->where('e.status = :ready AND e.expiresAt <= :now')
-            ->setParameter('ready', ExportStatus::Ready->value)->setParameter('now', $now, 'datetime_immutable')
+            ->setParameter('ready', ExportStatus::Ready->value)->setParameter('now', $now, UtcDateTimeImmutableType::NAME)
             ->orderBy('e.expiresAt')->setMaxResults($limit)->getQuery()->getResult();
 
         return $rows;
@@ -529,7 +530,7 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
     {
         /** @var list<RegisterNotice> $rows */
         $rows = $this->em()->createQueryBuilder()->select('n')->from(RegisterNotice::class, 'n')
-            ->where('n.sentAt IS NULL AND n.deliverableFrom <= :now')->setParameter('now', $now, 'datetime_immutable')
+            ->where('n.sentAt IS NULL AND n.deliverableFrom <= :now')->setParameter('now', $now, UtcDateTimeImmutableType::NAME)
             ->orderBy('n.deliverableFrom')->addOrderBy('n.createdAt')->setMaxResults($limit)->getQuery()->getResult();
 
         return $rows;
@@ -542,7 +543,7 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
     {
         $marked = $this->em()->createQueryBuilder()->update(RegisterNotice::class, 'n')
             ->set('n.sentAt', ':at')->where('n.id = :id AND n.sentAt IS NULL')
-            ->setParameter('at', WorkdayRevision::utc($at), 'datetime_immutable')->setParameter('id', $id)
+            ->setParameter('at', WorkdayRevision::utc($at), UtcDateTimeImmutableType::NAME)->setParameter('id', $id)
             ->getQuery()->execute();
 
         return $marked === 1;

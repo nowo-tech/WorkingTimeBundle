@@ -178,7 +178,7 @@ final readonly class RegisterTriggerInstaller
         $refuse = fn (string $table): string => sprintf("SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '%s is append-only'", $this->prefix . $table);
         $guard  = $this->purgeUser === null
             ? 'COALESCE(' . self::PURGE_VARIABLE . ', 0) <> 1'
-            : sprintf("SUBSTRING_INDEX(CURRENT_USER(), '@', 1) <> '%s'", $this->purgeUser);
+            : sprintf("SUBSTRING_INDEX(USER(), '@', 1) <> '%s'", $this->purgeUser);
         $fixed      = implode(' OR ', array_map(static fn (string $column): string => sprintf('NOT (NEW.`%1$s` <=> OLD.`%1$s`)', $column), self::SEGMENT_FIXED));
         $statements = [];
         foreach (self::TABLES as $table => $short) {

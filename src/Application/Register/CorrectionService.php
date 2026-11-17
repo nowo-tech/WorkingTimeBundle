@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Application\Register;
 
 use DateTimeImmutable;
+use Nowo\WorkingTimeBundle\Application\Register\Exception\ChainBusyException;
 use Nowo\WorkingTimeBundle\Application\Register\Exception\StaleCorrectionDecisionException;
 use Nowo\WorkingTimeBundle\Application\Register\Notice\NoticeOutbox;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Shared\AfterCommitEvents;
+use Nowo\WorkingTimeBundle\Application\Shared\DuplicateRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\StaleRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\IdGeneratorInterface;
@@ -39,6 +41,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Throwable;
 
 use function array_filter;
 use function in_array;
@@ -121,7 +124,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
      */
     public function decide(string $correctionId, bool $approve, ?string $comment, int $expectedVersion): CorrectionRequest
     {
-        $tenant   = $this->access->context(WorkingTimePermission::ManageTeam, null, true)->tenant;
+        $tenant   = $this->access->context(null)->tenant;
         $existing = $this->runner->read(fn (): ?CorrectionRequest => $this->store->correction($correctionId));
         if ($existing === null || $existing->getTenantId() !== $tenant->value) {
             throw new RegisterUnavailableException();
@@ -132,42 +135,37 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         }
         $comment = $this->comment($comment);
         $events  = new AfterCommitEvents();
-        try {
-            $request = $this->runner->write(function () use ($context, $correctionId, $approve, $comment, $expectedVersion, $events): CorrectionRequest { // @igor-ignore - the runner calls this closure at once and keeps nothing
-                $now     = $this->clock->now();
-                $request = $this->store->correction($correctionId) ?? throw new RegisterUnavailableException();
-                if ($request->getVersion() !== $expectedVersion) {
-                    throw new StaleCorrectionDecisionException();
-                }
-                if (!$request->isPending()) {
-                    throw new CorrectionRefusedException('correction.error.already_decided');
-                }
-                $workday = $this->store->workday($request->getWorkdayId()) ?? throw new RegisterUnavailableException();
-                $name    = $context->actorProfile->displayName;
-                if ($approve) {
-                    $segment  = $request->getSegmentId() ?? $this->ids->generate();
-                    $revision = $this->chain->append($workday, RevisionKind::Correction, $segment, $this->payload($request->getOperation(), $segment, $request->getSegmentType()?->value, $request->getNewStart(), $request->getNewEnd(), [ // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
-                        'request'        => $request->getId(),
-                        'approved_by_id' => $context->actor->value,
-                        'approved_by'    => $name,
-                        'comment'        => $comment,
-                    ]), $request->getReason(), $context->actor, $name, $now);
-                    $request->approve($context->actor, $name, $comment, $revision->getId(), $now);
-                } else {
-                    $request->reject($context->actor, $name, $comment, $now);
-                }
-                $this->runner->flush();
-                $this->notices->queue($context->settings, $context->worker(), RegisterNotice::CORRECTION_DECIDED, ['date' => $workday->date()->value, 'decision' => $approve ? 'approved' : 'rejected', 'actor' => $name], null, 'decided:' . $request->getId(), $now);
-                $this->audit->record(new AuditEntry($approve ? 'working_time.correction_approved' : 'working_time.correction_rejected', $context->tenant, $context->actor, $context->worker(), ['request' => $request->getId(), 'date' => $workday->date()->value]));
-                $events->clear();
-                $events->add(new CorrectionDecided($context->tenant, $context->worker(), $request->getId(), $approve));
+        $request = $this->raced(fn (): CorrectionRequest => $this->runner->write(function () use ($context, $correctionId, $approve, $comment, $expectedVersion, $events): CorrectionRequest { // @igor-ignore - the runner calls this closure at once and keeps nothing
+            $now     = $this->clock->now();
+            $request = $this->store->correction($correctionId) ?? throw new RegisterUnavailableException();
+            if ($request->getVersion() !== $expectedVersion) {
+                throw new StaleCorrectionDecisionException();
+            }
+            if (!$request->isPending()) {
+                throw new CorrectionRefusedException('correction.error.already_decided');
+            }
+            $workday = $this->store->workday($request->getWorkdayId()) ?? throw new RegisterUnavailableException();
+            $name    = $context->actorProfile->displayName;
+            if ($approve) {
+                $segment  = $request->getSegmentId() ?? $this->ids->generate();
+                $revision = $this->chain->append($workday, RevisionKind::Correction, $segment, $this->payload($request->getOperation(), $segment, $request->getSegmentType()?->value, $request->getNewStart(), $request->getNewEnd(), [ // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+                    'request'        => $request->getId(),
+                    'approved_by_id' => $context->actor->value,
+                    'approved_by'    => $name,
+                    'comment'        => $comment,
+                ]), $request->getReason(), $context->actor, $name, $now);
+                $request->approve($context->actor, $name, $comment, $revision->getId(), $now);
+            } else {
+                $request->reject($context->actor, $name, $comment, $now);
+            }
+            $this->runner->flush();
+            $this->notices->queue($context->settings, $context->worker(), RegisterNotice::CORRECTION_DECIDED, ['date' => $workday->date()->value, 'decision' => $approve ? 'approved' : 'rejected', 'actor' => $name], null, 'decided:' . $request->getId(), $now);
+            $this->audit->record(new AuditEntry($approve ? 'working_time.correction_approved' : 'working_time.correction_rejected', $context->tenant, $context->actor, $context->worker(), ['request' => $request->getId(), 'date' => $workday->date()->value]));
+            $events->clear();
+            $events->add(new CorrectionDecided($context->tenant, $context->worker(), $request->getId(), $approve));
 
-                return $request;
-            });
-        } catch (StaleRowException $e) { // @codeCoverageIgnoreStart
-            // Two decisions passed the version check at the same moment: Doctrine's version check at flush refused one.
-            throw new StaleCorrectionDecisionException($e);
-        } // @codeCoverageIgnoreEnd
+            return $request;
+        }), static fn (Throwable $race): Throwable => new StaleCorrectionDecisionException($race));
         $events->dispatch($this->dispatcher);
 
         return $request;
@@ -189,7 +187,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         }
         $reason   = $this->reason($input->reason);
         $events   = new AfterCommitEvents();
-        $revision = $this->runner->write(function () use ($context, $date, $input, $reason, $now, $events): WorkdayRevision { // @igor-ignore - the runner calls this closure at once and keeps nothing
+        $revision = $this->raced(fn (): WorkdayRevision => $this->runner->write(function () use ($context, $date, $input, $reason, $now, $events): WorkdayRevision { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $workday   = $this->workday($context, $context->worker(), $date, $now);
             $operation = $this->validate($this->reader->one($workday, $now), $input, $now);
             $segment   = $operation === CorrectionOperation::Add ? $this->ids->generate() : (string) $input->segment;
@@ -204,7 +202,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
             $events->add(new CorrectionRecorded($context->tenant, $context->worker(), $revision->getId()));
 
             return $revision;
-        });
+        }), static fn (Throwable $race): Throwable => new ChainBusyException($race));
         $events->dispatch($this->dispatcher);
 
         return $revision;
@@ -221,7 +219,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
             throw new CorrectionRefusedException('correction.error.reason');
         }
 
-        return $this->runner->write(function () use ($context, $recordedRevisionId, $contest, $comment): WorkdayRevision { // @igor-ignore - the runner calls this closure at once and keeps nothing
+        return $this->raced(fn (): WorkdayRevision => $this->runner->write(function () use ($context, $recordedRevisionId, $contest, $comment): WorkdayRevision { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $now      = $this->clock->now();
             $recorded = $this->store->revision($recordedRevisionId);
             $workday  = $recorded instanceof WorkdayRevision ? $this->store->workday($recorded->getWorkdayId()) : null;
@@ -235,7 +233,34 @@ final readonly class CorrectionService implements CorrectionServiceInterface
             $this->audit->record(new AuditEntry($contest ? 'working_time.correction_contested' : 'working_time.correction_acknowledged', $context->tenant, $context->actor, $context->worker(), ['revision' => $recorded->getId(), 'date' => $workday->date()->value]));
 
             return $revision;
-        });
+        }), static fn (Throwable $race): Throwable => new ChainBusyException($race));
+    }
+
+    /**
+     * Runs a chain-appending write; when another writer appended first (the unique seq refused the link, or a version
+     * moved under the flush) the write runs once more against the new head and version; a second race is the given
+     * conflict (409 + Retry-After). Nothing of a refused attempt is stored (audit ST-M2).
+     *
+     * @template T
+     *
+     * @param callable(): T $write
+     * @param callable(Throwable): Throwable $conflict
+     *
+     * @return T
+     */
+    private function raced(callable $write, callable $conflict): mixed
+    {
+        try {
+            return $write();
+        } catch (DuplicateRowException) {
+            try {
+                return $write();
+            } catch (DuplicateRowException|StaleRowException $again) {
+                throw $conflict($again);
+            }
+        } catch (StaleRowException $stale) {
+            throw $conflict($stale);
+        }
     }
 
     /**

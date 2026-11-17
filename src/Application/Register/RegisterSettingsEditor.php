@@ -92,10 +92,10 @@ final readonly class RegisterSettingsEditor implements RegisterSettingsEditorInt
 
                 return $settings;
             });
-        } catch (StaleRowException|DuplicateRowException $e) { // @codeCoverageIgnoreStart
+        } catch (StaleRowException|DuplicateRowException $e) {
             // Two saves passed the version check at the same moment (first saves: the same primary key).
             throw new StaleSettingsException($e);
-        } // @codeCoverageIgnoreEnd
+        }
         $events->dispatch($this->dispatcher);
 
         return $settings;

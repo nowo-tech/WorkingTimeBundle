@@ -20,6 +20,6 @@
         <field name="correctionWindowDays" column="correction_window_days" type="smallint"/>
         <field name="version" column="version" type="integer" version="true"/>
         <field name="updatedById" column="updated_by_id" type="string" length="128" nullable="true"/>
-        <field name="updatedAt" column="updated_at" type="datetime_immutable"/>
+        <field name="updatedAt" column="updated_at" type="nowo_wt_utc_datetime"/>
     </entity>
 </doctrine-mapping>

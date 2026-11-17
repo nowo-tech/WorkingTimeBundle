@@ -24,6 +24,12 @@ final class TestContext
     /** Racing writers the RaceInjector still simulates. */
     public int $races = 0;
 
+    /** Versioned rows the RaceInjector moves under the next flush (another writer's decision or save). */
+    public bool $bumpVersions = false;
+
+    /** First saves of settings the RaceInjector makes before ours (the same primary key). */
+    public bool $settingsRace = false;
+
     public ?string $actor = null;
 
     /** @var array<string, array<string, WorkerProfile>> tenant => worker => profile */

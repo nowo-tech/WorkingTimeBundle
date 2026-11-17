@@ -10,13 +10,13 @@
         <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
         <field name="workdayId" column="workday_id" type="string" length="36"/>
         <field name="type" column="type" type="string" length="8" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType"/>
-        <field name="startedAt" column="started_at" type="datetime_immutable"/>
+        <field name="startedAt" column="started_at" type="nowo_wt_utc_datetime"/>
         <field name="startSource" column="start_source" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentSource"/>
-        <field name="startReceivedAt" column="start_received_at" type="datetime_immutable"/>
+        <field name="startReceivedAt" column="start_received_at" type="nowo_wt_utc_datetime"/>
         <field name="startIpPrefix" column="start_ip_prefix" type="string" length="43" nullable="true"/>
-        <field name="endedAt" column="ended_at" type="datetime_immutable" nullable="true"/>
+        <field name="endedAt" column="ended_at" type="nowo_wt_utc_datetime" nullable="true"/>
         <field name="endSource" column="end_source" type="string" length="16" nullable="true" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentSource"/>
-        <field name="endReceivedAt" column="end_received_at" type="datetime_immutable" nullable="true"/>
+        <field name="endReceivedAt" column="end_received_at" type="nowo_wt_utc_datetime" nullable="true"/>
         <field name="endIpPrefix" column="end_ip_prefix" type="string" length="43" nullable="true"/>
     </entity>
 </doctrine-mapping>

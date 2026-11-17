@@ -14,16 +14,16 @@
         <field name="operation" column="operation" type="string" length="8" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\CorrectionOperation"/>
         <field name="segmentId" column="segment_id" type="string" length="36" nullable="true"/>
         <field name="segmentType" column="segment_type" type="string" length="8" nullable="true" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType"/>
-        <field name="newStart" column="new_start" type="datetime_immutable" nullable="true"/>
-        <field name="newEnd" column="new_end" type="datetime_immutable" nullable="true"/>
+        <field name="newStart" column="new_start" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="newEnd" column="new_end" type="nowo_wt_utc_datetime" nullable="true"/>
         <field name="reason" column="reason" type="text"/>
         <field name="status" column="status" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\CorrectionStatus"/>
         <field name="decidedById" column="decided_by_id" type="string" length="128" nullable="true"/>
         <field name="decidedByName" column="decided_by_name" type="string" length="180" nullable="true"/>
-        <field name="decidedAt" column="decided_at" type="datetime_immutable" nullable="true"/>
+        <field name="decidedAt" column="decided_at" type="nowo_wt_utc_datetime" nullable="true"/>
         <field name="decisionComment" column="decision_comment" type="text" nullable="true"/>
         <field name="revisionId" column="revision_id" type="string" length="36" nullable="true"/>
         <field name="version" column="version" type="integer" version="true"/>
-        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
     </entity>
 </doctrine-mapping>
