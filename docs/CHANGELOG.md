@@ -33,3 +33,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `working_time_header_clock()`; 409 + `Retry-After` through transaction-doctrine's policy and formatter.
 - Translations in en, es, it, fr, pt, de, nl, ca, eu, gl; demos for Symfony 7.4 and 8.1 with a Playwright e2e.
 - Requires `nowo-tech/transaction-doctrine ^1.3` and `nowo-tech/ui-kit-bundle ^2.55`.
+- Integrity hardening (audit ST):
+  - UTC storage of every instant (`nowo_wt_utc_datetime`).
+  - `db_user` guard on `USER()`; it needs `purge_connection`.
+  - Correction decide / record / answer replay once on a taken chain head, then answer 409 + `Retry-After`.
+  - `verify` cross-checks segments against links, stale heads, anchors against the retention boundary
+    (`first_kept_date`), and earlier heads (`--heads`, export `chain_heads`, `--publish-heads`, `--heads-out`).
+  - `triggers:check` verifies that triggers are enabled and checks their bodies.
+  - In single-EM mode the host's pending changes are never flushed or cleared.
+  - Notices re-check the hours at delivery; `register.reminders.default_hours` covers range-less days.
+  - Downloads re-check `export`.
+  - The GDPR export keeps the manager's reason.
+  - The TimeTrack source acts only for the signed-in worker.
+  - A worker-scoped `manage_team` opens the team page for the managed workers and lets the manager decide on them.

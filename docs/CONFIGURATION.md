@@ -32,7 +32,7 @@ nowo_working_time:
         correction_window_days: 31 # default of new tenants (they choose 1..31)
         retention_years: 4         # default of new tenants (they choose 4..10)
         ip_evidence: prefix        # off | prefix (tenants opt in with a notice; /24 and /64 only)
-        reminders: { window_minutes: 15 }
+        reminders: { window_minutes: 15, default_hours: '09:00-18:00' }   # default_hours: weekdays without scheduled ranges
         monthly_summary: { enabled: true }
         export:
             formats: [pdf, csv]    # pdf needs dompdf/dompdf or a renderer service; the recipe ships [csv]
@@ -91,7 +91,7 @@ nowo_working_time:
 
 `leave.enabled` needs register and holidays; `leave.lock.store: lock_factory` needs `leave.lock.lock_factory`;
 `leave.attachments.enabled` needs a store; `register.retention_years` is 4..10; `integrity.purge_guard: db_user` needs
-`purge_db_user`; UI paths are distinct and start with `/`; provider base URIs are https; the PDF renderer cannot enable
+`purge_db_user` and `purge_connection`; UI paths are distinct and start with `/`; provider base URIs are https; the PDF renderer cannot enable
 remote resources, JavaScript or PHP; `permissions.not_available_status` is fixed to 404. The permission role lists are
 empty by default: everything is denied until the host maps roles.
 

@@ -83,7 +83,7 @@ Public interfaces: `RegisterClockInterface`, `RegisterReaderInterface`, `Correct
 | --- | --- | --- |
 | `nowo:working-time:notices` | every 5 minutes | 1 when a notice could not be delivered (it stays in the outbox) |
 | `nowo:working-time:purge [--dry-run]` | daily | 0 done, 1 error, 2 the triggers refused the deletes (guard misconfigured) |
-| `nowo:working-time:verify [--tenant] [--worker]` | weekly | 1 on a broken chain (audited, `ChainBroken` event) |
+| `nowo:working-time:verify [--tenant] [--worker] [--heads=<file>] [--heads-out=<file>] [--publish-heads]` | weekly | 1 on a broken chain (audited, `ChainBroken` event), 2 for an unreadable heads file; publish or keep the heads outside the database (SECURITY.md) |
 
 ## 5. Integrity
 

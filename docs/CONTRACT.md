@@ -239,11 +239,14 @@ CREATE TRIGGER <p>wt_revision_no_delete BEFORE DELETE ON <p>working_time_revisio
 
 - Needs the `TRIGGER` privilege; with binary logging also `SUPER` or `log_bin_trust_function_creators = 1`
   (documented in UPGRADING; the installer reports it, rolls back what it created, exits 2).
-- `TRUNCATE` and `DROP TABLE` do not fire triggers on MySQL: documented; the chain + anchors detect the result.
+- `TRUNCATE` and `DROP TABLE` do not fire triggers on MySQL. The chain and the anchors alone do not detect a whole
+  chain removed with its segments and workdays. `verify` detects it with the segment cross-checks and with heads
+  recorded outside the table: the export `chain_heads`, `--heads`, or heads published through the audit sink. See
+  SECURITY.md for the residual risk and the recommended grants (audit ST-M3 / ST-I1).
 - Purge guard `session_variable` (default): the purger runs `SET @nowo_working_time_purge = 1` on its own connection
   right before its DELETE batch and `SET @nowo_working_time_purge = NULL` in `finally`; a DBAL middleware
   (`PurgeFlagResetMiddleware`) also clears it on every new connection (worker mode). Option `purge_guard: db_user`:
-  the trigger checks `SUBSTRING_INDEX(CURRENT_USER(), '@', 1) = '<purge user>'` instead, and the purger uses a
+  the trigger checks `SUBSTRING_INDEX(USER(), '@', 1) = '<purge user>'` (the login user: `CURRENT_USER()` is the definer inside a trigger) instead, and the purger uses a
   dedicated DBAL connection (`integrity.purge_connection`) — stronger, needs a second DB user (Q-O5).
 
 **MariaDB 10.11 / 11.4** — same SQL as MySQL (`<=>`, `SIGNAL`, user variables all supported). Differences handled by
