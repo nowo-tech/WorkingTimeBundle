@@ -13,6 +13,9 @@ use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
  */
 final readonly class DatabaseExportFileStore implements ExportFileStoreInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private DoctrineTransactionRunner $runner)
     {
     }
@@ -35,6 +38,7 @@ final readonly class DatabaseExportFileStore implements ExportFileStoreInterface
         if ($file === null) {
             return null;
         }
+
         return $file->getContent();
     }
 

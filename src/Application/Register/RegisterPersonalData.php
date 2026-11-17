@@ -34,6 +34,9 @@ final readonly class RegisterPersonalData
     /** Sections the export and the erasure cover (parity test). */
     public const SECTIONS = ['workdays', 'corrections', 'exports', 'preferences'];
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private ExportFileStoreInterface $files,
@@ -105,14 +108,14 @@ final readonly class RegisterPersonalData
                 'workdays'    => $workdays,
                 'corrections' => $requests,
                 'exports'     => array_map(static fn (RegisterExport $export): array => [
-                    'tenant'     => $export->getTenantId(),
-                    'from'       => $export->monthFrom(),
-                    'to'         => $export->monthTo(),
-                    'format'     => $export->getFormat()->value,
-                    'status'     => $export->getStatus()->value,
-                    'own_copy'   => $export->isOwnCopy(),
-                    'requested'  => self::iso($export->getCreatedAt()),
-                    'sha256'     => $export->getSha256(),
+                    'tenant'    => $export->getTenantId(),
+                    'from'      => $export->monthFrom(),
+                    'to'        => $export->monthTo(),
+                    'format'    => $export->getFormat()->value,
+                    'status'    => $export->getStatus()->value,
+                    'own_copy'  => $export->isOwnCopy(),
+                    'requested' => self::iso($export->getCreatedAt()),
+                    'sha256'    => $export->getSha256(),
                 ], $this->exports($worker)),
                 'preferences' => $preference !== null && $preference->getWorkerId() === $worker->value
                     ? ['reminders' => $preference->wantsReminders(), 'monthly_summary' => $preference->wantsMonthlySummary()]

@@ -14,6 +14,9 @@ use Throwable;
  */
 final readonly class EntityManagerHygieneListener
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private DoctrineTransactionRunner $runner)
     {
     }

@@ -24,6 +24,9 @@ use function sprintf;
 #[AsCommand(name: 'nowo:working-time:purge', description: 'Delete working-time register rows past their retention')]
 final class PurgeRegisterCommand extends Command
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private readonly RegisterPurger $purger,
         private readonly RegisterExportService $exports,

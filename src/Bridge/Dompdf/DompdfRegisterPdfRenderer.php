@@ -24,6 +24,9 @@ use function sys_get_temp_dir;
  */
 final readonly class DompdfRegisterPdfRenderer implements RegisterPdfRendererInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private Environment $twig,
         private string $template = '@NowoWorkingTime/export/register_pdf.html.twig',

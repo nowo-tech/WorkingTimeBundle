@@ -20,6 +20,7 @@ interface TransactionRunnerInterface
      * @param callable(): T $work
      *
      * @throws DuplicateRowException when a unique key refused a row (a racing writer)
+     * @throws StaleRowException when a versioned row changed since it was read
      *
      * @return T
      */

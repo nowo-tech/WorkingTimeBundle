@@ -19,6 +19,9 @@ use function sprintf;
 #[AsCommand(name: 'nowo:working-time:notices', description: 'Queue and deliver working-time notices')]
 final class NoticesCommand extends Command
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private readonly NoticeDispatcher $notices)
     {
         parent::__construct();

@@ -12,6 +12,9 @@ use Nowo\WorkingTimeBundle\Application\Register\Port\ExportGeneratorInterface;
  */
 final readonly class GenerateRegisterExportHandler
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private ExportGeneratorInterface $generator)
     {
     }

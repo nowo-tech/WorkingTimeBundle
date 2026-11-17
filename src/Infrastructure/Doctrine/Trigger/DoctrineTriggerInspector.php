@@ -14,6 +14,9 @@ use Throwable;
  */
 final readonly class DoctrineTriggerInspector implements TriggerInspectorInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private DoctrineTransactionRunner $runner,
         private RegisterTriggerInstaller $installer,

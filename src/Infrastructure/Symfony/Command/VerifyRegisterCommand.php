@@ -24,6 +24,9 @@ use function sprintf;
 #[AsCommand(name: 'nowo:working-time:verify', description: 'Verify the working-time register hash chains')]
 final class VerifyRegisterCommand extends Command
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private readonly ChainVerifierInterface $verifier)
     {
         parent::__construct();

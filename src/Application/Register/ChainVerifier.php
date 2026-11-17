@@ -34,6 +34,9 @@ final readonly class ChainVerifier implements ChainVerifierInterface
     /** Links per read. */
     public const BATCH = 1_000;
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private TransactionRunnerInterface $runner,

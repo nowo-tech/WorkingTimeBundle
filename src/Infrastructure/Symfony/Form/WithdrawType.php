@@ -28,7 +28,7 @@ final class WithdrawType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $this->withBuilder($builder, function () use ($options): void {
+        $this->withBuilder($builder, static function (): void {
             // CSRF only.
         });
     }

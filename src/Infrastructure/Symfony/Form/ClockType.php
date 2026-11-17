@@ -29,7 +29,7 @@ final class ClockType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $this->withBuilder($builder, function () use ($options): void {
+        $this->withBuilder($builder, function (): void {
             $this->addTypedField('requestKey', HiddenType::class, ['label' => false]);
         });
     }

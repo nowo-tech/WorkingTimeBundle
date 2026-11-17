@@ -23,6 +23,9 @@ use function array_map;
  */
 final readonly class RegisterReader implements RegisterReaderInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private RegisterRules $rules = new RegisterRules(),

@@ -18,6 +18,9 @@ final readonly class UserKitRegisterEraser implements PersonalDataEraserInterfac
     /** Eraser key. */
     public const KEY = 'working_time';
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterPersonalData $data,
         private WorkerOfUserInterface $workers,

@@ -45,7 +45,7 @@ final class RegisterCsv
      *
      * @param array<string, DayRecord> $days
      *
-     * @return list<list<string|int>>
+     * @return list<list<int|string>>
      */
     public static function rows(string $organization, array $days, bool $ip): array
     {
@@ -84,7 +84,7 @@ final class RegisterCsv
     /**
      * The CSV bytes of a header and rows.
      *
-     * @param list<list<string|int>> $rows
+     * @param list<list<int|string>> $rows
      */
     public static function encode(array $rows): string
     {

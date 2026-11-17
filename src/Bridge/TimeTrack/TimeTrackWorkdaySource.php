@@ -12,10 +12,10 @@ use Nowo\TimeTrackBundle\Workday\WorkdayConflictException;
 use Nowo\TimeTrackBundle\Workday\WorkdayForbiddenException;
 use Nowo\TimeTrackBundle\Workday\WorkdaySourceInterface;
 use Nowo\TimeTrackBundle\Workday\WorkdayState;
+use Nowo\WorkingTimeBundle\Application\Register\Notice\HoursWindow;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
 use Nowo\WorkingTimeBundle\Application\Register\ScheduleResolver;
-use Nowo\WorkingTimeBundle\Application\Register\Notice\HoursWindow;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentSource;
 use Nowo\WorkingTimeBundle\Domain\Register\Exception\ClockConflictException;
@@ -41,6 +41,9 @@ use const DATE_ATOM;
  */
 final readonly class TimeTrackWorkdaySource implements WorkdaySourceInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterClockInterface $clock,
         private RegisterAccess $access,

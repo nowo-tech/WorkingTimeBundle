@@ -14,6 +14,9 @@ use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType;
  */
 final readonly class CorrectionInput
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public CorrectionOperation $operation,
         public ?string $segment = null,

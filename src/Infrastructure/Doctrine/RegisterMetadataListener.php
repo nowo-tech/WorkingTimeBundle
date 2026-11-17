@@ -29,6 +29,9 @@ final readonly class RegisterMetadataListener
     /** Columns compared exactly besides every `id` / `*_id`. */
     public const EXACT_COLUMNS = ['request_key', 'dedupe_key', 'hash', 'prev_hash', 'anchor_hash', 'sha256'];
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private string $tablePrefix = 'nowo_')
     {
     }

@@ -36,6 +36,9 @@ final readonly class RegisterPurger
     /** Delivered notices are kept this long (they only stop a notice going out twice). */
     public const NOTICE_DAYS = 400;
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private RegisterPurgeStoreInterface $purge,
@@ -63,7 +66,7 @@ final readonly class RegisterPurger
             $firstKept = RetentionPolicy::firstKept($settings->retentionYears(), $today);
             $totals    = ['first_kept' => $firstKept->value, 'workdays' => 0, 'segments' => 0, 'revisions' => 0, 'corrections' => 0, 'anchors' => 0];
             if ($dryRun) {
-                $totals['workdays'] = $this->runner->read(fn (): int => $this->purge->countWorkdaysBefore($tenant, $firstKept));
+                $totals['workdays']      = $this->runner->read(fn (): int => $this->purge->countWorkdaysBefore($tenant, $firstKept));
                 $tenants[$tenant->value] = $totals;
 
                 continue;

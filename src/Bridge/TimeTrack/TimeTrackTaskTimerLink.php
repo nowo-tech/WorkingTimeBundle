@@ -20,6 +20,9 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 final readonly class TimeTrackTaskTimerLink implements TaskTimerLinkInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private TimerService $timers,
         private TokenStorageInterface $tokens,

@@ -23,7 +23,8 @@ class RegisterNotice
     public const MONTHLY_SUMMARY      = 'register.monthly_summary';
     public const EXPORT_READY         = 'register.export_ready';
 
-    private ?DateTimeImmutable $sentAt = null;
+    /** Set by the store's conditional update (a notice is marked sent once). */
+    private ?DateTimeImmutable $sentAt = null; // @phpstan-ignore property.unusedType
 
     /**
      * @param array<string, scalar|null> $params

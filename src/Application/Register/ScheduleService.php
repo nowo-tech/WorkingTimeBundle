@@ -29,6 +29,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class ScheduleService implements ScheduleServiceInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterAccess $access,
         private RegisterStoreInterface $store,
@@ -53,7 +56,7 @@ final readonly class ScheduleService implements ScheduleServiceInterface
         if ($scope === ScheduleScope::Group && !$this->knownGroup($context->tenant, (string) $target)) {
             throw new ScheduleRefusedException('schedule.error.group');
         }
-        $now = $this->clock->now();
+        $now     = $this->clock->now();
         [$today] = $this->resolver->at($context->settings, $context->actorProfile, $now);
         if ($validFrom->compare($today) < 0) {
             throw new ScheduleRefusedException('schedule.error.past');

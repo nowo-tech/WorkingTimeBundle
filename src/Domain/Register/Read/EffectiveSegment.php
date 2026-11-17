@@ -16,6 +16,9 @@ use function max;
  */
 final readonly class EffectiveSegment
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public string $id,
         public SegmentType $type,

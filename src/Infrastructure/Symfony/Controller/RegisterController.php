@@ -48,6 +48,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 use function array_map;
 use function count;
+use function is_array;
 use function is_string;
 
 /**
@@ -60,6 +61,9 @@ use function is_string;
  */
 final readonly class RegisterController
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private UiSupport $ui,
         private RegisterAccess $access,
@@ -116,9 +120,9 @@ final readonly class RegisterController
     public function month(Request $request, ?string $month = null): Response
     {
         return $this->ui->guard(function () use ($month): Response {
-            $context        = $this->access->context(WorkingTimePermission::Clock);
-            [$today]        = $this->schedules->at($context->settings, $context->subject, $this->time->now());
-            $month        ??= $today->month();
+            $context = $this->access->context(WorkingTimePermission::Clock);
+            [$today] = $this->schedules->at($context->settings, $context->subject, $this->time->now());
+            $month ??= $today->month();
             try {
                 $first = new LocalDate($month . '-01');
             } catch (InvalidArgumentException $e) {
@@ -158,7 +162,7 @@ final readonly class RegisterController
                         new Column('flags', UiSupport::label('month.col.flags'), align: 'end', priority: 3),
                     ],
                     $rows,
-                    rowActions: fn (array $row): array => [Action::view($this->ui->url('nowo_working_time_date', ['date' => $row['date']]), UiSupport::label('month.view_day'))],
+                    rowActions: fn (mixed $row): array => is_array($row) && is_string($row['date'] ?? null) ? [Action::view($this->ui->url('nowo_working_time_date', ['date' => $row['date']]), UiSupport::label('month.view_day'))] : [],
                     empty: new EmptyState(UiSupport::label('month.empty')),
                     bundle: 'NowoWorkingTimeBundle',
                     layout: $this->ui->layout(),
@@ -201,10 +205,10 @@ final readonly class RegisterController
     public function requestCorrection(Request $request, string $date): Response
     {
         return $this->ui->guard(function () use ($request, $date): Response {
-            $context = $this->access->context(WorkingTimePermission::Clock);
-            $day     = self::localDate($date);
+            $context         = $this->access->context(WorkingTimePermission::Clock);
+            $day             = self::localDate($date);
             [$record, $zone] = $this->record($context, $day);
-            $form    = $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
+            $form            = $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
             $form->handleRequest($request);
             if (!$form->isSubmitted() || !$form->isValid()) {
                 return $this->dayPage($context, $day, Response::HTTP_UNPROCESSABLE_ENTITY, $form);
@@ -230,8 +234,8 @@ final readonly class RegisterController
     public function answer(Request $request, string $id): Response
     {
         return $this->ui->guard(function () use ($request, $id): Response {
-            $context  = $this->access->context(WorkingTimePermission::Clock);
-            $form     = $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $id);
+            $context = $this->access->context(WorkingTimePermission::Clock);
+            $form    = $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $id);
             $form->handleRequest($request);
             $revision = $this->runner->read(fn () => $this->store->revision($id));
             $workday  = $revision === null ? null : $this->runner->read(fn (): ?Workday => $this->store->workday($revision->getWorkdayId()));
@@ -261,7 +265,7 @@ final readonly class RegisterController
     {
         [$record, $zone] = $this->record($context, $date);
         $correction ??= $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
-        $answers      = [];
+        $answers = [];
         foreach ($record->pendingAcknowledgements ?? [] as $revisionId) {
             $answers[$revisionId] = $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $revisionId)->createView();
         }

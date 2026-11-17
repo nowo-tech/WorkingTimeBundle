@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller;
 
 use InvalidArgumentException;
-use Nowo\UiKitBundle\View\Action;
 use Nowo\UiKitBundle\View\Column;
 use Nowo\UiKitBundle\View\EmptyState;
 use Nowo\UiKitBundle\View\ListPage;
@@ -48,6 +47,9 @@ final readonly class ScheduleController
     /** Weekday keys of the form. */
     public const DAYS = ['mon' => 1, 'tue' => 2, 'wed' => 3, 'thu' => 4, 'fri' => 5, 'sat' => 6, 'sun' => 7];
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private UiSupport $ui,
         private RegisterAccess $access,
@@ -119,7 +121,7 @@ final readonly class ScheduleController
         $rows      = [];
         $withdraws = [];
         foreach ($this->schedules->list() as $row) {
-            $rows[]                     = self::row($row);
+            $rows[]                   = self::row($row);
             $withdraws[$row->getId()] = $this->ui->form(WithdrawType::class, null, [], 'wt_withdraw_' . $row->getId())->createView();
         }
 

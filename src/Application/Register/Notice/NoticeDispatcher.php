@@ -39,6 +39,9 @@ use function intdiv;
  */
 final readonly class NoticeDispatcher
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private RegisterReader $reader,
@@ -133,11 +136,11 @@ final readonly class NoticeDispatcher
 
     private function summary(RegisterSettings $settings, WorkerProfile $worker, LocalDate $date, DateTimeImmutable $now): bool
     {
-        $lastDay   = (new LocalDate($date->month() . '-01'))->plusDays(-1);
-        $month     = $lastDay->month();
-        $key       = RegisterNotice::MONTHLY_SUMMARY . ':' . $worker->worker->value . ':' . $month;
-        $tenant    = new TenantRef($settings->getTenantId());
-        $summary   = MonthSummary::of($this->reader->worker($tenant, $worker->worker, new LocalDate($month . '-01'), $lastDay, $now));
+        $lastDay = (new LocalDate($date->month() . '-01'))->plusDays(-1);
+        $month   = $lastDay->month();
+        $key     = RegisterNotice::MONTHLY_SUMMARY . ':' . $worker->worker->value . ':' . $month;
+        $tenant  = new TenantRef($settings->getTenantId());
+        $summary = MonthSummary::of($this->reader->worker($tenant, $worker->worker, new LocalDate($month . '-01'), $lastDay, $now));
 
         return $this->outbox->queue($settings, $worker->worker, RegisterNotice::MONTHLY_SUMMARY, [
             'month'    => $month,

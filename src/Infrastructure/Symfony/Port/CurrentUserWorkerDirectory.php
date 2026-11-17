@@ -20,6 +20,9 @@ use function mb_substr;
  */
 final readonly class CurrentUserWorkerDirectory implements WorkerDirectoryInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private ?TokenStorageInterface $tokens = null)
     {
     }

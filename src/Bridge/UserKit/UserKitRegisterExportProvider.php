@@ -16,6 +16,9 @@ final readonly class UserKitRegisterExportProvider implements PersonalDataExport
     /** Section key. */
     public const SECTION = 'working_time';
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterPersonalData $data,
         private WorkerOfUserInterface $workers,

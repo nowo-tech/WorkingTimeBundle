@@ -29,6 +29,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class RegisterAccess
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private WorkingTimeTenantResolverInterface $tenants,
         private WorkingTimePermissionCheckerInterface $permissions,
@@ -63,7 +66,7 @@ final readonly class RegisterAccess
             throw new PermissionDeniedException();
         }
 
-        return new RegisterContext($tenant, $settings, $actor, $actorProfile, $profile, $actorProfile->locale ?? $this->tenants->profile($tenant)?->locale ?? 'en');
+        return new RegisterContext($tenant, $settings, $actor, $actorProfile, $profile, $actorProfile->locale ?? ($this->tenants->profile($tenant)->locale ?? 'en'));
     }
 
     /**

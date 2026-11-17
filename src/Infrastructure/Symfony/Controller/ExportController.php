@@ -26,8 +26,9 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 use function in_array;
-use function reset;
+use function is_array;
 use function is_string;
+use function reset;
 use function strlen;
 
 /**
@@ -73,7 +74,7 @@ final readonly class ExportController
                     $formats['export.format.' . $format] = $format;
                 }
             }
-            $form = $this->ui->form(ExportType::class, ['scope' => 'own', 'from' => $month, 'to' => $month, 'format' => $formats === [] ? null : reset($formats)], ['inspection' => $inspection, 'workers' => $workers, 'formats' => $formats]);
+            $form = $this->ui->form(ExportType::class, ['scope' => 'own', 'from' => $month, 'to' => $month, 'format' => reset($formats)], ['inspection' => $inspection, 'workers' => $workers, 'formats' => $formats]);
             $form->handleRequest($request);
             if (!$form->isSubmitted()) {
                 return $this->page($form, Response::HTTP_OK);
@@ -146,7 +147,7 @@ final readonly class ExportController
                     new Column('sha256', UiSupport::label('export.col.sha256'), priority: 3),
                 ],
                 $rows,
-                rowActions: static fn (array $row): array => $row['href'] === null ? [] : [new Action('download', UiSupport::label('export.download'), $row['href'], attributes: ['data-testid' => 'wt-export-download'])],
+                rowActions: static fn (mixed $row): array => is_array($row) && is_string($row['href'] ?? null) ? [new Action('download', UiSupport::label('export.download'), $row['href'], attributes: ['data-testid' => 'wt-export-download'])] : [],
                 empty: new EmptyState(UiSupport::label('export.empty')),
                 bundle: 'NowoWorkingTimeBundle',
                 layout: $this->ui->layout(),

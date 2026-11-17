@@ -59,11 +59,11 @@ final class SettingsType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'         => null,
-            'csrf_protection'    => true,
-            'csrf_token_id'      => 'nowo_working_time_settings',
-            'allow_extra_fields' => false,
-            'translation_domain' => NowoWorkingTimeBundle::TRANSLATION_DOMAIN,
+            'data_class'          => null,
+            'csrf_protection'     => true,
+            'csrf_token_id'       => 'nowo_working_time_settings',
+            'allow_extra_fields'  => false,
+            'translation_domain'  => NowoWorkingTimeBundle::TRANSLATION_DOMAIN,
             'ip_evidence_offered' => true,
         ]);
     }

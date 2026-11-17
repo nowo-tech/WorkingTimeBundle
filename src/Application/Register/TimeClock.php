@@ -54,6 +54,9 @@ use function in_array;
  */
 final readonly class TimeClock implements RegisterClockInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterAccess $access,
         private RegisterStoreInterface $store,

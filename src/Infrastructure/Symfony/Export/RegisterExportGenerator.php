@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export;
 
-use DateTimeImmutable;
 use Nowo\Brand\Contract\BrandProviderInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\ExportGeneratorInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
@@ -35,15 +34,14 @@ use Throwable;
 use ZipArchive;
 
 use function array_key_first;
-
 use function file_get_contents;
 use function hash;
 use function iconv;
 use function is_file;
 use function preg_replace;
 use function sprintf;
-use function strtolower;
 use function strrchr;
+use function strtolower;
 use function substr;
 use function sys_get_temp_dir;
 use function tempnam;
@@ -59,6 +57,9 @@ use function unlink;
  */
 final readonly class RegisterExportGenerator implements ExportGeneratorInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private RegisterReader $reader,
@@ -113,7 +114,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
         $to       = (new LocalDate($export->monthTo() . '-01'))->toDateTime()->modify('last day of this month');
         $to       = LocalDate::fromDateTime($to);
         $now      = $this->clock->now();
-        $org      = $this->tenants->profile($tenant)?->name ?? $tenant->value;
+        $org      = $this->tenants->profile($tenant)->name ?? $tenant->value;
         $workers  = $this->workers($export, $tenant, $from, $to);
         $period   = $export->monthFrom() === $export->monthTo() ? $export->monthFrom() : $export->monthFrom() . ' – ' . $export->monthTo();
         $base     = sprintf('working-time-%s-%s', $export->monthFrom(), $export->monthTo());
@@ -138,7 +139,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
                 $team[] = $row;
             }
             if ($export->getFormat() !== ExportFormat::Csv) {
-                $pdf                     = $this->pdf ?? throw new RuntimeException('No PDF renderer.');
+                $pdf                   = $this->pdf ?? throw new RuntimeException('No PDF renderer.');
                 $files[$slug . '.pdf'] = $pdf->render($this->reports->build($days, $org, $name, $period, $export->getRequestedByName(), $head, $integrity, $settings->ipEvidence(), $now, $locale), $this->brand->getBrand());
             }
             if ($export->getFormat() !== ExportFormat::Pdf) {
@@ -184,7 +185,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
                 $names[$workday->getWorkerId()] = $workday->getWorkerName();
             }
 
-            return $names !== [] ? $names : [$ref->value => $this->directory->worker($tenant, $ref)?->displayName ?? $ref->value];
+            return $names !== [] ? $names : [$ref->value => $this->directory->worker($tenant, $ref)->displayName ?? $ref->value];
         }
         $members = null;
         if ($export->getGroupId() !== null) {

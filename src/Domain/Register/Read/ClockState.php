@@ -19,6 +19,9 @@ use function array_values;
  */
 final readonly class ClockState
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public ClockStatus $status,
         public LocalDate $date,
@@ -42,8 +45,8 @@ final readonly class ClockState
     {
         return match ($this->status) {
             ClockStatus::Idle, ClockStatus::Closed => ClockAction::ClockIn,
-            ClockStatus::Working => ClockAction::ClockOut,
-            ClockStatus::OnBreak => ClockAction::BreakEnd,
+            ClockStatus::Working                   => ClockAction::ClockOut,
+            ClockStatus::OnBreak                   => ClockAction::BreakEnd,
         };
     }
 

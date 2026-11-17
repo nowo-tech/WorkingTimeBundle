@@ -30,7 +30,7 @@ final class DecisionType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $this->withBuilder($builder, function () use ($options): void {
+        $this->withBuilder($builder, function (): void {
             $this->addTypedField('version', HiddenType::class, ['label' => false]);
             $this->addTypedField('comment', TextareaType::class, ['label' => 'correction.form.comment', 'required' => false, 'attr' => ['maxlength' => 500, 'rows' => 2]]);
         });

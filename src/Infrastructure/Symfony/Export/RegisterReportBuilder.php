@@ -30,6 +30,9 @@ use function mb_substr;
  */
 final readonly class RegisterReportBuilder
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private TranslatorInterface $translator)
     {
     }

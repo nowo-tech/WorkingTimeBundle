@@ -27,6 +27,9 @@ final class TriggersCommand extends Command
     public const CHECK     = 'nowo:working-time:triggers:check';
     public const UNINSTALL = 'nowo:working-time:triggers:uninstall';
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private readonly string $mode,
         private readonly DoctrineTransactionRunner $runner,

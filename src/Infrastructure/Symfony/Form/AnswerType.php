@@ -30,7 +30,7 @@ final class AnswerType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $this->withBuilder($builder, function () use ($options): void {
+        $this->withBuilder($builder, function (): void {
             $this->addTypedField('answer', ChoiceType::class, [
                 'label'    => 'correction.form.answer',
                 'choices'  => ['correction.answer.acknowledge' => 'acknowledge', 'correction.answer.contest' => 'contest'],

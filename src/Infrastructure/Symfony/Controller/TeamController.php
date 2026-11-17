@@ -42,6 +42,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 use function count;
+use function is_array;
 use function is_numeric;
 use function is_string;
 
@@ -55,6 +56,9 @@ use function is_string;
  */
 final readonly class TeamController
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private UiSupport $ui,
         private RegisterAccess $access,
@@ -205,7 +209,7 @@ final readonly class TeamController
                     new Column('flags', UiSupport::label('team.col.flags'), align: 'end', priority: 2),
                 ],
                 $rows,
-                rowActions: fn (array $row): array => [Action::view($this->ui->url('nowo_working_time_team_day', ['worker' => $row['worker'], 'date' => $date->value]), UiSupport::label('team.view_day'))],
+                rowActions: fn (mixed $row): array => is_array($row) && is_string($row['worker'] ?? null) ? [Action::view($this->ui->url('nowo_working_time_team_day', ['worker' => $row['worker'], 'date' => $date->value]), UiSupport::label('team.view_day'))] : [],
                 empty: new EmptyState(UiSupport::label('team.empty')),
                 bundle: 'NowoWorkingTimeBundle',
                 layout: $this->ui->layout(),
@@ -222,7 +226,7 @@ final readonly class TeamController
     {
         [$record, $zone] = $this->dayRecord($context, $date);
         $own             = $context->isOwn();
-        $correction    ??= $own ? null : $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
+        $correction ??= $own ? null : $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
 
         return $this->ui->render('@NowoWorkingTime/register/team_day.html.twig', [
             'page' => new ShowPage(

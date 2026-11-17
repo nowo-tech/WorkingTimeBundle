@@ -17,6 +17,9 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
  */
 final readonly class ConflictFallbackListener
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private ConflictResponsePolicy $policy = new ConflictResponsePolicy())
     {
     }

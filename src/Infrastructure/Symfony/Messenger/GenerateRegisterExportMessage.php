@@ -9,6 +9,9 @@ namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger;
  */
 final readonly class GenerateRegisterExportMessage
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(public string $exportId)
     {
     }

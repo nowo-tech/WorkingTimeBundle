@@ -36,10 +36,16 @@ use function is_string;
  */
 final readonly class DoctrineRegisterStore implements RegisterStoreInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private DoctrineTransactionRunner $runner)
     {
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function settings(TenantRef $tenant): ?RegisterSettings
     {
         $settings = $this->em()->find(RegisterSettings::class, $tenant->value);
@@ -47,6 +53,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $settings !== null && $settings->getTenantId() === $tenant->value ? $settings : null;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function allSettings(): array
     {
         /** @var list<RegisterSettings> $all */
@@ -55,11 +64,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $all;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addSettings(RegisterSettings $settings): void
     {
         $this->em()->persist($settings);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function preference(WorkerRef $worker): ?WorkerPreference
     {
         $preference = $this->em()->find(WorkerPreference::class, $worker->value);
@@ -67,11 +82,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $preference !== null && $preference->getWorkerId() === $worker->value ? $preference : null;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addPreference(WorkerPreference $preference): void
     {
         $this->em()->persist($preference);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function removePreference(WorkerRef $worker): void
     {
         $preference = $this->preference($worker);
@@ -80,11 +101,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         }
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function workday(string $id): ?Workday
     {
         return $this->em()->find(Workday::class, $id);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function workdayOn(TenantRef $tenant, WorkerRef $worker, LocalDate $date): ?Workday
     {
         $workday = $this->em()->getRepository(Workday::class)->findOneBy(['tenantId' => $tenant->value, 'workerId' => $worker->value, 'localDate' => $date->toDateTime()]);
@@ -92,11 +119,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $workday !== null && $workday->getTenantId() === $tenant->value && $workday->getWorkerId() === $worker->value ? $workday : null;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function latestWorkdays(TenantRef $tenant, WorkerRef $worker, int $limit): array
     {
         return $this->own($tenant, $worker, $this->em()->getRepository(Workday::class)->findBy(['tenantId' => $tenant->value, 'workerId' => $worker->value], ['localDate' => 'DESC'], $limit));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function workdaysBetween(TenantRef $tenant, WorkerRef $worker, LocalDate $from, LocalDate $to): array
     {
         /** @var list<Workday> $rows */
@@ -109,6 +142,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $this->own($tenant, $worker, $rows);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function tenantWorkdaysBetween(TenantRef $tenant, LocalDate $from, LocalDate $to, ?array $workers = null): array
     {
         if ($workers === []) {
@@ -129,6 +165,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (Workday $workday): bool => $workday->getTenantId() === $tenant->value && ($refs === null || in_array($workday->getWorkerId(), $refs, true))));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function workdaysOfWorker(WorkerRef $worker): array
     {
         /** @var list<Workday> $rows */
@@ -137,21 +176,33 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (Workday $workday): bool => $workday->getWorkerId() === $worker->value));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addWorkday(Workday $workday): void
     {
         $this->em()->persist($workday);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function segment(string $id): ?WorkSegment
     {
         return $this->em()->find(WorkSegment::class, $id);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addSegment(WorkSegment $segment): void
     {
         $this->em()->persist($segment);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function segmentsOf(array $workdayIds): array
     {
         $grouped = [];
@@ -165,6 +216,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $grouped;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function segmentsById(array $ids): array
     {
         $byId = [];
@@ -178,6 +232,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $byId;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function revisionsOf(array $workdayIds): array
     {
         $grouped = [];
@@ -191,6 +248,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $grouped;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function chainHead(TenantRef $tenant, WorkerRef $worker): ?WorkdayRevision
     {
         $head = $this->em()->getRepository(WorkdayRevision::class)->findOneBy(['tenantId' => $tenant->value, 'workerId' => $worker->value], ['seq' => 'DESC']);
@@ -198,6 +258,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $head !== null && $head->getTenantId() === $tenant->value && $head->getWorkerId() === $worker->value ? $head : null;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function revisionByRequestKey(TenantRef $tenant, WorkerRef $worker, string $requestKey): ?WorkdayRevision
     {
         $revision = $this->em()->getRepository(WorkdayRevision::class)->findOneBy(['tenantId' => $tenant->value, 'workerId' => $worker->value, 'requestKey' => $requestKey]);
@@ -205,16 +268,25 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $revision !== null && $revision->getTenantId() === $tenant->value && $revision->getWorkerId() === $worker->value && $revision->getRequestKey() === $requestKey ? $revision : null;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function revision(string $id): ?WorkdayRevision
     {
         return $this->em()->find(WorkdayRevision::class, $id);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addRevision(WorkdayRevision $revision): void
     {
         $this->em()->persist($revision);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function chains(?TenantRef $tenant = null, ?WorkerRef $worker = null): array
     {
         $qb = $this->em()->createQueryBuilder()->select('DISTINCT r.tenantId AS tenant, r.workerId AS worker')->from(WorkdayRevision::class, 'r')
@@ -238,6 +310,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $chains;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function chainBatch(TenantRef $tenant, WorkerRef $worker, int $afterSeq, int $limit): array
     {
         /** @var list<WorkdayRevision> $rows */
@@ -249,6 +324,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (WorkdayRevision $revision): bool => $revision->getTenantId() === $tenant->value && $revision->getWorkerId() === $worker->value));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function anchors(TenantRef $tenant, WorkerRef $worker): array
     {
         $rows = $this->em()->getRepository(ChainAnchor::class)->findBy(['tenantId' => $tenant->value, 'workerId' => $worker->value], ['firstKeptSeq' => 'ASC']);
@@ -256,16 +334,25 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (ChainAnchor $anchor): bool => $anchor->getTenantId() === $tenant->value && $anchor->getWorkerId() === $worker->value));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function correction(string $id): ?CorrectionRequest
     {
         return $this->em()->find(CorrectionRequest::class, $id);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addCorrection(CorrectionRequest $request): void
     {
         $this->em()->persist($request);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function correctionsOf(array $workdayIds): array
     {
         $grouped = [];
@@ -279,6 +366,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $grouped;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function pendingCorrections(TenantRef $tenant, ?array $workers = null, int $limit = 200): array
     {
         if ($workers === []) {
@@ -294,6 +384,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (CorrectionRequest $request): bool => $request->getTenantId() === $tenant->value && ($refs === null || in_array($request->getWorkerId(), $refs, true))));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function scheduleCandidates(TenantRef $tenant, LocalDate $until): array
     {
         /** @var list<ScheduleAssignment> $rows */
@@ -305,6 +398,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (ScheduleAssignment $row): bool => $row->getTenantId() === $tenant->value));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function schedules(TenantRef $tenant): array
     {
         $rows = $this->em()->getRepository(ScheduleAssignment::class)->findBy(['tenantId' => $tenant->value], ['validFrom' => 'DESC', 'createdAt' => 'DESC']);
@@ -312,31 +408,49 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (ScheduleAssignment $row): bool => $row->getTenantId() === $tenant->value));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function schedule(string $id): ?ScheduleAssignment
     {
         return $this->em()->find(ScheduleAssignment::class, $id);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addSchedule(ScheduleAssignment $schedule): void
     {
         $this->em()->persist($schedule);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function removeSchedule(ScheduleAssignment $schedule): void
     {
         $this->em()->remove($schedule);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function export(string $id): ?RegisterExport
     {
         return $this->em()->find(RegisterExport::class, $id);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addExport(RegisterExport $export): void
     {
         $this->em()->persist($export);
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function exports(TenantRef $tenant, ?string $requestedBy, int $limit): array
     {
         $criteria = ['tenantId' => $tenant->value];
@@ -348,6 +462,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return array_values(array_filter($rows, static fn (RegisterExport $export): bool => $export->getTenantId() === $tenant->value && ($requestedBy === null || $export->getRequestedById() === $requestedBy)));
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function exportsAbout(string $ref): array
     {
         /** @var list<RegisterExport> $rows */
@@ -358,6 +475,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $rows;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function claimExport(string $id): bool
     {
         $claimed = $this->em()->createQueryBuilder()->update(RegisterExport::class, 'e')
@@ -368,6 +488,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $claimed === 1;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function expiredExports(DateTimeImmutable $now, int $limit): array
     {
         /** @var list<RegisterExport> $rows */
@@ -379,6 +502,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $rows;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function addNotice(RegisterNotice $notice): bool
     {
         if ($this->hasNotice($notice->getDedupeKey())) {
@@ -389,11 +515,17 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return true;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function hasNotice(string $dedupeKey): bool
     {
         return $this->em()->getRepository(RegisterNotice::class)->count(['dedupeKey' => $dedupeKey]) > 0;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function dueNotices(DateTimeImmutable $now, int $limit): array
     {
         /** @var list<RegisterNotice> $rows */
@@ -404,6 +536,9 @@ final readonly class DoctrineRegisterStore implements RegisterStoreInterface
         return $rows;
     }
 
+    /**
+     * See the implemented interface.
+     */
     public function markNoticeSent(string $id, DateTimeImmutable $at): bool
     {
         $marked = $this->em()->createQueryBuilder()->update(RegisterNotice::class, 'n')

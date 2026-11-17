@@ -11,6 +11,9 @@ use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
  */
 final readonly class RegisterExportReady
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public TenantRef $tenant,
         public string $exportId,

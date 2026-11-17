@@ -26,6 +26,9 @@ use function count;
  */
 final readonly class RevisionChain
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private TransactionRunnerInterface $runner,

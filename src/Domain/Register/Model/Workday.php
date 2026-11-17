@@ -49,7 +49,7 @@ class Workday
      */
     public static function migrated(string $id, TenantRef $tenant, WorkerRef $worker, string $workerName, LocalDate $date, DaySchedule $schedule, DateTimeImmutable $createdAt, int $legacyId): self
     {
-        $workday = self::open($id, $tenant, $worker, $workerName, $date, $schedule, $createdAt);
+        $workday           = self::open($id, $tenant, $worker, $workerName, $date, $schedule, $createdAt);
         $workday->legacyId = $legacyId;
 
         return $workday;

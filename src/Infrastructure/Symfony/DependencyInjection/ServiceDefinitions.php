@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection;
 
-use Nowo\Brand\Contract\BrandProviderInterface;
-use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseFormatterInterface;
-use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponsePolicy;
 use Nowo\TimeTrackBundle\Workday\WorkdaySourceInterface;
+use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseFormatterInterface;
 use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface;
 use Nowo\WorkingTimeBundle\Application\Register\ChainVerifier;
 use Nowo\WorkingTimeBundle\Application\Register\CorrectionService;
@@ -89,6 +87,7 @@ use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function interface_exists;
+use function is_array;
 use function is_string;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
@@ -113,8 +112,8 @@ final class ServiceDefinitions
      */
     public static function register(ContainerConfigurator $container, array $config): void
     {
-        $s = $container->services();
-        $p = self::P;
+        $s      = $container->services();
+        $p      = self::P;
         $logger = service('logger')->nullOnInvalid();
         $events = service('event_dispatcher')->nullOnInvalid();
         $clock  = service($p . 'clock');
@@ -156,7 +155,8 @@ final class ServiceDefinitions
         $s->set(RegisterTriggerInstaller::class)->args([param($p . 'doctrine.table_prefix'), param($p . 'integrity.purge_db_user')])->public();
         $s->set(DoctrineTriggerInspector::class)->args([service(DoctrineTransactionRunner::class), service(RegisterTriggerInstaller::class)]);
         $s->alias(TriggerInspectorInterface::class, DoctrineTriggerInspector::class);
-        $purgeConnection = $config['integrity']['purge_connection'] ?? null;
+        $integrity       = is_array($config['integrity'] ?? null) ? $config['integrity'] : [];
+        $purgeConnection = $integrity['purge_connection'] ?? null;
         $s->set(DbalRegisterPurgeStore::class)->args([
             service(DoctrineTransactionRunner::class),
             service(IdGeneratorInterface::class),
@@ -331,7 +331,8 @@ final class ServiceDefinitions
         $s->set(WorkingTimeConflictFormatter::class)->tag(ConflictResponseFormatterInterface::TAG, ['priority' => 16]);
         $s->set(UiRouteLoader::class)->args([param($p . 'ui.enabled'), param($p . 'ui.register_path'), param($p . 'ui.settings_path')])->tag('routing.loader');
         $s->set(WorkingTimeTwigExtension::class)->args([service(RegisterClockInterface::class), service('router')])->tag('twig.extension');
-        if (($config['ui']['enabled'] ?? false) === true) {
+        $ui = is_array($config['ui'] ?? null) ? $config['ui'] : [];
+        if (($ui['enabled'] ?? false) === true) {
             $s->set(UiSupport::class)->args([
                 service('twig'),
                 service('router'),

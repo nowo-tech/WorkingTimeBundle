@@ -23,6 +23,9 @@ use function str_replace;
  */
 final readonly class MailerNotifier implements WorkingTimeNotifierInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private MailerInterface $mailer,
         private WorkerDirectoryInterface $directory,
@@ -42,8 +45,8 @@ final readonly class MailerNotifier implements WorkingTimeNotifierInterface
         if ($profile === null || $profile->email === null || $profile->email === '') {
             return;
         }
-        $key     = 'notice.' . str_replace('.', '_', $message->kind);
-        $params  = [];
+        $key    = 'notice.' . str_replace('.', '_', $message->kind);
+        $params = [];
         foreach ($message->params as $name => $value) {
             $params['%' . $name . '%'] = (string) $value;
         }

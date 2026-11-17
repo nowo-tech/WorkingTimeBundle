@@ -37,11 +37,11 @@ final class CorrectionType extends AbstractType
                 'choices' => ['correction.operation.amend' => 'amend', 'correction.operation.add' => 'add', 'correction.operation.void' => 'void'],
             ]);
             $this->addTypedField('segment', ChoiceType::class, [
-                'label'       => 'correction.form.segment',
-                'choices'     => $options['segments'],
+                'label'                     => 'correction.form.segment',
+                'choices'                   => $options['segments'],
                 'choice_translation_domain' => false,
-                'required'    => false,
-                'placeholder' => 'correction.form.segment_none',
+                'required'                  => false,
+                'placeholder'               => 'correction.form.segment_none',
             ]);
             $this->addTypedField('segmentType', ChoiceType::class, [
                 'label'   => 'correction.form.segment_type',

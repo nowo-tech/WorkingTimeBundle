@@ -12,6 +12,9 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
  */
 final readonly class CorrectionRequested
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public TenantRef $tenant,
         public WorkerRef $worker,

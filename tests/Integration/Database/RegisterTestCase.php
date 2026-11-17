@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Tests\Integration\Database;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
+use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
+use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentSource;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettingsInput;
+use Nowo\WorkingTimeBundle\Domain\Register\Read\ClockState;
+use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
+use Nowo\WorkingTimeBundle\Domain\Shared\RequestKey;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\RegisterTriggerInstaller;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\TestContext;
@@ -21,6 +28,9 @@ use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\TestKernel;
 use Symfony\Component\Clock\MockClock;
 
 use function array_replace_recursive;
+use function bin2hex;
+use function random_bytes;
+use function sprintf;
 use function str_starts_with;
 
 /**
@@ -31,6 +41,20 @@ use function str_starts_with;
 abstract class RegisterTestCase extends KernelTestCase
 {
     protected TestKernel $kernel;
+
+    /**
+     * Whether the database is the given platform family (`mysql`, `postgresql`, `sqlite`).
+     */
+    protected function platform(): string
+    {
+        $platform = $this->connection()->getDatabasePlatform();
+
+        return match (true) {
+            $platform instanceof AbstractMySQLPlatform => 'mysql',
+            $platform instanceof PostgreSQLPlatform    => 'postgresql',
+            default                                    => 'sqlite',
+        };
+    }
 
     protected function host(): Host
     {
@@ -53,8 +77,8 @@ abstract class RegisterTestCase extends KernelTestCase
 
     protected function schema(bool $triggers): void
     {
-        $em        = $this->em();
-        $metadata  = [];
+        $em       = $this->em();
+        $metadata = [];
         foreach ($em->getMetadataFactory()->getAllMetadata() as $class) {
             if (str_starts_with($class->getName(), 'Nowo\WorkingTimeBundle\\')) {
                 $metadata[] = $class;
@@ -155,6 +179,30 @@ abstract class RegisterTestCase extends KernelTestCase
     {
         $this->ctx()->actor = $actor;
         $this->ctx()->grant($this->ctx()->tenant ?? 'acme', $actor, ...$permissions);
+    }
+
+    /**
+     * Clocks an action as the current actor, `$minutes` after the previous one.
+     */
+    protected function act(ClockAction $action, int $minutes = 0, ?string $ip = null): ClockState
+    {
+        if ($minutes !== 0) {
+            $this->clock()->modify(sprintf('+%d minutes', $minutes));
+        }
+
+        return $this->service(RegisterClockInterface::class)->act(null, $action, null, RequestKey::web(bin2hex(random_bytes(6))), SegmentSource::Web, $ip);
+    }
+
+    /**
+     * A worked day: in, 4 h, break 30 min, 4 h, out.
+     */
+    protected function workDay(): ClockState
+    {
+        $this->act(ClockAction::ClockIn);
+        $this->act(ClockAction::BreakStart, 240);
+        $this->act(ClockAction::BreakEnd, 30);
+
+        return $this->act(ClockAction::ClockOut, 240);
     }
 
     protected function access(): RegisterAccess

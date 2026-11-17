@@ -14,6 +14,7 @@ use Symfony\Component\Config\Loader\Loader;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
+use function is_string;
 use function rtrim;
 
 /**
@@ -29,6 +30,9 @@ final class UiRouteLoader extends Loader
     /** Route attribute that marks the bundle's routes (conflict formatter). */
     public const ROUTE_ATTRIBUTE = '_nowo_working_time';
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private readonly bool $enabled = false,
         private readonly string $registerPath = '/working-time',
@@ -49,8 +53,8 @@ final class UiRouteLoader extends Loader
         $base = rtrim($this->registerPath, '/');
         $uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
         $date = '\d{4}-\d{2}-\d{2}';
-        $add  = static function (string $name, string $path, string $controller, array $methods, array $requirements = [], array $defaults = []) use ($routes): void {
-            $routes->add('nowo_working_time_' . $name, new Route($path, ['_controller' => $controller, self::ROUTE_ATTRIBUTE => true] + $defaults, $requirements, [], '', [], $methods));
+        $add  = static function (string $name, string $path, string $controller, array $methods, array $requirements = []) use ($routes): void {
+            $routes->add('nowo_working_time_' . $name, self::route($path, $controller, $methods, $requirements));
         };
         $add('settings', $this->settingsPath, SettingsController::class . '::settings', ['GET', 'POST']);
         $add('preferences', $base . '/preferences', SettingsController::class . '::preferences', ['GET', 'POST']);
@@ -72,6 +76,26 @@ final class UiRouteLoader extends Loader
         $add('export_download', $base . '/exports/{id}/download', ExportController::class . '::download', ['GET'], ['id' => $uuid]);
 
         return $routes;
+    }
+
+    /**
+     * One route of the bundle.
+     *
+     * @param array<mixed> $methods
+     * @param array<mixed> $requirements
+     */
+    private static function route(string $path, string $controller, array $methods, array $requirements): Route
+    {
+        $verbs = [];
+        foreach ($methods as $method) {
+            $verbs[] = is_string($method) ? $method : 'GET';
+        }
+        $patterns = [];
+        foreach ($requirements as $key => $pattern) {
+            $patterns[(string) $key] = is_string($pattern) ? $pattern : '.+';
+        }
+
+        return new Route($path, ['_controller' => $controller, self::ROUTE_ATTRIBUTE => true], $patterns, [], '', [], $verbs);
     }
 
     /**

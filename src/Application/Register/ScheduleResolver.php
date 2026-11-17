@@ -27,6 +27,9 @@ use function in_array;
  */
 final readonly class ScheduleResolver
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private ScheduleFallbackProviderInterface $fallback,

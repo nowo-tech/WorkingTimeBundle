@@ -12,6 +12,9 @@ use Symfony\Component\Messenger\MessageBusInterface;
  */
 final readonly class MessengerExportDispatcher implements ExportDispatcherInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private MessageBusInterface $bus)
     {
     }

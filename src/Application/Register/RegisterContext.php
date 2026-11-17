@@ -17,6 +17,9 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
  */
 final readonly class RegisterContext
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public TenantRef $tenant,
         public RegisterSettings $settings,

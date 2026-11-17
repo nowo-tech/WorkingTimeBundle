@@ -28,6 +28,9 @@ use Psr\EventDispatcher\EventDispatcherInterface;
  */
 final readonly class RegisterSettingsEditor implements RegisterSettingsEditorInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterAccess $access,
         private RegisterStoreInterface $store,

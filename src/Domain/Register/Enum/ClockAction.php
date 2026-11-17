@@ -52,8 +52,8 @@ enum ClockAction: string
     {
         return match ($this) {
             self::ClockIn, self::BreakEnd => SegmentType::Work,
-            self::BreakStart => SegmentType::Break,
-            self::ClockOut   => null,
+            self::BreakStart              => SegmentType::Break,
+            self::ClockOut                => null,
         };
     }
 

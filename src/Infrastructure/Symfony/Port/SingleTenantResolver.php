@@ -13,6 +13,9 @@ use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
  */
 final readonly class SingleTenantResolver implements WorkingTimeTenantResolverInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private string $name = 'Working time',
         private string $locale = 'en',

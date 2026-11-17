@@ -16,6 +16,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class WorkerPreferences
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterAccess $access,
         private RegisterStoreInterface $store,

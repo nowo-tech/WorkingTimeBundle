@@ -16,6 +16,8 @@ use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterCsv;
 
+use function array_filter;
+use function implode;
 use function is_string;
 use function sprintf;
 use function substr;
@@ -35,8 +37,8 @@ final class DayView
      */
     public static function sections(LocalDate $date, ?DayRecord $record, string $timezone, bool $showIp): array
     {
-        $zone     = new DateTimeZone($timezone);
-        $summary  = [
+        $zone    = new DateTimeZone($timezone);
+        $summary = [
             new DetailItem(UiSupport::label('day.date'), $date->value),
             new DetailItem(UiSupport::label('day.timezone'), $timezone),
             new DetailItem(UiSupport::label('day.worked'), MonthSummary::hours($record->workedSeconds ?? 0)),
@@ -50,7 +52,7 @@ final class DayView
         foreach ($record->segments ?? [] as $segment) {
             $text = RegisterCsv::local($segment->start, $zone) . ' – ' . RegisterCsv::local($segment->end, $zone);
             if ($showIp && ($segment->startIpPrefix !== null || $segment->endIpPrefix !== null)) {
-                $text .= sprintf(' (%s)', RegisterCsv::ipPrefixes(new DayRecord($record->workday, [$segment], 0, 0, 0, [], [], [], [])));
+                $text .= sprintf(' (%s)', implode(' ', array_filter([$segment->startIpPrefix, $segment->endIpPrefix])));
             }
             $segments[] = new DetailItem(
                 UiSupport::label('segment.type.' . $segment->type->value),

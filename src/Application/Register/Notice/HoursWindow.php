@@ -29,8 +29,8 @@ final class HoursWindow
         $any = false;
         foreach ($days as $date => $schedule) {
             foreach ($schedule->ranges as $range) {
-                $any                  = true;
-                [$start, $end]        = self::bounds(new LocalDate($date), $schedule, $range, $windowMinutes);
+                $any           = true;
+                [$start, $end] = self::bounds(new LocalDate($date), $schedule, $range, $windowMinutes);
                 if ($now <= $end) {
                     return $now >= $start ? $now : $start;
                 }

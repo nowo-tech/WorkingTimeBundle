@@ -17,6 +17,9 @@ final readonly class PsrLogAuditSink implements WorkingTimeAuditSinkInterface
 {
     private LoggerInterface $logger;
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(?LoggerInterface $logger = null)
     {
         $this->logger = $logger ?? new NullLogger();

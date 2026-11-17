@@ -7,7 +7,6 @@ namespace Nowo\WorkingTimeBundle\Domain\Register\Model;
 use DateTimeZone;
 use InvalidArgumentException;
 
-use function array_values;
 use function count;
 use function explode;
 use function in_array;
@@ -174,7 +173,7 @@ final readonly class ScheduleDefinition
 
         return new self(
             is_string($data['timezone'] ?? null) ? $data['timezone'] : $defaultZone,
-            array_values($slots),
+            $slots,
             $int('daily_target_minutes'),
             $int('weekly_target_minutes'),
             $int('flex_minutes') ?? 0,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Application\Register\Notice;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Register\ScheduleResolver;
 use Nowo\WorkingTimeBundle\Domain\Port\IdGeneratorInterface;
@@ -14,8 +15,6 @@ use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
-
-use DateTimeZone;
 
 use function hash;
 
@@ -29,6 +28,9 @@ final readonly class NoticeOutbox
     /** Days ahead looked at for the recipient's next hours. */
     public const LOOKAHEAD_DAYS = 8;
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterStoreInterface $store,
         private WorkerDirectoryInterface $directory,

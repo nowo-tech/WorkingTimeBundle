@@ -24,7 +24,7 @@ use function str_replace;
 use function strtolower;
 
 /**
- * The database side of the append-only register (contract section 6.4, spec 198 FR-017): triggers that refuse
+ * The database side of the append-only register (contract section 6.4, spec 198 FR-017): triggers that refuse.
  *
  * - any UPDATE of the workday, revision and chain-anchor tables;
  * - any UPDATE of the segment table but the one that closes an open segment (only `end_*`, from NULL);
@@ -182,8 +182,8 @@ final readonly class RegisterTriggerInstaller
         $fixed      = implode(' OR ', array_map(static fn (string $column): string => sprintf('NOT (NEW.`%1$s` <=> OLD.`%1$s`)', $column), self::SEGMENT_FIXED));
         $statements = [];
         foreach (self::TABLES as $table => $short) {
-            $name  = $this->prefix . 'wt_' . $short;
-            $full  = $this->prefix . $table;
+            $name = $this->prefix . 'wt_' . $short;
+            $full = $this->prefix . $table;
             if ($short === 'segment') {
                 $statements[] = sprintf('CREATE TRIGGER %s_no_update BEFORE UPDATE ON %s FOR EACH ROW BEGIN IF OLD.ended_at IS NOT NULL OR NEW.ended_at IS NULL OR %s THEN %s; END IF; END', $name, $full, $fixed, $refuse($table));
             } else {
@@ -205,8 +205,8 @@ final readonly class RegisterTriggerInstaller
         $guard = $this->purgeUser === null
             ? sprintf("current_setting('%s', true) = '1'", self::PURGE_SETTING)
             : sprintf("current_user = '%s'", $this->purgeUser);
-        $fixed = implode(', ', array_map(static fn (string $column): string => 'NEW.' . $column, self::SEGMENT_FIXED));
-        $old   = str_replace('NEW.', 'OLD.', $fixed);
+        $fixed      = implode(', ', array_map(static fn (string $column): string => 'NEW.' . $column, self::SEGMENT_FIXED));
+        $old        = str_replace('NEW.', 'OLD.', $fixed);
         $statements = [
             sprintf("CREATE OR REPLACE FUNCTION %swt_refuse() RETURNS trigger LANGUAGE plpgsql AS \$\$\nBEGIN\n  IF TG_OP = 'DELETE' AND TG_TABLE_NAME <> '%s' AND %s THEN RETURN OLD; END IF;\n  RAISE EXCEPTION '%% is append-only', TG_TABLE_NAME USING ERRCODE = 'P0001';\nEND \$\$", $this->prefix, $this->prefix . 'working_time_chain_anchor', $guard),
             sprintf("CREATE OR REPLACE FUNCTION %swt_segment_close_only() RETURNS trigger LANGUAGE plpgsql AS \$\$\nBEGIN\n  IF OLD.ended_at IS NOT NULL OR NEW.ended_at IS NULL OR (%s) IS DISTINCT FROM (%s) THEN\n    RAISE EXCEPTION '%s is append-only' USING ERRCODE = 'P0001';\n  END IF;\n  RETURN NEW;\nEND \$\$", $this->prefix, $fixed, $old, $this->prefix . 'working_time_segment'),

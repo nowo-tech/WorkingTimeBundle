@@ -23,7 +23,7 @@ final class PurgeFlagResetDriver extends AbstractDriverMiddleware
      */
     public function connect(#[SensitiveParameter] array $params): Connection
     {
-        $connection = parent::connect($params);
+        $connection = parent::connect($params); // @phpstan-ignore argument.type
         if (self::isMysql($connection->getNativeConnection())) {
             $connection->exec('SET ' . RegisterTriggerInstaller::PURGE_VARIABLE . ' = NULL');
         }

@@ -9,6 +9,9 @@ namespace Nowo\WorkingTimeBundle\Domain\Shared;
  */
 final readonly class TenantProfile
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public TenantRef $tenant,
         public string $name,

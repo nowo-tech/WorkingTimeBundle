@@ -15,7 +15,7 @@ use function stream_get_contents;
 class RegisterExportFile
 {
     /**
-     * @param string|resource $content the bytes (Doctrine hydrates a blob as a stream)
+     * @param resource|string $content the bytes (Doctrine hydrates a blob as a stream)
      */
     private function __construct(
         private string $exportId,

@@ -58,6 +58,9 @@ use function trim;
  */
 final readonly class CorrectionService implements CorrectionServiceInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private RegisterAccess $access,
         private RegisterStoreInterface $store,
@@ -177,7 +180,7 @@ final readonly class CorrectionService implements CorrectionServiceInterface
         if ($context->isOwn()) {
             throw new CorrectionRefusedException('correction.error.own_day');
         }
-        $now = $this->clock->now();
+        $now     = $this->clock->now();
         [$today] = $this->schedules->at($context->settings, $context->subject, $now);
         if ($date->compare($today) > 0) {
             throw new CorrectionRefusedException('correction.error.future');

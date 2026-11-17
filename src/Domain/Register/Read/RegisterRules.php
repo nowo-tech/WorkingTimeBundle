@@ -14,6 +14,9 @@ final readonly class RegisterRules
     /** Art. 34.4 ET: the break rule applies to a day of more than six hours. */
     public const BREAK_RULE_AFTER = 6 * 3_600;
 
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         public int $lateSeconds = 600,
         public int $missingClockOutGraceSeconds = 7_200,

@@ -15,6 +15,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
 use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,6 +38,9 @@ use function random_bytes;
  */
 final readonly class UiSupport
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private Environment $twig,
         private UrlGeneratorInterface $router,
@@ -51,7 +55,7 @@ final readonly class UiSupport
     /**
      * A translation label of the bundle.
      *
-     * @param array<string, mixed> $params
+     * @param array<string, float|int|string|null> $params
      */
     public static function label(string $key, array $params = []): Label
     {
@@ -147,7 +151,7 @@ final readonly class UiSupport
     /**
      * A named form.
      *
-     * @param class-string<\Symfony\Component\Form\FormTypeInterface<mixed>> $type
+     * @param class-string<FormTypeInterface<mixed>> $type
      * @param array<string, mixed>|null $data
      * @param array<string, mixed> $options
      *
@@ -173,7 +177,7 @@ final readonly class UiSupport
      */
     public function tabs(string $current): AreaNav
     {
-        $items = [new AreaNavItem(self::label('nav.today'), $this->url('nowo_working_time_today'), $current === 'today')];
+        $items   = [new AreaNavItem(self::label('nav.today'), $this->url('nowo_working_time_today'), $current === 'today')];
         $items[] = new AreaNavItem(self::label('nav.month'), $this->url('nowo_working_time_month_current'), $current === 'month');
         $items[] = new AreaNavItem(self::label('nav.exports'), $this->url('nowo_working_time_exports'), $current === 'exports');
         if ($this->access->can(WorkingTimePermission::ManageTeam)) {

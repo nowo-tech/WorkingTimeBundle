@@ -13,6 +13,9 @@ use Nowo\Brand\Contract\BrandProviderInterface;
  */
 final readonly class NeutralBrandProvider implements BrandProviderInterface
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(private string $name = 'Working time')
     {
     }

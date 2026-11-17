@@ -36,6 +36,9 @@ use function trim;
  */
 final readonly class SettingsController
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private UiSupport $ui,
         private RegisterSettingsEditorInterface $editor,
@@ -69,7 +72,7 @@ final readonly class SettingsController
                     $form->addError(new FormError($this->ui->trans($e->key)));
                 } catch (StaleSettingsException) {
                     $this->ui->flash($request, 'error', 'settings.stale');
-                    [$status, $headers] = $this->ui->conflict();
+                    [$status, $headers]   = $this->ui->conflict();
                     [$settings, $version] = $this->editor->get();
 
                     return $this->page($this->ui->form(SettingsType::class, self::data($settings, $version, $request->getLocale()), ['ip_evidence_offered' => $this->ipEvidenceOffered]), $status, $headers);
@@ -87,7 +90,7 @@ final readonly class SettingsController
     {
         return $this->ui->guard(function () use ($request): Response {
             [$preference, $allowed, $mandatory] = $this->preferences->get();
-            $form = $this->ui->form(PreferencesType::class, ['reminders' => $preference->wantsReminders(), 'monthlySummary' => $preference->wantsMonthlySummary() || $mandatory], ['reminders_allowed' => $allowed, 'summary_mandatory' => $mandatory]);
+            $form                               = $this->ui->form(PreferencesType::class, ['reminders' => $preference->wantsReminders(), 'monthlySummary' => $preference->wantsMonthlySummary() || $mandatory], ['reminders_allowed' => $allowed, 'summary_mandatory' => $mandatory]);
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid()) {
                 /** @var array{reminders: mixed, monthlySummary: mixed} $data */

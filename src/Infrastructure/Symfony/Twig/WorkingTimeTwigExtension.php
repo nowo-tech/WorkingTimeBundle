@@ -24,6 +24,9 @@ use function sprintf;
  */
 final class WorkingTimeTwigExtension extends AbstractExtension
 {
+    /**
+     * Wires the collaborators.
+     */
     public function __construct(
         private readonly RegisterClockInterface $clock,
         private readonly UrlGeneratorInterface $router,
