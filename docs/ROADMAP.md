@@ -63,7 +63,7 @@ others are product features. The bundle is still not legal advice.
 
 | Item | What it is | Why it helps |
 | --- | --- | --- |
-| **Shift planning** | Shift templates, a rota per team and work centre, publication to workers with a notice, swap requests with approval, and the rota as the day's schedule | Shift work is the main use of a register outside offices; today staffing is a warning only (a v1 non-goal, contract §1) |
+| **Shift planning** — after 1.0 (owner 2026-11-18) | Shift templates, a rota per team and work centre, publication to workers with a notice, swap requests with approval, and the rota as the day's schedule | Shift work is the main use of a register outside offices; today staffing is a warning only (a v1 non-goal, contract §1) |
 | **Mobile-first clock-in** | A phone-first page (installable, with an offline queue that keeps the real time of each action) for clock-in, breaks and leave requests, without location | Workers away from a desk need a register they can reach; the server already stores offline times with `received_at` |
 | **Hour classes for payroll** | Classify worked time as night, holiday, weekend or ordinary from the schedule and the holiday calendar, in the month view and the payroll CSV | Night and holiday hours are paid differently (art. 36 ET and agreements); payroll otherwise recomputes them by hand |
 | **Absence and overtime reports** | Dashboards per team and work centre: absence rate by leave type (medical shown only as a count), overtime trend, leave taken versus allowance, pending approvals | Managers and HR plan with numbers instead of exports |
@@ -75,8 +75,8 @@ others are product features. The bundle is still not legal advice.
 
 | Item | What it is | Why it helps | Note |
 | --- | --- | --- | --- |
-| **Shared-terminal clock-in** | A terminal page for a shared device where workers clock in with a PIN, a QR code or a badge number; no photos and no biometrics | Factories, shops and clinics share one device | Kiosks are a v1 non-goal (contract §1); needs a threat model for PIN guessing and shared sessions |
-| **Allowed networks** | A tenant may limit clocking to listed networks (the stored /24 or /64 prefix), warning or refusing elsewhere | A light, location-free check for on-site work | Opt-in; the worker notice must say it; never a precise location |
+| **Shared-terminal clock-in** — after 1.0 (owner 2026-11-18) | A terminal page for a shared device where workers clock in with a PIN, a QR code or a badge number; never photos or biometrics | Factories, shops and clinics share one device | Kiosks are a v1 non-goal (contract §1); needs a threat model for PIN guessing and shared sessions |
+| **Allowed networks** — after 1.0 (owner 2026-11-18) | A tenant may limit clocking to listed networks (the stored /24 or /64 prefix), warning or refusing elsewhere | A light, location-free check for on-site work | Opt-in; the worker notice must say it; never a precise location |
 | **Collective-agreement rules** | Rule sets for seniority days, agreement-specific paid leave and accrual formulas beyond pro-rata | Removes manual allowance lines for each agreement | A v1 non-goal (contract §1); large and agreement-specific |
 | **Project time from the register** | Split a workday's worked time across tasks through the TimeTrack bridge, with the register as the total | Avoids double entry where both registers are used | The register stays the legal total; task time never edits it |
 
