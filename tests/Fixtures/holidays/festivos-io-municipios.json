@@ -1,0 +1,208 @@
+{
+ "version": "1.0.0",
+ "source": "INE — Relación de municipios y sus códigos por provincias (diccionario26.xlsx, ref. 2026-01-01)",
+ "source_url": "https://www.ine.es/daco/daco42/codmun/diccionario26.xlsx",
+ "count": 20,
+ "municipalities": [
+  {
+   "ine": "08019",
+   "dc": 3,
+   "name": "Barcelona",
+   "province": "08",
+   "province_name": "Barcelona",
+   "ccaa_ine": "09",
+   "ccaa_iso": "ES-CT",
+   "ccaa_name": "Cataluña"
+  },
+  {
+   "ine": "15030",
+   "dc": 8,
+   "name": "Coruña, A",
+   "province": "15",
+   "province_name": "A Coruña",
+   "ccaa_ine": "12",
+   "ccaa_iso": "ES-GA",
+   "ccaa_name": "Galicia"
+  },
+  {
+   "ine": "28058",
+   "dc": 7,
+   "name": "Fuenlabrada",
+   "province": "28",
+   "province_name": "Madrid",
+   "ccaa_ine": "13",
+   "ccaa_iso": "ES-MD",
+   "ccaa_name": "Comunidad de Madrid"
+  },
+  {
+   "ine": "28065",
+   "dc": 0,
+   "name": "Getafe",
+   "province": "28",
+   "province_name": "Madrid",
+   "ccaa_ine": "13",
+   "ccaa_iso": "ES-MD",
+   "ccaa_name": "Comunidad de Madrid"
+  },
+  {
+   "ine": "28079",
+   "dc": 6,
+   "name": "Madrid",
+   "province": "28",
+   "province_name": "Madrid",
+   "ccaa_ine": "13",
+   "ccaa_iso": "ES-MD",
+   "ccaa_name": "Comunidad de Madrid"
+  },
+  {
+   "ine": "29067",
+   "dc": 2,
+   "name": "Málaga",
+   "province": "29",
+   "province_name": "Málaga",
+   "ccaa_ine": "01",
+   "ccaa_iso": "ES-AN",
+   "ccaa_name": "Andalucía"
+  },
+  {
+   "ine": "41091",
+   "dc": 7,
+   "name": "Sevilla",
+   "province": "41",
+   "province_name": "Sevilla",
+   "ccaa_ine": "01",
+   "ccaa_iso": "ES-AN",
+   "ccaa_name": "Andalucía"
+  },
+  {
+   "ine": "46250",
+   "dc": 8,
+   "name": "València",
+   "province": "46",
+   "province_name": "Valencia/València",
+   "ccaa_ine": "10",
+   "ccaa_iso": "ES-VC",
+   "ccaa_name": "Comunitat Valenciana"
+  },
+  {
+   "ine": "48020",
+   "dc": 9,
+   "name": "Bilbao",
+   "province": "48",
+   "province_name": "Bizkaia",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "50297",
+   "dc": 3,
+   "name": "Zaragoza",
+   "province": "50",
+   "province_name": "Zaragoza",
+   "ccaa_ine": "02",
+   "ccaa_iso": "ES-AR",
+   "ccaa_name": "Aragón"
+  },
+  {
+   "ine": "01001",
+   "dc": 4,
+   "name": "Alegría-Dulantzi",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01002",
+   "dc": 9,
+   "name": "Amurrio",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01003",
+   "dc": 5,
+   "name": "Aramaio",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01004",
+   "dc": 0,
+   "name": "Artziniega",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01006",
+   "dc": 6,
+   "name": "Armiñón",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01008",
+   "dc": 8,
+   "name": "Arratzua-Ubarrundia",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01009",
+   "dc": 1,
+   "name": "Asparrena",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01010",
+   "dc": 5,
+   "name": "Ayala/Aiara",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01011",
+   "dc": 2,
+   "name": "Baños de Ebro/Mañueta",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  },
+  {
+   "ine": "01013",
+   "dc": 3,
+   "name": "Barrundia",
+   "province": "01",
+   "province_name": "Araba/Álava",
+   "ccaa_ine": "16",
+   "ccaa_iso": "ES-PV",
+   "ccaa_name": "País Vasco"
+  }
+ ]
+}

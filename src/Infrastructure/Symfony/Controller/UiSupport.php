@@ -9,8 +9,8 @@ use Nowo\UiKitBundle\View\AreaNav;
 use Nowo\UiKitBundle\View\AreaNavItem;
 use Nowo\UiKitBundle\View\Label;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
-use Nowo\WorkingTimeBundle\Domain\Register\Exception\PermissionDeniedException;
-use Nowo\WorkingTimeBundle\Domain\Register\Exception\RegisterUnavailableException;
+use Nowo\WorkingTimeBundle\Domain\Shared\Exception\AccessDeniedException;
+use Nowo\WorkingTimeBundle\Domain\Shared\Exception\NotAvailableException;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
 use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -123,7 +123,20 @@ final readonly class UiSupport
     }
 
     /**
-     * Runs a page and maps the gate's refusals: 404, then 403.
+     * Adds a flash with parameters, translated in the request's locale.
+     *
+     * @param array<string, int|string> $params
+     */
+    public function flashParams(Request $request, string $type, string $key, array $params): void
+    {
+        $session = $request->hasSession() ? $request->getSession() : null;
+        if ($session instanceof FlashBagAwareSessionInterface) {
+            $session->getFlashBag()->add($type, $this->trans($key, $params));
+        }
+    }
+
+    /**
+     * Runs a page and maps the gates' refusals (register, holidays, leave): 404, then 403.
      *
      * @param callable(): Response $page
      */
@@ -131,9 +144,9 @@ final readonly class UiSupport
     {
         try {
             return $page();
-        } catch (RegisterUnavailableException $e) {
+        } catch (NotAvailableException $e) {
             throw new NotFoundHttpException('Not found.', $e);
-        } catch (PermissionDeniedException $e) {
+        } catch (AccessDeniedException $e) {
             throw new AccessDeniedHttpException('Forbidden.', $e);
         }
     }

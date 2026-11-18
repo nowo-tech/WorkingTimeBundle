@@ -1,0 +1,16 @@
+{#
+  One bundle form in a UiKit card: title, form errors, every field not rendered yet, the submit button.
+  Variables: form (FormView), title (translation key), submit (translation key), action (URL or null), testid,
+  multipart (bool), variant (btn_primary | btn_secondary | btn_danger).
+#}
+{%- set _b = 'NowoWorkingTimeBundle' -%}
+<section class="{{ nowo_ui_class('card', _b) }}" data-testid="{{ testid }}">
+    <div class="{{ nowo_ui_class('card_body', _b) }}">
+        {% if title %}<h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ title|trans({}, _b) }}</h2>{% endif %}
+        {{ form_start(form, {action: action ?? '', multipart: multipart ?? false}) }}
+        {% if form.vars.errors|length > 0 %}<div class="{{ nowo_ui_class('flash_error', _b) }}" role="alert">{{ form_errors(form) }}</div>{% endif %}
+        {% for child in form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+        <div class="{{ nowo_ui_class('form_actions', _b) }}"><button type="submit" class="{{ nowo_ui_class(variant ?? 'btn_primary', _b) }}">{{ submit|trans({}, _b) }}</button></div>
+        {{ form_end(form) }}
+    </div>
+</section>

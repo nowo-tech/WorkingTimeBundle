@@ -52,6 +52,35 @@ nowo_working_time:
 renderer, `export.async: messenger` without Messenger and an invalid `register.schedule.default` fail the build with
 the fix.
 
+## Holidays and leave (0.2)
+
+```yaml
+nowo_working_time:
+    permissions:
+        roles:
+            holidays_manage: [ROLE_HR]       # holiday calendars, imports, work centres
+            leave_manage: [ROLE_HR]          # leave types, allowances, adjustments
+            leave_request: [ROLE_USER]       # own balances (requests from S3)
+            manage_settings: [ROLE_ADMIN]    # register and leave settings
+    holidays:
+        enabled: true
+        http_client: null                    # service id; null = the framework's http_client, else one per call
+        outbound_guard: Nowo\OutboundUrlGuardBundle\Guard\RuntimeOutboundUrlGuard
+        cache_pool: cache.app                # town list and OpenHolidays regions (public data only); use a shared pool
+        providers:
+            festivos_io: { enabled: true, base_uri: 'https://festivos.io', timeout: 10, municipalities_ttl: 604800 }
+            openholidays: { enabled: true, base_uri: 'https://openholidaysapi.org', timeout: 10, subdivisions_ttl: 86400 }
+            file: { enabled: true, max_rows: 200, max_bytes: 262144 }
+    leave:
+        enabled: false                       # needs register.enabled and holidays.enabled
+    ui:
+        holidays_path: /holidays
+        leave_path: /leave                   # leave settings: <settings_path>/leave
+```
+
+A stand-alone holiday host (an agenda, a CRM) sets `register.enabled: false` and `leave.enabled: false`, maps
+`holidays_manage` and calls `HolidayCalendarReaderInterface`; with `ui.enabled` only the holiday pages are served.
+
 ## Whole tree
 
 ```yaml

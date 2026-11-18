@@ -1,0 +1,12 @@
+{#
+  Leave settings (manage_settings), next to the register's: UiKit settings scaffold with one section (the form with the
+  version the admin saw). Variables: page (SettingsPage).
+#}
+{% extends '@NowoUiKit/page/settings.html.twig' %}
+
+{% block nowo_ui_settings_section %}
+    {% if section.form and section.form.vars.errors|length > 0 %}
+        <div class="{{ nowo_ui_class('flash_error', page.bundle) }}" role="alert" data-testid="wt-leave-settings-errors">{{ form_errors(section.form) }}</div>
+    {% endif %}
+    {{ parent() }}
+{% endblock %}

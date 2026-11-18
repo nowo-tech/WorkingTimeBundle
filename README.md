@@ -11,7 +11,7 @@ can be enabled separately, a private entity manager, a UiKit + FormKit UI and br
 interfaces and value objects with no Symfony, Doctrine or HTTP types, the bundle-owned tables are mapped in XML and referenced by
 id, and the bundle never flushes your EntityManager.
 
-> 🚧 **Status: 0.1 (S1) — the working-hours register.** Holidays (S2) and leave (S3) arrive slice by slice from
+> 🚧 **Status: 0.2 (S2) — the working-hours register, the stand-alone holiday component and the leave foundations.** The leave request workflow (S3) arrives next, slice by slice from
 > [docs/CONTRACT.md](docs/CONTRACT.md) ([docs/ROADMAP.md](docs/ROADMAP.md)). Usage: [docs/USAGE.md](docs/USAGE.md).
 
 > 📋 **Compatible with Symfony 7.4, 8.0 and 8.1** · PHP 8.2+ (Symfony 8.x requires PHP 8.4+)
@@ -32,7 +32,7 @@ Three parts, switched separately (`register.enabled` on, `holidays.enabled` on, 
   unit of work.
 - **Closed PDF rendering**: no remote resources, no JavaScript, no PHP.
 
-Built slice by slice: S0 scaffold → **S1 register (0.1)** → S2 holidays + leave foundations → S3 leave workflow.
+Built slice by slice: S0 scaffold → S1 register (0.1) → **S2 holidays + leave foundations (0.2)** → S3 leave workflow.
 
 ## Installation
 

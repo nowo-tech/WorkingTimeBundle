@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Holiday\Model\HolidayDay" table="holiday_day">
+        <unique-constraints>
+            <unique-constraint name="wt_holiday_day_date" columns="calendar_id,holiday_date"/>
+        </unique-constraints>
+        <indexes>
+            <index name="wt_holiday_day_tenant" columns="tenant_id,holiday_date"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="calendarId" column="calendar_id" type="string" length="36"/>
+        <field name="holidayDate" column="holiday_date" type="date_immutable"/>
+        <field name="name" column="name" type="string" length="120"/>
+        <field name="origin" column="origin" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Holiday\Enum\HolidayOrigin"/>
+        <field name="sourceRef" column="source_ref" type="string" length="120" nullable="true"/>
+        <field name="sourceUrl" column="source_url" type="string" length="255" nullable="true"/>
+        <field name="provider" column="provider" type="string" length="40" nullable="true"/>
+    </entity>
+</doctrine-mapping>

@@ -58,6 +58,7 @@ month:
         worked: Worked
         expected: Expected
         flags: Flags
+        note: Note
 day:
     title: 'Day %date%'
     back_to_month: Back to the month
@@ -191,12 +192,16 @@ schedule:
         daily_target: Daily target (minutes, flexible schedule)
         weekly_target: Weekly target (minutes)
         flex: Flexible band (minutes)
+        work_centre: Work centre
+        work_centre_help: The holiday calendars of the worker's days come from it; empty is the default centre.
+        default_centre: Default centre
     error:
         group: Choose a group of the organisation.
         worker: Choose a worker.
         past: A schedule is valid from today or later; past days keep the schedule they were measured against.
         not_future: Only a schedule that is not valid yet can be withdrawn.
         invalid: The schedule is not valid (time zone, ranges without overlaps, targets up to 12 hours a day).
+        work_centre: Choose one of the organisation's work centres.
 export:
     title: Exports
     intro: Your own copy of your register, and inspection exports for those who may make them. Files can be downloaded for 7 days.
@@ -344,3 +349,327 @@ notice:
     register_monthly_summary:
         subject: 'Your working time in %month%'
         body: 'Worked %worked% of %expected% expected over %days% day(s); %missing% missing clock-out(s).'
+holiday:
+    title: Public holidays
+    intro: Holiday calendars (national, regional, local) and the work centres they apply to. Imports from festivos.io, OpenHolidays or a CSV / ICS file are previewed before anything is saved.
+    empty: No holiday calendar yet.
+    open: Open
+    back: Back to the calendars
+    back_calendar: Back to the calendar
+    provisional: provisional
+    scope:
+        national: National
+        regional: Regional
+        local: Local
+    origin:
+        manual: By hand
+        file: File
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Provider
+    col:
+        year: Year
+        name: Name
+        scope: Scope
+        provider: Source
+        date: Date
+        origin: Origin
+        source: Official source
+        status: Status
+    calendar:
+        title: '%name% (%year%)'
+        add: New calendar
+        edit: Change the calendar
+        save: Save the calendar
+        empty: This calendar has no holidays yet.
+        provisional: This year is provisional at the source (local holidays not published yet); import it again once they are.
+        remove_title: Remove the calendar
+        remove: Remove the calendar and its holidays
+        form:
+            name: Name
+            scope: Scope
+            year: Year
+            country: Country
+            country_help: ISO code of two letters (ES, PT, FR…), for the imports.
+            subdivision: Region
+            subdivision_help: ISO region code (ES-MD, ES-CT…) of a regional calendar.
+            municipality: Municipality (INE code)
+            municipality_help: Five digits (28079 Madrid) for festivos.io; search them in the municipality list.
+            source_note: Source note
+        error:
+            name: The name has 1 to 80 characters.
+            year: The year is between 2000 and 2100.
+            year_in_use: The year of a calendar with holidays cannot change; create a calendar for the other year.
+            provider: Unknown provider.
+    day:
+        add: Add a holiday
+        edit: Edit
+        edit_title: Edit a holiday of %calendar%
+        save: Save the holiday
+        remove_title: Remove a holiday
+        remove: Remove
+        form:
+            date: Date
+            name: Name
+        error:
+            name: The name has 1 to 120 characters.
+            year: The date must be in the calendar's year.
+            date: Enter a valid date.
+            duplicate: The calendar already has a holiday on that date.
+    import:
+        title: Import a CSV or ICS file
+        preview: Preview
+        confirm: Import the new holidays
+        nothing: The file has no rows.
+        preview_title: Import into %name% (%year%)
+        form:
+            file: File
+            file_help: CSV with a header date,name,scope (comma or semicolon, UTF-8) or an ICS calendar with all-day events; at most 200 rows and 256 KiB.
+        status:
+            new: New
+            duplicate: Already there (kept)
+            other_scope: Another scope (skipped)
+            invalid: Invalid (skipped)
+            unchanged: Unchanged
+            removed: No longer listed (removed)
+        error:
+            file: The file is not a UTF-8 text file within the size limit.
+            header: The CSV needs a header row with at least the columns date and name.
+            too_many: The file has more than %max% rows.
+            empty: The file has no rows.
+            disabled: File imports are switched off.
+    provider:
+        import_from: Import from %provider%
+        festivos_io:
+            label: festivos.io (Spain, by municipality)
+            error: festivos.io could not be read; nothing was saved. Check the municipality code and the year, and try again later.
+            municipality: festivos.io needs a Spanish municipality (country ES and a five-digit INE code).
+        openholidays:
+            label: OpenHolidays (country or region)
+            error: The OpenHolidays API could not be read; nothing was saved. Check the country and region codes, and try again later.
+        error:
+            unknown: That provider is not available.
+            location: That provider cannot answer for this place.
+    location:
+        error:
+            country: The country is an ISO code of two letters.
+            subdivision: The region is an ISO code of the country (ES-MD).
+            municipality: The municipality is a five-digit INE code.
+    centre:
+        title: Work centres
+        intro: A work centre groups the calendars that apply to the people who work there; a worker's centre comes from their schedule, else the default centre.
+        empty: No work centre yet; every calendar applies to everyone.
+        add: New work centre
+        save: Save the work centre
+        edit_title: Work centre %name%
+        calendars: '%count% calendar(s)'
+        default: Default
+        remove_title: Remove the work centre
+        remove: Remove the work centre
+        form:
+            name: Name
+            calendars: Calendars
+            default: Default centre of the organisation
+        error:
+            name: The name has 1 to 80 characters.
+    municipalities:
+        title: Spanish municipalities
+        loaded: The municipality list is loaded; search it at %url%?query=… (by name, province or INE code).
+        not_loaded: The municipality list is not loaded; load it once (one call to festivos.io, kept for a week) to search towns by name.
+        refresh: Load the municipality list
+    flash:
+        calendar_saved: Calendar saved.
+        calendar_removed: Calendar removed.
+        day_added: Holiday added.
+        day_changed: Holiday changed.
+        day_removed: Holiday removed.
+        imported: '%added% holiday(s) imported.'
+        provider_imported: '%added% holiday(s) imported, %removed% removed.'
+        provider_imported_provisional: '%added% holiday(s) imported, %removed% removed. The year is still provisional at the source.'
+        centre_saved: Work centre saved.
+        centre_removed: Work centre removed.
+        municipalities_loaded: '%count% municipalities loaded.'
+leave:
+    back: Back to the types
+    year_previous: Previous year
+    year_next: Next year
+    nav:
+        label: Leave
+        balances: My balances
+        types: Types
+        allowances: Allowances
+        settings: Settings
+    unit:
+        natural_days: Natural days
+        working_days: Working days
+        hours: Hours
+    source:
+        none: Nothing
+        allowance: Yearly allowance
+        overtime: Ratified overtime
+    rounding:
+        nearest: To the nearest half-day
+        up: Up
+        down: Down
+    line_kind:
+        adjustment: Adjustment
+        carry_over: Carry-over
+        protected_carry_over: Protected carry-over
+    part:
+        full: Whole day
+        morning: Morning
+        afternoon: Afternoon
+        hours: Hours
+    seed:
+        vacation: Vacation
+        personal: Personal days
+        compensatory: Compensatory time off
+        marriage: Paid leave – marriage
+        family: Paid leave – family accident, illness or hospitalisation
+        bereavement: Paid leave – bereavement
+        moving: Paid leave – moving house
+        public_duty: Paid leave – public duty
+        unpaid: Unpaid leave
+        absence: Absence
+        medical: Absence – medical (justified)
+        medical_appointment: Medical appointment
+        work_accident: Work accident
+    balance:
+        title: My leave %year%
+        intro: Entitled includes your allowance and its adjustments and carry-overs; requests arrive with the next release.
+        empty: No balance for this year.
+        col:
+            type: Type
+            entitled: Entitled
+            taken: Taken
+            planned: Planned
+            pending: Pending
+            remaining: Remaining
+            unit: Unit
+    type:
+        title: Leave types
+        intro: The kinds of leave of the organisation. Archived types stay on old records.
+        empty: No leave type yet; seed the default ones.
+        seed_intro: The default types (vacation, personal days, the paid leaves of art. 37.3 ET, unpaid leave, absences) can be added at any time; existing ones are kept.
+        seed: Add the default types
+        no_health: No type, field or note may hold a diagnosis, a cause or any health detail; a medical type only records that the absence is justified.
+        add: New leave type
+        save: Save the type
+        edit: Edit
+        edit_title: Leave type %name%
+        archive: Archive the type
+        restore: Restore the type
+        active: Active
+        archived: Archived
+        medical: Medical (shown as Absent)
+        col:
+            name: Name
+            unit: Unit
+            source: Draws from
+            state: State
+        form:
+            name: Name
+            paid: Paid
+            source: Draws from
+            unit: Unit
+            needs_approval: Needs approval
+            needs_attachment: Needs a document
+            medical: Medical absence
+            medical_help: Shown as Absent to everyone without leave management; no health detail is ever stored.
+            colour: Colour
+            max_per_request: Largest request
+            amount_help: In days (half-days allowed) or hours, as the unit says.
+            carry_over: Unused days may be carried over
+            carry_over_max: Largest carry-over
+            carry_over_expiry: Carry-over expires on
+            carry_over_expiry_help: Month and day of the next year (MM-DD), for example 03-31.
+        error:
+            name: The name has 1 to 80 characters.
+            colour: Choose a colour of the palette.
+            max: The largest request is more than zero.
+            overtime_hours: A type that draws from overtime counts in hours.
+            medical_source: A medical type draws from no allowance.
+            expiry: The expiry is a month and a day (MM-DD).
+            carry_max: The largest carry-over is more than zero.
+            unit_in_use: The unit of a type with allowances cannot change; create a new type.
+    allowance:
+        title: Allowances %year%
+        intro: The yearly allowance of each type for the organisation, a group or one worker (the most specific wins), pro-rata for joiners and leavers.
+        empty: No allowance for this year.
+        add: New allowance
+        save: Save the allowance
+        remove_title: Remove an allowance
+        remove: Remove
+        worker_balances: A worker's balances (%year%)
+        col:
+            type: Type
+            scope: Applies to
+            target: Group or worker
+            amount: Amount
+            note: Note
+        form:
+            type: Type
+            scope: Applies to
+            year: Year
+            amount: Amount
+            agreement_equivalent: Agreement equivalent of the legal minimum
+            note: Note
+        error:
+            target: Choose the group or the worker the allowance applies to.
+            amount: The amount is zero or more and the year between 2000 and 2100.
+            legal_minimum: Vacation under the legal minimum (30 natural days or 22 working days) needs the agreement-equivalent mark and a note of at least 10 characters.
+            type: Only a type that draws from the yearly allowance has allowances.
+            carry_off: This type does not allow carry-over.
+            carry_max: A carry-over of this type is at most %max%.
+            reason: The reason has 3 to 255 characters.
+            line_amount: The amount is not zero (only an adjustment can be negative).
+            too_large: At most %max% (366 days or 2 080 hours).
+            negative: 'The adjustment would take the entitlement below zero (entitled now: %entitled%).'
+            self: Nobody changes their own allowance; another leave manager does.
+    line:
+        add: New adjustment or carry-over
+        save: Save the line
+        form:
+            kind: Kind
+            amount_help: In the type's unit; an adjustment may be negative.
+            reason: Reason
+            expires_on: Expires on
+            expires_on_help: 'Empty: a carry-over expires on the type''s date, a protected carry-over after the months of the settings.'
+    request:
+        error:
+            end_before_start: The end is before the start.
+            too_long: A request covers at most a year.
+            half_day_range: A half-day covers one date.
+            part: Days for day types, hours for hour types.
+            times: Enter a start and an end time (HH:MM), the end after the start.
+    settings:
+        title: Leave settings
+        intro: Leave management for the organisation. Turning it on adds the default leave types.
+        section: Leave
+        form:
+            enabled: Leave management is on
+            enabled_help: Needs the working-hours register on.
+            rounding: Pro-rata rounding
+            protected_carry_months: Months a protected carry-over lasts
+            colleagues_see_absences: Colleagues see Absent on the team calendar
+            medical_documents: Medical absences may carry a document
+            attachment_retention_months: Months documents are kept after the leave
+            overtime_ratio: Overtime to time off (percent)
+            planning_deadline: Vacation planning deadline (MM-DD)
+        error:
+            register_off: Turn the working-hours register on first.
+            protected_months: The months are between 1 and 60.
+            attachment_months: The months are between 1 and 48.
+            overtime_ratio: The ratio is between 1 and 400 percent.
+            planning_deadline: The deadline is a month and a day (MM-DD).
+    flash:
+        type_saved: Leave type saved.
+        type_archived: Leave type archived.
+        type_restored: Leave type restored.
+        seeded: '%count% default type(s) added.'
+        policy_added: Allowance added.
+        policy_removed: Allowance removed.
+        line_added: Line added.
+        settings_saved: Leave settings saved.
+    no_health_hint: Do not include health information (no diagnosis, cause or medical detail).
+

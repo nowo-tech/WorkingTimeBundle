@@ -45,6 +45,9 @@ final class ScheduleType extends AbstractType
             $this->addTypedField('dailyTarget', IntegerType::class, ['label' => 'schedule.form.daily_target', 'required' => false, 'attr' => ['min' => 0, 'max' => 720]]);
             $this->addTypedField('weeklyTarget', IntegerType::class, ['label' => 'schedule.form.weekly_target', 'required' => false, 'attr' => ['min' => 0, 'max' => 5040]]);
             $this->addTypedField('flex', IntegerType::class, ['label' => 'schedule.form.flex', 'required' => false, 'attr' => ['min' => 0, 'max' => 240]]);
+            if ($options['work_centres'] !== []) {
+                $this->addTypedField('workCentre', ChoiceType::class, ['label' => 'schedule.form.work_centre', 'choices' => $options['work_centres'], 'choice_translation_domain' => false, 'required' => false, 'placeholder' => 'schedule.form.default_centre', 'help' => 'schedule.form.work_centre_help']);
+            }
         });
     }
 
@@ -61,6 +64,7 @@ final class ScheduleType extends AbstractType
             'translation_domain' => NowoWorkingTimeBundle::TRANSLATION_DOMAIN,
             'groups'             => [],
             'workers'            => [],
+            'work_centres'       => [],
         ]);
     }
 

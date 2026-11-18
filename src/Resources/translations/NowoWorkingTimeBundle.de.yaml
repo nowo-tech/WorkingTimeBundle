@@ -58,6 +58,7 @@ month:
         worked: Gearbeitet
         expected: Erwartet
         flags: Hinweise
+        note: Notiz
 day:
     title: 'Tag %date%'
     back_to_month: Zurück zum Monat
@@ -191,12 +192,16 @@ schedule:
         daily_target: Tagesziel (Minuten, flexibler Plan)
         weekly_target: Wochenziel (Minuten)
         flex: Gleitzeitrahmen (Minuten)
+        work_centre: Arbeitsstätte
+        work_centre_help: Die Feiertagskalender der Tage der beschäftigten Person stammen daraus; leer bedeutet die Standard-Arbeitsstätte.
+        default_centre: Standard-Arbeitsstätte
     error:
         group: Wählen Sie eine Gruppe der Organisation.
         worker: Wählen Sie eine beschäftigte Person.
         past: Ein Arbeitszeitplan gilt ab heute oder später; vergangene Tage behalten den Plan, an dem sie gemessen wurden.
         not_future: Nur ein noch nicht gültiger Arbeitszeitplan kann zurückgezogen werden.
         invalid: Der Arbeitszeitplan ist nicht gültig (Zeitzone, Zeiträume ohne Überschneidungen, Ziele bis zu 12 Stunden pro Tag).
+        work_centre: Wählen Sie eine der Arbeitsstätten der Organisation.
 export:
     title: Exporte
     intro: Ihre eigene Kopie Ihrer Arbeitszeiterfassung und Prüfexporte für alle, die sie erstellen dürfen. Dateien können 7 Tage lang heruntergeladen werden.
@@ -344,3 +349,327 @@ notice:
     register_monthly_summary:
         subject: 'Ihre Arbeitszeit im %month%'
         body: 'Gearbeitet %worked% von %expected% erwartet an %days% Tag(en); %missing% fehlende(s) Ausstempeln.'
+holiday:
+    title: Feiertage
+    intro: Feiertagskalender (national, regional, lokal) und die Arbeitsstätten, für die sie gelten. Importe von festivos.io, OpenHolidays oder aus einer CSV- / ICS-Datei werden vor dem Speichern in der Vorschau angezeigt.
+    empty: Noch kein Feiertagskalender vorhanden.
+    open: Öffnen
+    back: Zurück zu den Kalendern
+    back_calendar: Zurück zum Kalender
+    provisional: vorläufig
+    scope:
+        national: National
+        regional: Regional
+        local: Lokal
+    origin:
+        manual: Manuell
+        file: Datei
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Anbieter
+    col:
+        year: Jahr
+        name: Name
+        scope: Geltungsbereich
+        provider: Quelle
+        date: Datum
+        origin: Herkunft
+        source: Offizielle Quelle
+        status: Status
+    calendar:
+        title: '%name% (%year%)'
+        add: Neuer Kalender
+        edit: Kalender ändern
+        save: Kalender speichern
+        empty: Dieser Kalender enthält noch keine Feiertage.
+        provisional: Dieses Jahr ist an der Quelle vorläufig (lokale Feiertage noch nicht veröffentlicht); importieren Sie es erneut, sobald sie vorliegen.
+        remove_title: Kalender entfernen
+        remove: Kalender und seine Feiertage entfernen
+        form:
+            name: Name
+            scope: Geltungsbereich
+            year: Jahr
+            country: Land
+            country_help: ISO-Code aus zwei Buchstaben (ES, PT, FR…), für die Importe.
+            subdivision: Region
+            subdivision_help: ISO-Regionscode (ES-MD, ES-CT…) eines regionalen Kalenders.
+            municipality: Gemeinde (INE-Code)
+            municipality_help: Fünf Ziffern (28079 Madrid) für festivos.io; suchen Sie sie in der Gemeindeliste.
+            source_note: Quellenhinweis
+        error:
+            name: Der Name hat 1 bis 80 Zeichen.
+            year: Das Jahr liegt zwischen 2000 und 2100.
+            year_in_use: Das Jahr eines Kalenders mit Feiertagen kann nicht geändert werden; legen Sie einen Kalender für das andere Jahr an.
+            provider: Unbekannter Anbieter.
+    day:
+        add: Feiertag hinzufügen
+        edit: Bearbeiten
+        edit_title: Feiertag von %calendar% bearbeiten
+        save: Feiertag speichern
+        remove_title: Feiertag entfernen
+        remove: Entfernen
+        form:
+            date: Datum
+            name: Name
+        error:
+            name: Der Name hat 1 bis 120 Zeichen.
+            year: Das Datum muss im Jahr des Kalenders liegen.
+            date: Geben Sie ein gültiges Datum ein.
+            duplicate: Der Kalender hat an diesem Datum bereits einen Feiertag.
+    import:
+        title: CSV- oder ICS-Datei importieren
+        preview: Vorschau
+        confirm: Neue Feiertage importieren
+        nothing: Die Datei enthält keine Zeilen.
+        preview_title: In %name% (%year%) importieren
+        form:
+            file: Datei
+            file_help: CSV mit der Kopfzeile date,name,scope (Komma oder Semikolon, UTF-8) oder ICS-Kalender mit ganztägigen Ereignissen; höchstens 200 Zeilen und 256 KiB.
+        status:
+            new: Neu
+            duplicate: Bereits vorhanden (beibehalten)
+            other_scope: Anderer Geltungsbereich (übersprungen)
+            invalid: Ungültig (übersprungen)
+            unchanged: Unverändert
+            removed: Nicht mehr aufgeführt (entfernt)
+        error:
+            file: Die Datei ist keine UTF-8-Textdatei innerhalb der Größenbeschränkung.
+            header: Das CSV benötigt eine Kopfzeile mit mindestens den Spalten date und name.
+            too_many: Die Datei hat mehr als %max% Zeilen.
+            empty: Die Datei enthält keine Zeilen.
+            disabled: Dateiimporte sind deaktiviert.
+    provider:
+        import_from: Von %provider% importieren
+        festivos_io:
+            label: festivos.io (Spanien, nach Gemeinde)
+            error: festivos.io konnte nicht gelesen werden; es wurde nichts gespeichert. Prüfen Sie den Gemeindecode und das Jahr und versuchen Sie es später erneut.
+            municipality: festivos.io benötigt eine spanische Gemeinde (Land ES und ein fünfstelliger INE-Code).
+        openholidays:
+            label: OpenHolidays (Land oder Region)
+            error: Die OpenHolidays-API konnte nicht gelesen werden; es wurde nichts gespeichert. Prüfen Sie die Länder- und Regionscodes und versuchen Sie es später erneut.
+        error:
+            unknown: Dieser Anbieter ist nicht verfügbar.
+            location: Dieser Anbieter kann für diesen Ort keine Auskunft geben.
+    location:
+        error:
+            country: Das Land ist ein ISO-Code aus zwei Buchstaben.
+            subdivision: Die Region ist ein ISO-Code des Landes (ES-MD).
+            municipality: Die Gemeinde ist ein fünfstelliger INE-Code.
+    centre:
+        title: Arbeitsstätten
+        intro: Eine Arbeitsstätte fasst die Kalender zusammen, die für die dort arbeitenden Personen gelten; die Arbeitsstätte einer beschäftigten Person ergibt sich aus ihrem Arbeitszeitplan, sonst aus der Standard-Arbeitsstätte.
+        empty: Noch keine Arbeitsstätte; jeder Kalender gilt für alle.
+        add: Neue Arbeitsstätte
+        save: Arbeitsstätte speichern
+        edit_title: Arbeitsstätte %name%
+        calendars: '%count% Kalender'
+        default: Standard
+        remove_title: Arbeitsstätte entfernen
+        remove: Arbeitsstätte entfernen
+        form:
+            name: Name
+            calendars: Kalender
+            default: Standard-Arbeitsstätte der Organisation
+        error:
+            name: Der Name hat 1 bis 80 Zeichen.
+    municipalities:
+        title: Spanische Gemeinden
+        loaded: Die Gemeindeliste ist geladen; suchen Sie unter %url%?query=… (nach Name, Provinz oder INE-Code).
+        not_loaded: Die Gemeindeliste ist nicht geladen; laden Sie sie einmal (ein Aufruf an festivos.io, eine Woche lang gespeichert), um Orte nach Namen zu suchen.
+        refresh: Gemeindeliste laden
+    flash:
+        calendar_saved: Kalender gespeichert.
+        calendar_removed: Kalender entfernt.
+        day_added: Feiertag hinzugefügt.
+        day_changed: Feiertag geändert.
+        day_removed: Feiertag entfernt.
+        imported: '%added% Feiertag(e) importiert.'
+        provider_imported: '%added% Feiertag(e) importiert, %removed% entfernt.'
+        provider_imported_provisional: '%added% Feiertag(e) importiert, %removed% entfernt. Das Jahr ist an der Quelle noch vorläufig.'
+        centre_saved: Arbeitsstätte gespeichert.
+        centre_removed: Arbeitsstätte entfernt.
+        municipalities_loaded: '%count% Gemeinden geladen.'
+leave:
+    back: Zurück zu den Arten
+    year_previous: Vorjahr
+    year_next: Folgejahr
+    nav:
+        label: Abwesenheiten
+        balances: Meine Salden
+        types: Arten
+        allowances: Ansprüche
+        settings: Einstellungen
+    unit:
+        natural_days: Kalendertage
+        working_days: Arbeitstage
+        hours: Stunden
+    source:
+        none: Keine
+        allowance: Jahresanspruch
+        overtime: Genehmigte Überstunden
+    rounding:
+        nearest: Auf den nächsten halben Tag
+        up: Aufrunden
+        down: Abrunden
+    line_kind:
+        adjustment: Anpassung
+        carry_over: Übertrag
+        protected_carry_over: Geschützter Übertrag
+    part:
+        full: Ganzer Tag
+        morning: Vormittag
+        afternoon: Nachmittag
+        hours: Stunden
+    seed:
+        vacation: Urlaub
+        personal: Persönliche Tage
+        compensatory: Freizeitausgleich
+        marriage: Bezahlte Freistellung – Heirat
+        family: Bezahlte Freistellung – Unfall, Krankheit oder Krankenhausaufenthalt eines Angehörigen
+        bereavement: Bezahlte Freistellung – Trauerfall
+        moving: Bezahlte Freistellung – Umzug
+        public_duty: Bezahlte Freistellung – öffentliche Pflicht
+        unpaid: Unbezahlte Freistellung
+        absence: Abwesenheit
+        medical: Abwesenheit – medizinisch (begründet)
+        medical_appointment: Arzttermin
+        work_accident: Arbeitsunfall
+    balance:
+        title: Meine Abwesenheiten %year%
+        intro: Der Anspruch umfasst Ihren Jahresanspruch samt Anpassungen und Überträgen; Anträge folgen mit der nächsten Version.
+        empty: Kein Saldo für dieses Jahr.
+        col:
+            type: Art
+            entitled: Anspruch
+            taken: Genommen
+            planned: Geplant
+            pending: Ausstehend
+            remaining: Verbleibend
+            unit: Einheit
+    type:
+        title: Abwesenheitsarten
+        intro: Die Abwesenheitsarten der Organisation. Archivierte Arten bleiben in alten Einträgen erhalten.
+        empty: Noch keine Abwesenheitsart; fügen Sie die Standardarten hinzu.
+        seed_intro: Die Standardarten (Urlaub, persönliche Tage, die bezahlten Freistellungen nach art. 37.3 ET, unbezahlte Freistellung, Abwesenheiten) können jederzeit hinzugefügt werden; vorhandene bleiben erhalten.
+        seed: Standardarten hinzufügen
+        no_health: Keine Art, kein Feld und keine Notiz darf eine Diagnose, eine Ursache oder sonstige Gesundheitsdaten enthalten; eine medizinische Art vermerkt nur, dass die Abwesenheit begründet ist.
+        add: Neue Abwesenheitsart
+        save: Art speichern
+        edit: Bearbeiten
+        edit_title: Abwesenheitsart %name%
+        archive: Art archivieren
+        restore: Art wiederherstellen
+        active: Aktiv
+        archived: Archiviert
+        medical: Medizinisch (angezeigt als Abwesend)
+        col:
+            name: Name
+            unit: Einheit
+            source: Zieht ab von
+            state: Status
+        form:
+            name: Name
+            paid: Bezahlt
+            source: Zieht ab von
+            unit: Einheit
+            needs_approval: Benötigt Genehmigung
+            needs_attachment: Benötigt ein Dokument
+            medical: Medizinische Abwesenheit
+            medical_help: Wird allen ohne Abwesenheitsverwaltung als Abwesend angezeigt; es werden nie Gesundheitsdaten gespeichert.
+            colour: Farbe
+            max_per_request: Größter Antrag
+            amount_help: In Tagen (halbe Tage erlaubt) oder Stunden, je nach Einheit.
+            carry_over: Nicht genommene Tage können übertragen werden
+            carry_over_max: Größter Übertrag
+            carry_over_expiry: Der Übertrag verfällt am
+            carry_over_expiry_help: Monat und Tag des Folgejahres (MM-DD), zum Beispiel 03-31.
+        error:
+            name: Der Name hat 1 bis 80 Zeichen.
+            colour: Wählen Sie eine Farbe aus der Palette.
+            max: Der größte Antrag ist größer als null.
+            overtime_hours: Eine Art, die von Überstunden abzieht, zählt in Stunden.
+            medical_source: Eine medizinische Art zieht von keinem Anspruch ab.
+            expiry: Der Verfall ist ein Monat und ein Tag (MM-DD).
+            carry_max: Der größte Übertrag ist größer als null.
+            unit_in_use: Die Einheit einer Art mit Ansprüchen kann nicht geändert werden; legen Sie eine neue Art an.
+    allowance:
+        title: Ansprüche %year%
+        intro: Der Jahresanspruch jeder Art für die Organisation, eine Gruppe oder eine beschäftigte Person (der speziellste gilt), anteilig für Ein- und Austritte.
+        empty: Kein Anspruch für dieses Jahr.
+        add: Neuer Anspruch
+        save: Anspruch speichern
+        remove_title: Anspruch entfernen
+        remove: Entfernen
+        worker_balances: Salden einer beschäftigten Person (%year%)
+        col:
+            type: Art
+            scope: Gilt für
+            target: Gruppe oder beschäftigte Person
+            amount: Betrag
+            note: Notiz
+        form:
+            type: Art
+            scope: Gilt für
+            year: Jahr
+            amount: Betrag
+            agreement_equivalent: Tarifvertragliches Äquivalent des gesetzlichen Mindestanspruchs
+            note: Notiz
+        error:
+            target: Wählen Sie die Gruppe oder die beschäftigte Person, für die der Anspruch gilt.
+            amount: Der Betrag ist null oder mehr und das Jahr liegt zwischen 2000 und 2100.
+            legal_minimum: Urlaub unter dem gesetzlichen Mindestanspruch (30 Kalendertage oder 22 Arbeitstage) erfordert die Markierung als tarifvertragliches Äquivalent und eine Notiz mit mindestens 10 Zeichen.
+            type: Nur eine Art, die vom Jahresanspruch abzieht, hat Ansprüche.
+            carry_off: Diese Art erlaubt keinen Übertrag.
+            carry_max: Ein Übertrag dieser Art beträgt höchstens %max%.
+            reason: Der Grund hat 3 bis 255 Zeichen.
+            line_amount: Der Betrag ist nicht null (nur eine Anpassung kann negativ sein).
+            too_large: Höchstens %max% (366 Tage oder 2 080 Stunden).
+            negative: 'Die Anpassung würde den Anspruch unter null bringen (aktueller Anspruch: %entitled%).'
+            self: Niemand ändert den eigenen Anspruch; das macht eine andere für Abwesenheiten zuständige Person.
+    line:
+        add: Neue Anpassung oder neuer Übertrag
+        save: Zeile speichern
+        form:
+            kind: Art der Zeile
+            amount_help: In der Einheit der Art; eine Anpassung kann negativ sein.
+            reason: Grund
+            expires_on: Verfällt am
+            expires_on_help: 'Leer: Ein Übertrag verfällt am Datum der Art, ein geschützter Übertrag nach den Monaten der Einstellungen.'
+    request:
+        error:
+            end_before_start: Das Ende liegt vor dem Beginn.
+            too_long: Ein Antrag umfasst höchstens ein Jahr.
+            half_day_range: Ein halber Tag umfasst nur ein Datum.
+            part: Tage für Tagesarten, Stunden für Stundenarten.
+            times: Geben Sie eine Start- und eine Endzeit ein (HH:MM), das Ende nach dem Start.
+    settings:
+        title: Abwesenheitseinstellungen
+        intro: Abwesenheitsverwaltung der Organisation. Beim Einschalten werden die Standard-Abwesenheitsarten hinzugefügt.
+        section: Abwesenheiten
+        form:
+            enabled: Die Abwesenheitsverwaltung ist eingeschaltet
+            enabled_help: Erfordert die eingeschaltete Arbeitszeiterfassung.
+            rounding: Rundung der anteiligen Berechnung
+            protected_carry_months: Monate, die ein geschützter Übertrag gilt
+            colleagues_see_absences: Kollegen sehen Abwesend im Teamkalender
+            medical_documents: Medizinische Abwesenheiten dürfen ein Dokument enthalten
+            attachment_retention_months: Monate, die Dokumente nach der Abwesenheit aufbewahrt werden
+            overtime_ratio: Überstunden zu Freizeit (Prozent)
+            planning_deadline: Frist für die Urlaubsplanung (MM-DD)
+        error:
+            register_off: Schalten Sie zuerst die Arbeitszeiterfassung ein.
+            protected_months: Die Monate liegen zwischen 1 und 60.
+            attachment_months: Die Monate liegen zwischen 1 und 48.
+            overtime_ratio: Das Verhältnis liegt zwischen 1 und 400 Prozent.
+            planning_deadline: Die Frist ist ein Monat und ein Tag (MM-DD).
+    flash:
+        type_saved: Abwesenheitsart gespeichert.
+        type_archived: Abwesenheitsart archiviert.
+        type_restored: Abwesenheitsart wiederhergestellt.
+        seeded: '%count% Standardart(en) hinzugefügt.'
+        policy_added: Anspruch hinzugefügt.
+        policy_removed: Anspruch entfernt.
+        line_added: Zeile hinzugefügt.
+        settings_saved: Abwesenheitseinstellungen gespeichert.
+    no_health_hint: Keine Gesundheitsangaben eintragen (keine Diagnose, keine Ursache, keine medizinischen Details).
+

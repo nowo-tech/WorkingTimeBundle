@@ -58,6 +58,7 @@ month:
         worked: Lavorato
         expected: Previsto
         flags: Segnalazioni
+        note: Nota
 day:
     title: 'Giorno %date%'
     back_to_month: Torna al mese
@@ -191,12 +192,16 @@ schedule:
         daily_target: Obiettivo giornaliero (minuti, orario flessibile)
         weekly_target: Obiettivo settimanale (minuti)
         flex: Fascia flessibile (minuti)
+        work_centre: Sede di lavoro
+        work_centre_help: I calendari delle festività dei giorni del lavoratore derivano da essa; vuoto indica la sede predefinita.
+        default_centre: Sede predefinita
     error:
         group: Scegli un gruppo dell'organizzazione.
         worker: Scegli un lavoratore.
         past: Un orario è valido da oggi o più avanti; i giorni passati mantengono l'orario con cui sono stati misurati.
         not_future: Si può ritirare solo un orario non ancora valido.
         invalid: L'orario non è valido (fuso orario, fasce senza sovrapposizioni, obiettivi fino a 12 ore al giorno).
+        work_centre: Scegli una delle sedi di lavoro dell'organizzazione.
 export:
     title: Esportazioni
     intro: La tua copia personale del registro e le esportazioni per l'ispezione per chi può farle. I file si possono scaricare per 7 giorni.
@@ -344,3 +349,327 @@ notice:
     register_monthly_summary:
         subject: 'Il tuo orario di lavoro a %month%'
         body: 'Lavorato %worked% su %expected% previste in %days% giorno/i; %missing% uscita/e mancante/i.'
+holiday:
+    title: Festività
+    intro: Calendari delle festività (nazionali, regionali, locali) e sedi di lavoro a cui si applicano. Le importazioni da festivos.io, OpenHolidays o da un file CSV / ICS vengono mostrate in anteprima prima di salvare qualsiasi cosa.
+    empty: Nessun calendario delle festività.
+    open: Apri
+    back: Torna ai calendari
+    back_calendar: Torna al calendario
+    provisional: provvisorio
+    scope:
+        national: Nazionale
+        regional: Regionale
+        local: Locale
+    origin:
+        manual: Manuale
+        file: File
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Fornitore
+    col:
+        year: Anno
+        name: Nome
+        scope: Ambito
+        provider: Fonte
+        date: Data
+        origin: Origine
+        source: Fonte ufficiale
+        status: Stato
+    calendar:
+        title: '%name% (%year%)'
+        add: Nuovo calendario
+        edit: Modifica il calendario
+        save: Salva il calendario
+        empty: Questo calendario non ha ancora festività.
+        provisional: Questo anno è provvisorio alla fonte (le festività locali non sono ancora pubblicate); importalo di nuovo quando lo saranno.
+        remove_title: Rimuovi il calendario
+        remove: Rimuovi il calendario e le sue festività
+        form:
+            name: Nome
+            scope: Ambito
+            year: Anno
+            country: Paese
+            country_help: Codice ISO di due lettere (ES, PT, FR…), per le importazioni.
+            subdivision: Regione
+            subdivision_help: Codice ISO della regione (ES-MD, ES-CT…) di un calendario regionale.
+            municipality: Comune (codice INE)
+            municipality_help: Cinque cifre (28079 Madrid) per festivos.io; cercali nell'elenco dei comuni.
+            source_note: Nota sulla fonte
+        error:
+            name: Il nome ha da 1 a 80 caratteri.
+            year: L'anno è compreso tra 2000 e 2100.
+            year_in_use: L'anno di un calendario con festività non può cambiare; crea un calendario per l'altro anno.
+            provider: Fornitore sconosciuto.
+    day:
+        add: Aggiungi una festività
+        edit: Modifica
+        edit_title: Modifica una festività di %calendar%
+        save: Salva la festività
+        remove_title: Rimuovi una festività
+        remove: Rimuovi
+        form:
+            date: Data
+            name: Nome
+        error:
+            name: Il nome ha da 1 a 120 caratteri.
+            year: La data deve essere nell'anno del calendario.
+            date: Inserisci una data valida.
+            duplicate: Il calendario ha già una festività in quella data.
+    import:
+        title: Importa un file CSV o ICS
+        preview: Anteprima
+        confirm: Importa le nuove festività
+        nothing: Il file non ha righe.
+        preview_title: Importa in %name% (%year%)
+        form:
+            file: File
+            file_help: CSV con intestazione date,name,scope (virgola o punto e virgola, UTF-8) oppure calendario ICS con eventi di un giorno intero; al massimo 200 righe e 256 KiB.
+        status:
+            new: Nuovo
+            duplicate: Già presente (mantenuto)
+            other_scope: Altro ambito (saltato)
+            invalid: Non valido (saltato)
+            unchanged: Invariato
+            removed: Non più elencato (rimosso)
+        error:
+            file: Il file non è un file di testo UTF-8 entro il limite di dimensione.
+            header: Il CSV richiede una riga di intestazione con almeno le colonne date e name.
+            too_many: Il file ha più di %max% righe.
+            empty: Il file non ha righe.
+            disabled: Le importazioni da file sono disattivate.
+    provider:
+        import_from: Importa da %provider%
+        festivos_io:
+            label: festivos.io (Spagna, per comune)
+            error: Impossibile leggere festivos.io; non è stato salvato nulla. Controlla il codice del comune e l'anno, poi riprova più tardi.
+            municipality: festivos.io richiede un comune spagnolo (paese ES e un codice INE di cinque cifre).
+        openholidays:
+            label: OpenHolidays (paese o regione)
+            error: Impossibile leggere l'API di OpenHolidays; non è stato salvato nulla. Controlla i codici di paese e regione, poi riprova più tardi.
+        error:
+            unknown: Questo fornitore non è disponibile.
+            location: Questo fornitore non può rispondere per questo luogo.
+    location:
+        error:
+            country: Il paese è un codice ISO di due lettere.
+            subdivision: La regione è un codice ISO del paese (ES-MD).
+            municipality: Il comune è un codice INE di cinque cifre.
+    centre:
+        title: Sedi di lavoro
+        intro: Una sede di lavoro raggruppa i calendari che si applicano alle persone che vi lavorano; la sede di un lavoratore deriva dal suo orario, altrimenti dalla sede predefinita.
+        empty: Nessuna sede di lavoro; ogni calendario si applica a tutti.
+        add: Nuova sede di lavoro
+        save: Salva la sede di lavoro
+        edit_title: Sede di lavoro %name%
+        calendars: '%count% calendario/i'
+        default: Predefinita
+        remove_title: Rimuovi la sede di lavoro
+        remove: Rimuovi la sede di lavoro
+        form:
+            name: Nome
+            calendars: Calendari
+            default: Sede predefinita dell'organizzazione
+        error:
+            name: Il nome ha da 1 a 80 caratteri.
+    municipalities:
+        title: Comuni spagnoli
+        loaded: L'elenco dei comuni è caricato; cercali su %url%?query=… (per nome, provincia o codice INE).
+        not_loaded: L'elenco dei comuni non è caricato; caricalo una volta (una chiamata a festivos.io, conservata per una settimana) per cercare i comuni per nome.
+        refresh: Carica l'elenco dei comuni
+    flash:
+        calendar_saved: Calendario salvato.
+        calendar_removed: Calendario rimosso.
+        day_added: Festività aggiunta.
+        day_changed: Festività modificata.
+        day_removed: Festività rimossa.
+        imported: '%added% festività importate.'
+        provider_imported: '%added% festività importate, %removed% rimosse.'
+        provider_imported_provisional: '%added% festività importate, %removed% rimosse. L''anno è ancora provvisorio alla fonte.'
+        centre_saved: Sede di lavoro salvata.
+        centre_removed: Sede di lavoro rimossa.
+        municipalities_loaded: '%count% comuni caricati.'
+leave:
+    back: Torna ai tipi
+    year_previous: Anno precedente
+    year_next: Anno successivo
+    nav:
+        label: Assenze
+        balances: I miei saldi
+        types: Tipi
+        allowances: Dotazioni
+        settings: Impostazioni
+    unit:
+        natural_days: Giorni di calendario
+        working_days: Giorni lavorativi
+        hours: Ore
+    source:
+        none: Nessuna
+        allowance: Dotazione annuale
+        overtime: Straordinario ratificato
+    rounding:
+        nearest: Alla mezza giornata più vicina
+        up: Per eccesso
+        down: Per difetto
+    line_kind:
+        adjustment: Rettifica
+        carry_over: Riporto
+        protected_carry_over: Riporto protetto
+    part:
+        full: Giornata intera
+        morning: Mattina
+        afternoon: Pomeriggio
+        hours: Ore
+    seed:
+        vacation: Ferie
+        personal: Giorni personali
+        compensatory: Riposo compensativo
+        marriage: Permesso retribuito – matrimonio
+        family: Permesso retribuito – infortunio, malattia o ricovero di un familiare
+        bereavement: Permesso retribuito – lutto
+        moving: Permesso retribuito – trasloco
+        public_duty: Permesso retribuito – dovere pubblico
+        unpaid: Permesso non retribuito
+        absence: Assenza
+        medical: Assenza – medica (giustificata)
+        medical_appointment: Visita medica
+        work_accident: Infortunio sul lavoro
+    balance:
+        title: Le mie assenze %year%
+        intro: Il diritto comprende la tua dotazione con le relative rettifiche e riporti; le richieste arriveranno con la prossima versione.
+        empty: Nessun saldo per quest'anno.
+        col:
+            type: Tipo
+            entitled: Spettante
+            taken: Fruito
+            planned: Pianificato
+            pending: In attesa
+            remaining: Residuo
+            unit: Unità
+    type:
+        title: Tipi di assenza
+        intro: I tipi di assenza dell'organizzazione. I tipi archiviati restano sui vecchi registri.
+        empty: Nessun tipo di assenza; aggiungi quelli predefiniti.
+        seed_intro: I tipi predefiniti (ferie, giorni personali, i permessi retribuiti dell'art. 37.3 ET, permesso non retribuito, assenze) possono essere aggiunti in qualsiasi momento; quelli esistenti vengono mantenuti.
+        seed: Aggiungi i tipi predefiniti
+        no_health: Nessun tipo, campo o nota può contenere una diagnosi, una causa o qualsiasi dato sulla salute; un tipo medico registra solo che l'assenza è giustificata.
+        add: Nuovo tipo di assenza
+        save: Salva il tipo
+        edit: Modifica
+        edit_title: Tipo di assenza %name%
+        archive: Archivia il tipo
+        restore: Ripristina il tipo
+        active: Attivo
+        archived: Archiviato
+        medical: Medico (mostrato come Assente)
+        col:
+            name: Nome
+            unit: Unità
+            source: Attinge da
+            state: Stato
+        form:
+            name: Nome
+            paid: Retribuito
+            source: Attinge da
+            unit: Unità
+            needs_approval: Richiede approvazione
+            needs_attachment: Richiede un documento
+            medical: Assenza medica
+            medical_help: Mostrata come Assente a chi non gestisce le assenze; non viene mai salvato alcun dato sulla salute.
+            colour: Colore
+            max_per_request: Richiesta massima
+            amount_help: In giorni (sono ammesse mezze giornate) o ore, secondo l'unità.
+            carry_over: I giorni non usati possono essere riportati
+            carry_over_max: Riporto massimo
+            carry_over_expiry: Il riporto scade il
+            carry_over_expiry_help: Mese e giorno dell'anno successivo (MM-DD), ad esempio 03-31.
+        error:
+            name: Il nome ha da 1 a 80 caratteri.
+            colour: Scegli un colore della tavolozza.
+            max: La richiesta massima è maggiore di zero.
+            overtime_hours: Un tipo che attinge dallo straordinario conta in ore.
+            medical_source: Un tipo medico non attinge da alcuna dotazione.
+            expiry: La scadenza è un mese e un giorno (MM-DD).
+            carry_max: Il riporto massimo è maggiore di zero.
+            unit_in_use: L'unità di un tipo con dotazioni non può cambiare; crea un nuovo tipo.
+    allowance:
+        title: Dotazioni %year%
+        intro: La dotazione annuale di ogni tipo per l'organizzazione, un gruppo o un lavoratore (prevale la più specifica), in proporzione per assunti e cessati.
+        empty: Nessuna dotazione per quest'anno.
+        add: Nuova dotazione
+        save: Salva la dotazione
+        remove_title: Rimuovi una dotazione
+        remove: Rimuovi
+        worker_balances: Saldi di un lavoratore (%year%)
+        col:
+            type: Tipo
+            scope: Si applica a
+            target: Gruppo o lavoratore
+            amount: Quantità
+            note: Nota
+        form:
+            type: Tipo
+            scope: Si applica a
+            year: Anno
+            amount: Quantità
+            agreement_equivalent: Equivalente da contratto del minimo legale
+            note: Nota
+        error:
+            target: Scegli il gruppo o il lavoratore a cui si applica la dotazione.
+            amount: La quantità è zero o più e l'anno è compreso tra 2000 e 2100.
+            legal_minimum: Le ferie inferiori al minimo legale (30 giorni di calendario o 22 lavorativi) richiedono il contrassegno di equivalente da contratto e una nota di almeno 10 caratteri.
+            type: Solo un tipo che attinge dalla dotazione annuale ha dotazioni.
+            carry_off: Questo tipo non consente il riporto.
+            carry_max: Un riporto di questo tipo è al massimo %max%.
+            reason: Il motivo ha da 3 a 255 caratteri.
+            line_amount: La quantità non è zero (solo una rettifica può essere negativa).
+            too_large: Al massimo %max% (366 giorni o 2 080 ore).
+            negative: 'La rettifica porterebbe il diritto sotto zero (diritto attuale: %entitled%).'
+            self: Nessuno modifica la propria assegnazione; lo fa un altro responsabile dei permessi.
+    line:
+        add: Nuova rettifica o riporto
+        save: Salva la riga
+        form:
+            kind: Genere
+            amount_help: Nell'unità del tipo; una rettifica può essere negativa.
+            reason: Motivo
+            expires_on: Scade il
+            expires_on_help: 'Vuoto: un riporto scade alla data del tipo, un riporto protetto dopo i mesi delle impostazioni.'
+    request:
+        error:
+            end_before_start: La fine è precedente all'inizio.
+            too_long: Una richiesta copre al massimo un anno.
+            half_day_range: Una mezza giornata copre una sola data.
+            part: Giorni per i tipi a giorni, ore per i tipi a ore.
+            times: Inserisci un'ora di inizio e una di fine (HH:MM), con la fine successiva all'inizio.
+    settings:
+        title: Impostazioni assenze
+        intro: Gestione delle assenze dell'organizzazione. Attivandola vengono aggiunti i tipi di assenza predefiniti.
+        section: Assenze
+        form:
+            enabled: La gestione delle assenze è attiva
+            enabled_help: Richiede il registro dell'orario di lavoro attivo.
+            rounding: Arrotondamento pro rata
+            protected_carry_months: Mesi di durata di un riporto protetto
+            colleagues_see_absences: I colleghi vedono Assente nel calendario del team
+            medical_documents: Le assenze mediche possono avere un documento
+            attachment_retention_months: Mesi di conservazione dei documenti dopo l'assenza
+            overtime_ratio: Straordinario in riposo (percentuale)
+            planning_deadline: Termine di pianificazione delle ferie (MM-DD)
+        error:
+            register_off: Attiva prima il registro dell'orario di lavoro.
+            protected_months: I mesi sono compresi tra 1 e 60.
+            attachment_months: I mesi sono compresi tra 1 e 48.
+            overtime_ratio: Il rapporto è compreso tra 1 e 400 per cento.
+            planning_deadline: Il termine è un mese e un giorno (MM-DD).
+    flash:
+        type_saved: Tipo di assenza salvato.
+        type_archived: Tipo di assenza archiviato.
+        type_restored: Tipo di assenza ripristinato.
+        seeded: '%count% tipo/i predefinito/i aggiunto/i.'
+        policy_added: Dotazione aggiunta.
+        policy_removed: Dotazione rimossa.
+        line_added: Riga aggiunta.
+        settings_saved: Impostazioni assenze salvate.
+    no_health_hint: Non includere informazioni sanitarie (nessuna diagnosi, causa o dettaglio medico).
+

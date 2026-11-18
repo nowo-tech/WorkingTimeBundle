@@ -16,6 +16,7 @@ use Nowo\UiKitBundle\View\PageHeader;
 use Nowo\UiKitBundle\View\ShowPage;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
+use Nowo\WorkingTimeBundle\Application\Register\RegisterAnnotations;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterContext;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterReader;
 use Nowo\WorkingTimeBundle\Application\Register\ScheduleResolver;
@@ -48,9 +49,12 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 use function array_map;
+use function array_values;
 use function count;
+use function implode;
 use function is_array;
 use function is_string;
+use function ksort;
 
 /**
  * The worker's own register (contract section 11.1): today with the clock buttons, a month, a day (by id or date),
@@ -75,6 +79,7 @@ final readonly class RegisterController
         private ScheduleResolver $schedules,
         private TransactionRunnerInterface $runner,
         private ClockInterface $time,
+        private RegisterAnnotations $annotations,
     ) {
     }
 
@@ -129,20 +134,27 @@ final readonly class RegisterController
             } catch (InvalidArgumentException $e) {
                 throw new NotFoundHttpException('Not found.', $e);
             }
-            $last = LocalDate::fromDateTime($first->toDateTime()->modify('last day of this month'));
-            $days = $this->runner->read(fn (): array => $this->reader->worker($context->tenant, $context->worker(), $first, $last, $this->time->now()));
-            $rows = [];
+            $last  = LocalDate::fromDateTime($first->toDateTime()->modify('last day of this month'));
+            $days  = $this->runner->read(fn (): array => $this->reader->worker($context->tenant, $context->worker(), $first, $last, $this->time->now()));
+            $notes = $this->notes($context, $first, $last);
+            $rows  = [];
             foreach ($days as $date => $record) {
-                $zone   = $record->workday->schedule()->zone();
-                $rows[] = [
+                $zone        = $record->workday->schedule()->zone();
+                $rows[$date] = [
                     'date'     => (string) $date,
                     'start'    => RegisterCsv::local($record->firstStart(), $zone),
                     'end'      => RegisterCsv::local($record->lastEnd(), $zone),
                     'worked'   => MonthSummary::hours($record->workedSeconds),
                     'expected' => MonthSummary::hours($record->workday->schedule()->expectedSeconds),
                     'flags'    => $record->flagValues() === [] ? '' : (string) count($record->flags),
+                    'note'     => $notes[$date] ?? '',
                 ];
             }
+            foreach ($notes as $date => $note) {
+                $rows[$date] ??= ['date' => (string) $date, 'start' => '', 'end' => '', 'worked' => '', 'expected' => '', 'flags' => '', 'note' => $note];
+            }
+            ksort($rows);
+            $rows     = array_values($rows);
             $summary  = MonthSummary::of($days);
             $previous = $first->toDateTime()->modify('-1 month')->format('Y-m');
             $next     = $first->toDateTime()->modify('+1 month')->format('Y-m');
@@ -161,6 +173,7 @@ final readonly class RegisterController
                         new Column('worked', UiSupport::label('month.col.worked'), align: 'end'),
                         new Column('expected', UiSupport::label('month.col.expected'), align: 'end', priority: 2),
                         new Column('flags', UiSupport::label('month.col.flags'), align: 'end', priority: 3),
+                        new Column('note', UiSupport::label('month.col.note'), priority: 2),
                     ],
                     $rows,
                     rowActions: fn (mixed $row): array => is_array($row) && is_string($row['date'] ?? null) ? [Action::view($this->ui->url('nowo_working_time_date', ['date' => $row['date']]), UiSupport::label('month.view_day'))] : [],
@@ -342,5 +355,25 @@ final readonly class RegisterController
         } catch (InvalidArgumentException $e) {
             throw new NotFoundHttpException('Not found.', $e);
         }
+    }
+
+    /**
+     * The labels of the month's annotated days (holidays; leave from S3), `Y-m-d` => text.
+     *
+     * @return array<string, string>
+     */
+    private function notes(RegisterContext $context, LocalDate $first, LocalDate $last): array
+    {
+        $annotations = $this->annotations;
+        $notes       = [];
+        foreach ($this->runner->read(static fn (): array => $annotations->between($context->settings, $context->subject, $first, $last)) as $date => $dayAnnotations) { // @igor-ignore - the runner calls this closure at once and keeps nothing
+            $labels = [];
+            foreach ($dayAnnotations as $annotation) {
+                $labels[] = $annotation->label;
+            }
+            $notes[(string) $date] = implode(' · ', $labels);
+        }
+
+        return $notes;
     }
 }

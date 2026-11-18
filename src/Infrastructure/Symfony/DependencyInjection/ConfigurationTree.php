@@ -172,13 +172,13 @@ final class ConfigurationTree
         $providers->arrayNode('festivos_io')->addDefaultsIfNotSet()->children()
             ->booleanNode('enabled')->defaultTrue()->end()
             ->scalarNode('base_uri')->defaultValue('https://festivos.io')->validate()->ifTrue(static fn (string $v): bool => !str_starts_with($v, 'https://'))->thenInvalid('base_uri must be an https URL.')->end()->end()
-            ->integerNode('timeout')->defaultValue(10)->min(1)->end()
+            ->integerNode('timeout')->defaultValue(10)->min(1)->max(30)->end()
             ->integerNode('municipalities_ttl')->defaultValue(604800)->min(0)->end()
         ->end()->end();
         $providers->arrayNode('openholidays')->addDefaultsIfNotSet()->children()
             ->booleanNode('enabled')->defaultTrue()->end()
             ->scalarNode('base_uri')->defaultValue('https://openholidaysapi.org')->validate()->ifTrue(static fn (string $v): bool => !str_starts_with($v, 'https://'))->thenInvalid('base_uri must be an https URL.')->end()->end()
-            ->integerNode('timeout')->defaultValue(10)->min(1)->end()
+            ->integerNode('timeout')->defaultValue(10)->min(1)->max(30)->end()
             ->integerNode('subdivisions_ttl')->defaultValue(86400)->min(0)->end()
         ->end()->end();
         $providers->arrayNode('file')->addDefaultsIfNotSet()->children()

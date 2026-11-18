@@ -58,6 +58,7 @@ month:
         worked: Treballat
         expected: Previst
         flags: Avisos
+        note: Nota
 day:
     title: 'Dia %date%'
     back_to_month: Tornar al mes
@@ -191,12 +192,16 @@ schedule:
         daily_target: Objectiu diari (minuts, horari flexible)
         weekly_target: Objectiu setmanal (minuts)
         flex: Banda flexible (minuts)
+        work_centre: Centre de treball
+        work_centre_help: Els calendaris de festius dels dies de la persona treballadora en surten; buit és el centre per defecte.
+        default_centre: Centre per defecte
     error:
         group: Tria un grup de l'organització.
         worker: Tria una persona treballadora.
         past: Un horari és vigent des d'avui o més tard; els dies passats conserven l'horari amb què es van mesurar.
         not_future: Només es pot retirar un horari que encara no és vigent.
         invalid: L'horari no és vàlid (zona horària, franges sense solapaments, objectius de fins a 12 hores al dia).
+        work_centre: Tria un dels centres de treball de l'organització.
 export:
     title: Exportacions
     intro: La teva pròpia còpia del registre i les exportacions d'inspecció per a qui les pot fer. Els fitxers es poden baixar durant 7 dies.
@@ -344,3 +349,327 @@ notice:
     register_monthly_summary:
         subject: 'La teva jornada al %month%'
         body: 'Treballat %worked% de %expected% previstes en %days% dia/dies; %missing% sortida/sortides sense fitxar.'
+holiday:
+    title: Festius
+    intro: Calendaris de festius (nacionals, autonòmics, locals) i els centres de treball als quals s'apliquen. Les importacions des de festivos.io, OpenHolidays o un fitxer CSV / ICS es previsualitzen abans de desar res.
+    empty: Encara no hi ha cap calendari de festius.
+    open: Obre
+    back: Torna als calendaris
+    back_calendar: Torna al calendari
+    provisional: provisional
+    scope:
+        national: Nacional
+        regional: Autonòmic
+        local: Local
+    origin:
+        manual: A mà
+        file: Fitxer
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Proveïdor
+    col:
+        year: Any
+        name: Nom
+        scope: Àmbit
+        provider: Font
+        date: Data
+        origin: Origen
+        source: Font oficial
+        status: Estat
+    calendar:
+        title: '%name% (%year%)'
+        add: Nou calendari
+        edit: Modifica el calendari
+        save: Desa el calendari
+        empty: Aquest calendari encara no té festius.
+        provisional: Aquest any és provisional a l'origen (encara no s'han publicat els festius locals); torna a importar-lo quan ho estiguin.
+        remove_title: Elimina el calendari
+        remove: Elimina el calendari i els seus festius
+        form:
+            name: Nom
+            scope: Àmbit
+            year: Any
+            country: País
+            country_help: Codi ISO de dues lletres (ES, PT, FR…), per a les importacions.
+            subdivision: Regió
+            subdivision_help: Codi ISO de regió (ES-MD, ES-CT…) d'un calendari autonòmic.
+            municipality: Municipi (codi INE)
+            municipality_help: Cinc dígits (28079 Madrid) per a festivos.io; cerca'ls a la llista de municipis.
+            source_note: Nota sobre la font
+        error:
+            name: El nom té d'1 a 80 caràcters.
+            year: L'any és entre 2000 i 2100.
+            year_in_use: L'any d'un calendari amb festius no pot canviar; crea un calendari per a l'altre any.
+            provider: Proveïdor desconegut.
+    day:
+        add: Afegeix un festiu
+        edit: Edita
+        edit_title: Edita un festiu de %calendar%
+        save: Desa el festiu
+        remove_title: Elimina un festiu
+        remove: Elimina
+        form:
+            date: Data
+            name: Nom
+        error:
+            name: El nom té d'1 a 120 caràcters.
+            year: La data ha de ser a l'any del calendari.
+            date: Introdueix una data vàlida.
+            duplicate: El calendari ja té un festiu en aquesta data.
+    import:
+        title: Importa un fitxer CSV o ICS
+        preview: Previsualitza
+        confirm: Importa els festius nous
+        nothing: El fitxer no té files.
+        preview_title: Importa a %name% (%year%)
+        form:
+            file: Fitxer
+            file_help: CSV amb una capçalera date,name,scope (coma o punt i coma, UTF-8) o un calendari ICS amb esdeveniments de tot el dia; com a màxim 200 files i 256 KiB.
+        status:
+            new: Nou
+            duplicate: Ja hi és (es manté)
+            other_scope: Un altre àmbit (omès)
+            invalid: No vàlid (omès)
+            unchanged: Sense canvis
+            removed: Ja no hi figura (eliminat)
+        error:
+            file: El fitxer no és un fitxer de text UTF-8 dins del límit de mida.
+            header: El CSV necessita una fila de capçalera amb almenys les columnes date i name.
+            too_many: El fitxer té més de %max% files.
+            empty: El fitxer no té files.
+            disabled: Les importacions de fitxers estan desactivades.
+    provider:
+        import_from: Importa des de %provider%
+        festivos_io:
+            label: festivos.io (Espanya, per municipi)
+            error: No s'ha pogut llegir festivos.io; no s'ha desat res. Comprova el codi del municipi i l'any, i torna-ho a provar més tard.
+            municipality: festivos.io necessita un municipi espanyol (país ES i un codi INE de cinc dígits).
+        openholidays:
+            label: OpenHolidays (país o regió)
+            error: No s'ha pogut llegir l'API d'OpenHolidays; no s'ha desat res. Comprova els codis de país i de regió, i torna-ho a provar més tard.
+        error:
+            unknown: Aquest proveïdor no està disponible.
+            location: Aquest proveïdor no pot respondre per a aquest lloc.
+    location:
+        error:
+            country: El país és un codi ISO de dues lletres.
+            subdivision: La regió és un codi ISO del país (ES-MD).
+            municipality: El municipi és un codi INE de cinc dígits.
+    centre:
+        title: Centres de treball
+        intro: Un centre de treball agrupa els calendaris que s'apliquen a les persones que hi treballen; el centre d'una persona treballadora ve del seu horari i, si no, del centre per defecte.
+        empty: Encara no hi ha cap centre de treball; tots els calendaris s'apliquen a tothom.
+        add: Nou centre de treball
+        save: Desa el centre de treball
+        edit_title: Centre de treball %name%
+        calendars: '%count% calendari(s)'
+        default: Per defecte
+        remove_title: Elimina el centre de treball
+        remove: Elimina el centre de treball
+        form:
+            name: Nom
+            calendars: Calendaris
+            default: Centre per defecte de l'organització
+        error:
+            name: El nom té d'1 a 80 caràcters.
+    municipalities:
+        title: Municipis espanyols
+        loaded: La llista de municipis està carregada; cerca-hi a %url%?query=… (per nom, província o codi INE).
+        not_loaded: La llista de municipis no està carregada; carrega-la una vegada (una crida a festivos.io, conservada una setmana) per cercar localitats per nom.
+        refresh: Carrega la llista de municipis
+    flash:
+        calendar_saved: Calendari desat.
+        calendar_removed: Calendari eliminat.
+        day_added: Festiu afegit.
+        day_changed: Festiu modificat.
+        day_removed: Festiu eliminat.
+        imported: '%added% festiu(s) importat(s).'
+        provider_imported: '%added% festiu(s) importat(s), %removed% eliminat(s).'
+        provider_imported_provisional: '%added% festiu(s) importat(s), %removed% eliminat(s). L''any continua sent provisional a l''origen.'
+        centre_saved: Centre de treball desat.
+        centre_removed: Centre de treball eliminat.
+        municipalities_loaded: '%count% municipis carregats.'
+leave:
+    back: Torna als tipus
+    year_previous: Any anterior
+    year_next: Any següent
+    nav:
+        label: Absències
+        balances: Els meus saldos
+        types: Tipus
+        allowances: Assignacions
+        settings: Configuració
+    unit:
+        natural_days: Dies naturals
+        working_days: Dies laborables
+        hours: Hores
+    source:
+        none: Cap
+        allowance: Assignació anual
+        overtime: Hores extra ratificades
+    rounding:
+        nearest: Al mig dia més proper
+        up: Cap amunt
+        down: Cap avall
+    line_kind:
+        adjustment: Ajust
+        carry_over: Traspàs
+        protected_carry_over: Traspàs protegit
+    part:
+        full: Dia complet
+        morning: Matí
+        afternoon: Tarda
+        hours: Hores
+    seed:
+        vacation: Vacances
+        personal: Assumptes propis
+        compensatory: Descans compensatori
+        marriage: Permís retribuït – matrimoni
+        family: Permís retribuït – accident, malaltia o hospitalització d'un familiar
+        bereavement: Permís retribuït – traspàs
+        moving: Permís retribuït – trasllat de domicili
+        public_duty: Permís retribuït – deure públic
+        unpaid: Permís no retribuït
+        absence: Absència
+        medical: Absència – mèdica (justificada)
+        medical_appointment: Cita mèdica
+        work_accident: Accident de treball
+    balance:
+        title: Les meves absències %year%
+        intro: El dret inclou la teva assignació, els seus ajustos i traspassos; les sol·licituds arribaran amb la propera versió.
+        empty: No hi ha saldo per a aquest any.
+        col:
+            type: Tipus
+            entitled: Dret
+            taken: Gaudit
+            planned: Planificat
+            pending: Pendent
+            remaining: Restant
+            unit: Unitat
+    type:
+        title: Tipus d'absència
+        intro: Els tipus d'absència de l'organització. Els tipus arxivats es conserven en els registres antics.
+        empty: Encara no hi ha cap tipus d'absència; afegeix els per defecte.
+        seed_intro: Els tipus per defecte (vacances, assumptes propis, els permisos retribuïts de l'art. 37.3 ET, permís no retribuït, absències) es poden afegir en qualsevol moment; els existents es conserven.
+        seed: Afegeix els tipus per defecte
+        no_health: Cap tipus, camp o nota no pot contenir un diagnòstic, una causa ni cap dada de salut; un tipus mèdic només registra que l'absència està justificada.
+        add: Nou tipus d'absència
+        save: Desa el tipus
+        edit: Edita
+        edit_title: Tipus d'absència %name%
+        archive: Arxiva el tipus
+        restore: Restaura el tipus
+        active: Actiu
+        archived: Arxivat
+        medical: Mèdic (es mostra com a Absent)
+        col:
+            name: Nom
+            unit: Unitat
+            source: Es descompta de
+            state: Estat
+        form:
+            name: Nom
+            paid: Retribuït
+            source: Es descompta de
+            unit: Unitat
+            needs_approval: Requereix aprovació
+            needs_attachment: Requereix un document
+            medical: Absència mèdica
+            medical_help: Es mostra com a Absent a qui no gestiona absències; mai es desa cap dada de salut.
+            colour: Color
+            max_per_request: Sol·licitud màxima
+            amount_help: En dies (s'admeten mitjos dies) o hores, segons indiqui la unitat.
+            carry_over: Els dies no usats es poden traspassar
+            carry_over_max: Traspàs màxim
+            carry_over_expiry: El traspàs caduca el
+            carry_over_expiry_help: Mes i dia de l'any següent (MM-DD), per exemple 03-31.
+        error:
+            name: El nom té d'1 a 80 caràcters.
+            colour: Tria un color de la paleta.
+            max: La sol·licitud màxima és més gran que zero.
+            overtime_hours: Un tipus que es descompta de les hores extra compta en hores.
+            medical_source: Un tipus mèdic no es descompta de cap assignació.
+            expiry: La caducitat és un mes i un dia (MM-DD).
+            carry_max: El traspàs màxim és més gran que zero.
+            unit_in_use: La unitat d'un tipus amb assignacions no pot canviar; crea un tipus nou.
+    allowance:
+        title: Assignacions %year%
+        intro: L'assignació anual de cada tipus per a l'organització, un grup o una persona treballadora (preval la més específica), prorratejada per a altes i baixes.
+        empty: No hi ha assignacions per a aquest any.
+        add: Nova assignació
+        save: Desa l'assignació
+        remove_title: Elimina una assignació
+        remove: Elimina
+        worker_balances: Saldos d'una persona treballadora (%year%)
+        col:
+            type: Tipus
+            scope: S'aplica a
+            target: Grup o persona treballadora
+            amount: Quantitat
+            note: Nota
+        form:
+            type: Tipus
+            scope: S'aplica a
+            year: Any
+            amount: Quantitat
+            agreement_equivalent: Equivalent per conveni del mínim legal
+            note: Nota
+        error:
+            target: Tria el grup o la persona treballadora a qui s'aplica l'assignació.
+            amount: La quantitat és zero o més i l'any és entre 2000 i 2100.
+            legal_minimum: Les vacances per sota del mínim legal (30 dies naturals o 22 laborables) requereixen la marca d'equivalent per conveni i una nota d'almenys 10 caràcters.
+            type: Només un tipus que es descompta de l'assignació anual té assignacions.
+            carry_off: Aquest tipus no permet traspàs.
+            carry_max: Un traspàs d'aquest tipus és com a màxim %max%.
+            reason: El motiu té de 3 a 255 caràcters.
+            line_amount: La quantitat no és zero (només un ajust pot ser negatiu).
+            too_large: Com a màxim %max% (366 dies o 2 080 hores).
+            negative: 'L''ajust deixaria el dret per sota de zero (dret actual: %entitled%).'
+            self: Ningú no modifica la seva pròpia assignació; ho fa una altra persona gestora de permisos.
+    line:
+        add: Nou ajust o traspàs
+        save: Desa la línia
+        form:
+            kind: Classe
+            amount_help: En la unitat del tipus; un ajust pot ser negatiu.
+            reason: Motiu
+            expires_on: Caduca el
+            expires_on_help: 'Buit: un traspàs caduca en la data del tipus, un traspàs protegit després dels mesos de la configuració.'
+    request:
+        error:
+            end_before_start: El final és anterior a l'inici.
+            too_long: Una sol·licitud abasta com a màxim un any.
+            half_day_range: Un mig dia abasta una sola data.
+            part: Dies per a tipus per dies, hores per a tipus per hores.
+            times: Introdueix una hora d'inici i una de final (HH:MM), amb el final posterior a l'inici.
+    settings:
+        title: Configuració d'absències
+        intro: Gestió d'absències de l'organització. En activar-la s'afegeixen els tipus d'absència per defecte.
+        section: Absències
+        form:
+            enabled: La gestió d'absències està activada
+            enabled_help: Requereix el registre de jornada activat.
+            rounding: Arrodoniment del prorrateig
+            protected_carry_months: Mesos de vigència d'un traspàs protegit
+            colleagues_see_absences: Els companys veuen Absent al calendari de l'equip
+            medical_documents: Les absències mèdiques poden portar un document
+            attachment_retention_months: Mesos que es conserven els documents després de l'absència
+            overtime_ratio: Hores extra a descans (percentatge)
+            planning_deadline: Data límit de planificació de vacances (MM-DD)
+        error:
+            register_off: Activa primer el registre de jornada.
+            protected_months: Els mesos són entre 1 i 60.
+            attachment_months: Els mesos són entre 1 i 48.
+            overtime_ratio: La proporció és entre 1 i 400 per cent.
+            planning_deadline: La data límit és un mes i un dia (MM-DD).
+    flash:
+        type_saved: Tipus d'absència desat.
+        type_archived: Tipus d'absència arxivat.
+        type_restored: Tipus d'absència restaurat.
+        seeded: '%count% tipus per defecte afegit(s).'
+        policy_added: Assignació afegida.
+        policy_removed: Assignació eliminada.
+        line_added: Línia afegida.
+        settings_saved: Configuració d'absències desada.
+    no_health_hint: No hi incloguis informació de salut (cap diagnòstic, causa ni detall mèdic).
+

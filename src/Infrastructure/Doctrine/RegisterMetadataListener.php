@@ -27,7 +27,7 @@ final readonly class RegisterMetadataListener
     public const ENTITY_NAMESPACE = 'Nowo\WorkingTimeBundle\Domain\\';
 
     /** Columns compared exactly besides every `id` / `*_id`. */
-    public const EXACT_COLUMNS = ['request_key', 'dedupe_key', 'hash', 'prev_hash', 'anchor_hash', 'sha256'];
+    public const EXACT_COLUMNS = ['request_key', 'dedupe_key', 'hash', 'prev_hash', 'anchor_hash', 'sha256', 'seed_code'];
 
     /**
      * Wires the collaborators.

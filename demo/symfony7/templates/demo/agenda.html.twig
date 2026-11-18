@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{#
+  The stand-alone holiday component (contract section 1): an agenda that only reads HolidayCalendarReaderInterface
+  (the tenant's default work centre, else every calendar), with no register or leave involved.
+#}
+{% block title %}Agenda{% endblock %}
+
+{% block nowo_ui_page_header %}
+    {{ include(nowo_ui_partial('page_header'), {
+        title: 'Public holidays ' ~ year,
+        intro: 'Read through HolidayCalendarReaderInterface only, as an agenda or a CRM would. Ada manages the calendars on the Holidays page.',
+    }) }}
+{% endblock %}
+
+{% block body %}
+    <section class="nowo-ui-card" data-testid="demo-agenda">
+        <div class="nowo-ui-card__body">
+            {% if rows is empty %}
+                <p class="nowo-ui-muted" data-testid="demo-agenda-empty">No holiday yet this year.</p>
+            {% else %}
+                <table class="nowo-ui-data-table">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Holiday</th><th scope="col">Scope</th></tr></thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr data-testid="demo-agenda-row"><th scope="row">{{ row.date }}</th><td>{{ row.name }}</td><td>{{ row.scope }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

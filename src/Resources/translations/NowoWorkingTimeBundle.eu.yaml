@@ -58,6 +58,7 @@ month:
         worked: Landuta
         expected: Aurreikusia
         flags: Oharrak
+        note: Oharra
 day:
     title: '%date% eguna'
     back_to_month: Hilabetera itzuli
@@ -191,12 +192,16 @@ schedule:
         daily_target: Eguneko helburua (minutuak, ordutegi malgua)
         weekly_target: Asteko helburua (minutuak)
         flex: Banda malgua (minutuak)
+        work_centre: Lantokia
+        work_centre_help: Langilearen egunetako jaiegun-egutegiak hortik datoz; hutsik lantoki lehenetsia da.
+        default_centre: Lantoki lehenetsia
     error:
         group: Aukeratu erakundeko talde bat.
         worker: Aukeratu langile bat.
         past: Ordutegi bat gaurtik aurrera dago indarrean; iraganeko egunek neurtu zitzaizkien ordutegia mantentzen dute.
         not_future: Oraindik indarrean ez dagoen ordutegi bat soilik kendu daiteke.
         invalid: Ordutegia ez da baliozkoa (ordu-zona, gainjartzerik gabeko tarteak, egunean 12 ordura arteko helburuak).
+        work_centre: Aukeratu erakundeko lantoki bat.
 export:
     title: Esportazioak
     intro: Zure erregistroaren zure kopia eta ikuskaritzarako esportazioak egin ditzaketenentzat. Fitxategiak 7 egunez deskarga daitezke.
@@ -344,3 +349,327 @@ notice:
     register_monthly_summary:
         subject: 'Zure lanaldia %month% hilabetean'
         body: '%expected% aurreikusitakotik %worked% landu da %days% egunetan; fitxatu gabeko %missing% irteera.'
+holiday:
+    title: Jaiegunak
+    intro: Jaiegun-egutegiak (nazionalak, autonomikoak, lokalak) eta aplikatzen zaizkien lantokiak. festivos.io, OpenHolidays edo CSV / ICS fitxategi batetik egindako inportazioak aurreikusi egiten dira ezer gorde aurretik.
+    empty: Oraindik ez dago jaiegun-egutegirik.
+    open: Ireki
+    back: Itzuli egutegietara
+    back_calendar: Itzuli egutegira
+    provisional: behin-behinekoa
+    scope:
+        national: Nazionala
+        regional: Autonomikoa
+        local: Lokala
+    origin:
+        manual: Eskuz
+        file: Fitxategia
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Hornitzailea
+    col:
+        year: Urtea
+        name: Izena
+        scope: Eremua
+        provider: Iturria
+        date: Data
+        origin: Jatorria
+        source: Iturri ofiziala
+        status: Egoera
+    calendar:
+        title: '%name% (%year%)'
+        add: Egutegi berria
+        edit: Aldatu egutegia
+        save: Gorde egutegia
+        empty: Egutegi honek ez du oraindik jaiegunik.
+        provisional: Urte hau behin-behinekoa da iturrian (tokiko jaiegunak ez dira oraindik argitaratu); inportatu berriro argitaratzen direnean.
+        remove_title: Kendu egutegia
+        remove: Kendu egutegia eta bere jaiegunak
+        form:
+            name: Izena
+            scope: Eremua
+            year: Urtea
+            country: Herrialdea
+            country_help: Bi letrako ISO kodea (ES, PT, FR…), inportazioetarako.
+            subdivision: Eskualdea
+            subdivision_help: Egutegi autonomiko baten eskualdeko ISO kodea (ES-MD, ES-CT…).
+            municipality: Udalerria (INE kodea)
+            municipality_help: Bost digitu (28079 Madril) festivos.io-rako; bilatu udalerrien zerrendan.
+            source_note: Iturriari buruzko oharra
+        error:
+            name: Izenak 1 eta 80 karaktere ditu.
+            year: Urtea 2000 eta 2100 artekoa da.
+            year_in_use: Jaiegunak dituen egutegi baten urtea ezin da aldatu; sortu egutegi bat beste urterako.
+            provider: Hornitzaile ezezaguna.
+    day:
+        add: Gehitu jaiegun bat
+        edit: Editatu
+        edit_title: Editatu %calendar% egutegiko jaiegun bat
+        save: Gorde jaieguna
+        remove_title: Kendu jaiegun bat
+        remove: Kendu
+        form:
+            date: Data
+            name: Izena
+        error:
+            name: Izenak 1 eta 120 karaktere ditu.
+            year: Data egutegiaren urtekoa izan behar da.
+            date: Sartu data baliodun bat.
+            duplicate: Egutegiak jaiegun bat du dagoeneko data horretan.
+    import:
+        title: Inportatu CSV edo ICS fitxategi bat
+        preview: Aurreikusi
+        confirm: Inportatu jaiegun berriak
+        nothing: Fitxategiak ez du lerrorik.
+        preview_title: Inportatu %name% (%year%) egutegira
+        form:
+            file: Fitxategia
+            file_help: date,name,scope goiburua duen CSV bat (koma edo puntu eta koma, UTF-8) edo egun osoko gertaerak dituen ICS egutegi bat; gehienez 200 lerro eta 256 KiB.
+        status:
+            new: Berria
+            duplicate: Badago jada (mantendu da)
+            other_scope: Beste eremu bat (saltatu da)
+            invalid: Baliogabea (saltatu da)
+            unchanged: Aldatu gabe
+            removed: Ez dago zerrendan (kendu da)
+        error:
+            file: Fitxategia ez da tamaina-mugaren barruko UTF-8 testu-fitxategia.
+            header: CSVak goiburu-lerro bat behar du, gutxienez date eta name zutabeekin.
+            too_many: Fitxategiak %max% lerro baino gehiago ditu.
+            empty: Fitxategiak ez du lerrorik.
+            disabled: Fitxategi-inportazioak desaktibatuta daude.
+    provider:
+        import_from: Inportatu %provider% hornitzailetik
+        festivos_io:
+            label: festivos.io (Espainia, udalerriaren arabera)
+            error: Ezin izan da festivos.io irakurri; ez da ezer gorde. Egiaztatu udalerriaren kodea eta urtea, eta saiatu berriro geroago.
+            municipality: festivos.io-k Espainiako udalerri bat behar du (ES herrialdea eta bost digituko INE kodea).
+        openholidays:
+            label: OpenHolidays (herrialdea edo eskualdea)
+            error: Ezin izan da OpenHolidays API-a irakurri; ez da ezer gorde. Egiaztatu herrialde- eta eskualde-kodeak, eta saiatu berriro geroago.
+        error:
+            unknown: Hornitzaile hori ez dago erabilgarri.
+            location: Hornitzaile horrek ezin du leku honetarako erantzun.
+    location:
+        error:
+            country: Herrialdea bi letrako ISO kode bat da.
+            subdivision: Eskualdea herrialdearen ISO kode bat da (ES-MD).
+            municipality: Udalerria bost digituko INE kode bat da.
+    centre:
+        title: Lantokiak
+        intro: Lantoki batek bertan lan egiten duten pertsonei aplikatzen zaizkien egutegiak biltzen ditu; langile baten lantokia bere ordutegitik dator, eta bestela lantoki lehenetsitik.
+        empty: Oraindik ez dago lantokirik; egutegi guztiak guztiei aplikatzen zaizkie.
+        add: Lantoki berria
+        save: Gorde lantokia
+        edit_title: '%name% lantokia'
+        calendars: '%count% egutegi'
+        default: Lehenetsia
+        remove_title: Kendu lantokia
+        remove: Kendu lantokia
+        form:
+            name: Izena
+            calendars: Egutegiak
+            default: Erakundearen lantoki lehenetsia
+        error:
+            name: Izenak 1 eta 80 karaktere ditu.
+    municipalities:
+        title: Espainiako udalerriak
+        loaded: 'Udalerrien zerrenda kargatuta dago; bilatu hemen: %url%?query=… (izenez, probintziaz edo INE kodez).'
+        not_loaded: Udalerrien zerrenda ez dago kargatuta; kargatu behin (festivos.io-ri dei bat, aste batez gordeta) herriak izenez bilatzeko.
+        refresh: Kargatu udalerrien zerrenda
+    flash:
+        calendar_saved: Egutegia gorde da.
+        calendar_removed: Egutegia kendu da.
+        day_added: Jaieguna gehitu da.
+        day_changed: Jaieguna aldatu da.
+        day_removed: Jaieguna kendu da.
+        imported: '%added% jaiegun inportatu dira.'
+        provider_imported: '%added% jaiegun inportatu dira, %removed% kendu dira.'
+        provider_imported_provisional: '%added% jaiegun inportatu dira, %removed% kendu dira. Urtea oraindik behin-behinekoa da iturrian.'
+        centre_saved: Lantokia gorde da.
+        centre_removed: Lantokia kendu da.
+        municipalities_loaded: '%count% udalerri kargatu dira.'
+leave:
+    back: Itzuli motetara
+    year_previous: Aurreko urtea
+    year_next: Hurrengo urtea
+    nav:
+        label: Absentziak
+        balances: Nire saldoak
+        types: Motak
+        allowances: Esleipenak
+        settings: Ezarpenak
+    unit:
+        natural_days: Egun naturalak
+        working_days: Lanegunak
+        hours: Orduak
+    source:
+        none: Bat ere ez
+        allowance: Urteko esleipena
+        overtime: Berretsitako ordu extrak
+    rounding:
+        nearest: Hurbilen dagoen egun-erdira
+        up: Gora
+        down: Behera
+    line_kind:
+        adjustment: Doikuntza
+        carry_over: Eramatea
+        protected_carry_over: Eramate babestua
+    part:
+        full: Egun osoa
+        morning: Goiza
+        afternoon: Arratsaldea
+        hours: Orduak
+    seed:
+        vacation: Oporrak
+        personal: Norberaren egunak
+        compensatory: Ordainezko atsedena
+        marriage: Baimen ordaindua – ezkontza
+        family: Baimen ordaindua – senide baten istripua, gaixotasuna edo ospitaleratzea
+        bereavement: Baimen ordaindua – heriotza
+        moving: Baimen ordaindua – etxebizitza-aldaketa
+        public_duty: Baimen ordaindua – betebehar publikoa
+        unpaid: Ordaindu gabeko baimena
+        absence: Absentzia
+        medical: Absentzia – medikoa (justifikatua)
+        medical_appointment: Hitzordu medikoa
+        work_accident: Lan-istripua
+    balance:
+        title: Nire absentziak %year%
+        intro: Eskubideak zure esleipena, bere doikuntzak eta eramateak barne hartzen ditu; eskaerak hurrengo bertsioarekin iritsiko dira.
+        empty: Ez dago saldorik urte honetarako.
+        col:
+            type: Mota
+            entitled: Eskubidea
+            taken: Hartua
+            planned: Planifikatua
+            pending: Zain
+            remaining: Gelditzen dena
+            unit: Unitatea
+    type:
+        title: Absentzia-motak
+        intro: Erakundearen absentzia-motak. Artxibatutako motak erregistro zaharretan geratzen dira.
+        empty: Oraindik ez dago absentzia-motarik; gehitu lehenetsiak.
+        seed_intro: Mota lehenetsiak (oporrak, norberaren egunak, ET legearen 37.3 artikuluko baimen ordainduak, ordaindu gabeko baimena, absentziak) edonoiz gehi daitezke; lehendik daudenak mantentzen dira.
+        seed: Gehitu mota lehenetsiak
+        no_health: Ez mota, ez eremu, ez ohar batek ezin du diagnostikorik, kausarik edo osasun-daturik izan; mota mediko batek absentzia justifikatuta dagoela bakarrik erregistratzen du.
+        add: Absentzia-mota berria
+        save: Gorde mota
+        edit: Editatu
+        edit_title: '%name% absentzia-mota'
+        archive: Artxibatu mota
+        restore: Berreskuratu mota
+        active: Aktiboa
+        archived: Artxibatua
+        medical: Medikoa (Absente gisa erakusten da)
+        col:
+            name: Izena
+            unit: Unitatea
+            source: Hemendik kentzen da
+            state: Egoera
+        form:
+            name: Izena
+            paid: Ordaindua
+            source: Hemendik kentzen da
+            unit: Unitatea
+            needs_approval: Onespena behar du
+            needs_attachment: Dokumentu bat behar du
+            medical: Absentzia medikoa
+            medical_help: Absente gisa erakusten da absentziak kudeatzen ez dituen guztiei; ez da inoiz osasun-daturik gordetzen.
+            colour: Kolorea
+            max_per_request: Eskaera handiena
+            amount_help: Egunetan (egun-erdiak onartzen dira) edo ordutan, unitateak dioenaren arabera.
+            carry_over: Erabili gabeko egunak eraman daitezke
+            carry_over_max: Eramate handiena
+            carry_over_expiry: Eramatea iraungitzen da
+            carry_over_expiry_help: Hurrengo urteko hilabetea eta eguna (MM-DD), adibidez 03-31.
+        error:
+            name: Izenak 1 eta 80 karaktere ditu.
+            colour: Aukeratu paletako kolore bat.
+            max: Eskaera handiena zero baino handiagoa da.
+            overtime_hours: Ordu extretatik kentzen den motak ordutan zenbatzen du.
+            medical_source: Mota medikoak ez du inongo esleipenetik kentzen.
+            expiry: Iraungitzea hilabete bat eta egun bat da (MM-DD).
+            carry_max: Eramate handiena zero baino handiagoa da.
+            unit_in_use: Esleipenak dituen mota baten unitatea ezin da aldatu; sortu mota berri bat.
+    allowance:
+        title: Esleipenak %year%
+        intro: Mota bakoitzaren urteko esleipena erakunderako, talde baterako edo langile batentzat (zehatzenak nagusitzen da), proportzioan sartzen eta uzten dutenentzat.
+        empty: Ez dago esleipenik urte honetarako.
+        add: Esleipen berria
+        save: Gorde esleipena
+        remove_title: Kendu esleipen bat
+        remove: Kendu
+        worker_balances: Langile baten saldoak (%year%)
+        col:
+            type: Mota
+            scope: Honi aplikatzen zaio
+            target: Taldea edo langilea
+            amount: Kopurua
+            note: Oharra
+        form:
+            type: Mota
+            scope: Honi aplikatzen zaio
+            year: Urtea
+            amount: Kopurua
+            agreement_equivalent: Gutxieneko legalaren hitzarmen-baliokidea
+            note: Oharra
+        error:
+            target: Aukeratu esleipena aplikatzen zaion taldea edo langilea.
+            amount: Kopurua zero edo gehiago da eta urtea 2000 eta 2100 artekoa da.
+            legal_minimum: Gutxieneko legala baino oporrek (30 egun natural edo 22 laneguneko) hitzarmen-baliokidearen marka eta gutxienez 10 karaktereko ohar bat behar dituzte.
+            type: Urteko esleipenetik kentzen den motak bakarrik du esleipenik.
+            carry_off: Mota honek ez du eramaterik onartzen.
+            carry_max: Mota honen eramatea gehienez %max% da.
+            reason: Arrazoiak 3 eta 255 karaktere ditu.
+            line_amount: Kopurua ez da zero (doikuntza batek bakarrik izan dezake negatiboa).
+            too_large: Gehienez %max% (366 egun edo 2 080 ordu).
+            negative: 'Doikuntzak eskubidea zerotik behera utziko luke (oraingo eskubidea: %entitled%).'
+            self: Inork ez du bere esleipena aldatzen; baimenen beste kudeatzaile batek egiten du.
+    line:
+        add: Doikuntza edo eramate berria
+        save: Gorde lerroa
+        form:
+            kind: Mota
+            amount_help: Motaren unitatean; doikuntza bat negatiboa izan daiteke.
+            reason: Arrazoia
+            expires_on: Iraungitzen da
+            expires_on_help: 'Hutsik: eramatea motaren datan iraungitzen da, eramate babestua ezarpenetako hilabeteen ondoren.'
+    request:
+        error:
+            end_before_start: Amaiera hasiera baino lehenagokoa da.
+            too_long: Eskaera batek gehienez urte bat hartzen du.
+            half_day_range: Egun-erdi batek data bakar bat hartzen du.
+            part: Egunak egunetako motentzat, orduak orduetako motentzat.
+            times: Sartu hasiera- eta amaiera-ordu bat (HH:MM), amaiera hasieraren ondoren.
+    settings:
+        title: Absentzien ezarpenak
+        intro: Erakundearen absentzien kudeaketa. Aktibatzean absentzia-mota lehenetsiak gehitzen dira.
+        section: Absentziak
+        form:
+            enabled: Absentzien kudeaketa aktibatuta dago
+            enabled_help: Lanaldi-erregistroa aktibatuta egotea behar du.
+            rounding: Proportzio-biribilketa
+            protected_carry_months: Eramate babestuak irauten duen hilabeteak
+            colleagues_see_absences: Lankideek Absente ikusten dute taldearen egutegian
+            medical_documents: Absentzia medikoek dokumentu bat izan dezakete
+            attachment_retention_months: Absentziaren ondoren dokumentuak gordetzen diren hilabeteak
+            overtime_ratio: Ordu extrak atsedenera (ehunekoa)
+            planning_deadline: Oporrak planifikatzeko epemuga (MM-DD)
+        error:
+            register_off: Aktibatu lehenik lanaldi-erregistroa.
+            protected_months: Hilabeteak 1 eta 60 artekoak dira.
+            attachment_months: Hilabeteak 1 eta 48 artekoak dira.
+            overtime_ratio: Proportzioa ehuneko 1 eta 400 artekoa da.
+            planning_deadline: Epemuga hilabete bat eta egun bat da (MM-DD).
+    flash:
+        type_saved: Absentzia-mota gorde da.
+        type_archived: Absentzia-mota artxibatu da.
+        type_restored: Absentzia-mota berreskuratu da.
+        seeded: '%count% mota lehenetsi gehitu dira.'
+        policy_added: Esleipena gehitu da.
+        policy_removed: Esleipena kendu da.
+        line_added: Lerroa gehitu da.
+        settings_saved: Absentzien ezarpenak gorde dira.
+    no_health_hint: Ez sartu osasun-informaziorik (ez diagnostikorik, ez kausarik, ez xehetasun medikorik).
+

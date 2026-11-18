@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Leave component (contract section 6.6). No column holds a diagnosis, a cause or any health detail. -->
+    <entity name="Nowo\WorkingTimeBundle\Domain\Leave\Model\LeaveType" table="working_time_leave_type">
+        <unique-constraints>
+            <!-- One seeded type per code and tenant (audit TD-M1); custom types have no code (NULL repeats). -->
+            <unique-constraint name="wt_leave_type_seed" columns="tenant_id,seed_code"/>
+        </unique-constraints>
+        <indexes>
+            <index name="wt_leave_type_tenant" columns="tenant_id,archived"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="seedCode" column="seed_code" type="string" length="40" nullable="true"/>
+        <field name="names" column="names" type="json"/>
+        <field name="paid" column="paid" type="boolean"/>
+        <field name="allowanceSource" column="allowance_source" type="string" length="12" enum-type="Nowo\WorkingTimeBundle\Domain\Leave\Enum\AllowanceSource"/>
+        <field name="unit" column="unit" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Leave\Enum\LeaveUnit"/>
+        <field name="needsApproval" column="needs_approval" type="boolean"/>
+        <field name="needsAttachment" column="needs_attachment" type="boolean"/>
+        <field name="medical" column="medical" type="boolean"/>
+        <field name="colour" column="colour" type="string" length="16"/>
+        <field name="maxPerRequest" column="max_per_request" type="integer" nullable="true"/>
+        <field name="carryOver" column="carry_over" type="boolean"/>
+        <field name="carryOverMax" column="carry_over_max" type="integer" nullable="true"/>
+        <field name="carryOverExpiry" column="carry_over_expiry" type="string" length="5" nullable="true"/>
+        <field name="archived" column="archived" type="boolean"/>
+        <field name="sortOrder" column="sort_order" type="integer"/>
+        <field name="version" column="version" type="integer" version="true"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+    </entity>
+</doctrine-mapping>

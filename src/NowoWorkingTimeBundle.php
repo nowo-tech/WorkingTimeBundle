@@ -30,7 +30,9 @@ use function is_string;
  * 0.1 (S1) ships the register: the append-only record (database triggers on MySQL, MariaDB, PostgreSQL and SQLite),
  * the hash chain in Beacon's and the bundle's formats with purge anchors and the verifier, clocking, schedules,
  * corrections, settings, exports, notices, the retention purge, the UiKit + FormKit pages and the TimeTrack, UserKit
- * and Dompdf bridges. Holidays and leave arrive with S2 / S3 (docs/ROADMAP.md).
+ * and Dompdf bridges. 0.2 (S2) adds the stand-alone holiday component (calendars, work centres, festivos.io /
+ * OpenHolidays / file imports, the reader for agendas) and the leave foundations (types, allowances, carry-over,
+ * the day counter, balances). The leave request workflow arrives with S3 (docs/ROADMAP.md).
  *
  * @author Héctor Franco Aceituno <hectorfranco@nowo.tech>
  * @copyright 2026 Nowo.tech
@@ -46,8 +48,15 @@ final class NowoWorkingTimeBundle extends AbstractBundle
     /** FormKit profile of the bundle's forms (REQ-TWIG-005 rule 11). */
     public const FORM_PROFILE = 'working_time';
 
-    /** Doctrine mapping name. */
+    /** Doctrine mapping name (the register's; the holiday and leave mappings add a suffix). */
     public const MAPPING_NAME = 'NowoWorkingTimeBundle';
+
+    /** The XML mappings: name => [directory under Resources/config, entity namespace]. */
+    public const MAPPINGS = [
+        self::MAPPING_NAME             => ['doctrine', 'Nowo\\WorkingTimeBundle\\Domain\\Register\\Model'],
+        self::MAPPING_NAME . 'Holiday' => ['doctrine-holiday', 'Nowo\\WorkingTimeBundle\\Domain\\Holiday\\Model'],
+        self::MAPPING_NAME . 'Leave'   => ['doctrine-leave', 'Nowo\\WorkingTimeBundle\\Domain\\Leave\\Model'],
+    ];
 
     protected string $extensionAlias = self::ALIAS;
 
@@ -113,12 +122,11 @@ final class NowoWorkingTimeBundle extends AbstractBundle
             // fails the build with the fix instead of creating one silently.
             return;
         }
-        $builder->prependExtensionConfig('doctrine', ['orm' => ['entity_managers' => [$manager => ['mappings' => [self::MAPPING_NAME => [
-            'type'      => 'xml',
-            'dir'       => __DIR__ . '/Resources/config/doctrine',
-            'prefix'    => 'Nowo\WorkingTimeBundle\Domain\Register\Model',
-            'is_bundle' => false,
-        ]]]]]]);
+        $mappings = [];
+        foreach (self::MAPPINGS as $name => [$dir, $prefix]) {
+            $mappings[$name] = ['type' => 'xml', 'dir' => __DIR__ . '/Resources/config/' . $dir, 'prefix' => $prefix, 'is_bundle' => false];
+        }
+        $builder->prependExtensionConfig('doctrine', ['orm' => ['entity_managers' => [$manager => ['mappings' => $mappings]]]]);
     }
 
     /**

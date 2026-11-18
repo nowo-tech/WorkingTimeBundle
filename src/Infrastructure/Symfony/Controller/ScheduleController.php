@@ -10,6 +10,7 @@ use Nowo\UiKitBundle\View\EmptyState;
 use Nowo\UiKitBundle\View\ListPage;
 use Nowo\UiKitBundle\View\PageHeader;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\HolidayCalendarReaderInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ScheduleScope;
 use Nowo\WorkingTimeBundle\Domain\Register\Exception\ScheduleRefusedException;
@@ -58,6 +59,7 @@ final readonly class ScheduleController
         private WorkerDirectoryInterface $directory,
         private ClockInterface $clock,
         private string $defaultTimezone = 'UTC',
+        private ?HolidayCalendarReaderInterface $holidays = null,
     ) {
     }
 
@@ -77,7 +79,7 @@ final readonly class ScheduleController
                 $data = $form->getData();
                 try {
                     [$scope, $target, $from, $definition] = $this->input($data);
-                    $this->schedules->assign($scope, $target, $from, $definition);
+                    $this->schedules->assign($scope, $target, $from, $definition, is_string($data['workCentre'] ?? null) && $data['workCentre'] !== '' ? $data['workCentre'] : null);
                     $this->ui->flash($request, 'success', 'schedule.saved');
 
                     return $this->ui->redirect('nowo_working_time_schedules');
@@ -165,7 +167,12 @@ final readonly class ScheduleController
             $workers[$worker->displayName] = $worker->worker->value;
         }
 
-        return $this->ui->form(ScheduleType::class, ['timezone' => $this->defaultTimezone, 'scope' => 'tenant'], ['groups' => $groups, 'workers' => $workers]);
+        $centres = [];
+        foreach ($this->holidays?->workCentres($context->tenant) ?? [] as $centre) {
+            $centres[$centre->getName()] = $centre->getId();
+        }
+
+        return $this->ui->form(ScheduleType::class, ['timezone' => $this->defaultTimezone, 'scope' => 'tenant'], ['groups' => $groups, 'workers' => $workers, 'work_centres' => $centres]);
     }
 
     /**

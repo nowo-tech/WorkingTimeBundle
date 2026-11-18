@@ -58,6 +58,7 @@ month:
         worked: Gewerkt
         expected: Verwacht
         flags: Markeringen
+        note: Notitie
 day:
     title: 'Dag %date%'
     back_to_month: Terug naar de maand
@@ -191,12 +192,16 @@ schedule:
         daily_target: Dagdoel (minuten, flexibel rooster)
         weekly_target: Weekdoel (minuten)
         flex: Flexibele band (minuten)
+        work_centre: Werklocatie
+        work_centre_help: De feestdagenkalenders van de dagen van de werknemer komen hiervandaan; leeg is de standaardlocatie.
+        default_centre: Standaardlocatie
     error:
         group: Kies een groep van de organisatie.
         worker: Kies een werknemer.
         past: Een rooster geldt vanaf vandaag of later; verstreken dagen behouden het rooster waaraan ze zijn gemeten.
         not_future: Alleen een rooster dat nog niet geldt kan worden ingetrokken.
         invalid: Het rooster is niet geldig (tijdzone, bereiken zonder overlap, doelen tot 12 uur per dag).
+        work_centre: Kies een van de werklocaties van de organisatie.
 export:
     title: Exports
     intro: Je eigen kopie van je registratie en inspectie-exports voor wie ze mag maken. Bestanden kunnen 7 dagen worden gedownload.
@@ -344,3 +349,327 @@ notice:
     register_monthly_summary:
         subject: 'Je werktijd in %month%'
         body: 'Gewerkt %worked% van %expected% verwacht over %days% dag(en); %missing% ontbrekend(e) uitklok(ken).'
+holiday:
+    title: Feestdagen
+    intro: Feestdagenkalenders (nationaal, regionaal, lokaal) en de werklocaties waarvoor ze gelden. Imports van festivos.io, OpenHolidays of een CSV- / ICS-bestand worden vooraf getoond voordat er iets wordt opgeslagen.
+    empty: Nog geen feestdagenkalender.
+    open: Openen
+    back: Terug naar de kalenders
+    back_calendar: Terug naar de kalender
+    provisional: voorlopig
+    scope:
+        national: Nationaal
+        regional: Regionaal
+        local: Lokaal
+    origin:
+        manual: Handmatig
+        file: Bestand
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Aanbieder
+    col:
+        year: Jaar
+        name: Naam
+        scope: Bereik
+        provider: Bron
+        date: Datum
+        origin: Herkomst
+        source: Officiële bron
+        status: Status
+    calendar:
+        title: '%name% (%year%)'
+        add: Nieuwe kalender
+        edit: Kalender wijzigen
+        save: Kalender opslaan
+        empty: Deze kalender heeft nog geen feestdagen.
+        provisional: Dit jaar is bij de bron voorlopig (lokale feestdagen nog niet gepubliceerd); importeer het opnieuw zodra ze er zijn.
+        remove_title: Kalender verwijderen
+        remove: Kalender en zijn feestdagen verwijderen
+        form:
+            name: Naam
+            scope: Bereik
+            year: Jaar
+            country: Land
+            country_help: ISO-code van twee letters (ES, PT, FR…), voor de imports.
+            subdivision: Regio
+            subdivision_help: ISO-regiocode (ES-MD, ES-CT…) van een regionale kalender.
+            municipality: Gemeente (INE-code)
+            municipality_help: Vijf cijfers (28079 Madrid) voor festivos.io; zoek ze in de gemeentelijst.
+            source_note: Bronvermelding
+        error:
+            name: De naam heeft 1 tot 80 tekens.
+            year: Het jaar ligt tussen 2000 en 2100.
+            year_in_use: Het jaar van een kalender met feestdagen kan niet wijzigen; maak een kalender voor het andere jaar.
+            provider: Onbekende aanbieder.
+    day:
+        add: Feestdag toevoegen
+        edit: Bewerken
+        edit_title: Een feestdag van %calendar% bewerken
+        save: Feestdag opslaan
+        remove_title: Feestdag verwijderen
+        remove: Verwijderen
+        form:
+            date: Datum
+            name: Naam
+        error:
+            name: De naam heeft 1 tot 120 tekens.
+            year: De datum moet in het jaar van de kalender liggen.
+            date: Voer een geldige datum in.
+            duplicate: De kalender heeft op die datum al een feestdag.
+    import:
+        title: Een CSV- of ICS-bestand importeren
+        preview: Voorbeeld
+        confirm: De nieuwe feestdagen importeren
+        nothing: Het bestand heeft geen rijen.
+        preview_title: Importeren in %name% (%year%)
+        form:
+            file: Bestand
+            file_help: CSV met een kopregel date,name,scope (komma of puntkomma, UTF-8) of een ICS-kalender met evenementen van een hele dag; maximaal 200 rijen en 256 KiB.
+        status:
+            new: Nieuw
+            duplicate: Bestaat al (behouden)
+            other_scope: Ander bereik (overgeslagen)
+            invalid: Ongeldig (overgeslagen)
+            unchanged: Ongewijzigd
+            removed: Niet meer vermeld (verwijderd)
+        error:
+            file: Het bestand is geen UTF-8-tekstbestand binnen de groottelimiet.
+            header: De CSV heeft een kopregel nodig met minstens de kolommen date en name.
+            too_many: Het bestand heeft meer dan %max% rijen.
+            empty: Het bestand heeft geen rijen.
+            disabled: Bestandsimports staan uit.
+    provider:
+        import_from: Importeren uit %provider%
+        festivos_io:
+            label: festivos.io (Spanje, per gemeente)
+            error: festivos.io kon niet worden gelezen; er is niets opgeslagen. Controleer de gemeentecode en het jaar en probeer het later opnieuw.
+            municipality: festivos.io heeft een Spaanse gemeente nodig (land ES en een INE-code van vijf cijfers).
+        openholidays:
+            label: OpenHolidays (land of regio)
+            error: De OpenHolidays-API kon niet worden gelezen; er is niets opgeslagen. Controleer de land- en regiocodes en probeer het later opnieuw.
+        error:
+            unknown: Die aanbieder is niet beschikbaar.
+            location: Die aanbieder kan niet antwoorden voor deze plaats.
+    location:
+        error:
+            country: Het land is een ISO-code van twee letters.
+            subdivision: De regio is een ISO-code van het land (ES-MD).
+            municipality: De gemeente is een INE-code van vijf cijfers.
+    centre:
+        title: Werklocaties
+        intro: Een werklocatie groepeert de kalenders die gelden voor de mensen die er werken; de locatie van een werknemer komt uit zijn rooster, anders van de standaardlocatie.
+        empty: Nog geen werklocatie; elke kalender geldt voor iedereen.
+        add: Nieuwe werklocatie
+        save: Werklocatie opslaan
+        edit_title: Werklocatie %name%
+        calendars: '%count% kalender(s)'
+        default: Standaard
+        remove_title: Werklocatie verwijderen
+        remove: Werklocatie verwijderen
+        form:
+            name: Naam
+            calendars: Kalenders
+            default: Standaardlocatie van de organisatie
+        error:
+            name: De naam heeft 1 tot 80 tekens.
+    municipalities:
+        title: Spaanse gemeenten
+        loaded: De gemeentelijst is geladen; zoek erin via %url%?query=… (op naam, provincie of INE-code).
+        not_loaded: De gemeentelijst is niet geladen; laad ze één keer (één aanroep naar festivos.io, een week bewaard) om plaatsen op naam te zoeken.
+        refresh: Gemeentelijst laden
+    flash:
+        calendar_saved: Kalender opgeslagen.
+        calendar_removed: Kalender verwijderd.
+        day_added: Feestdag toegevoegd.
+        day_changed: Feestdag gewijzigd.
+        day_removed: Feestdag verwijderd.
+        imported: '%added% feestdag(en) geïmporteerd.'
+        provider_imported: '%added% feestdag(en) geïmporteerd, %removed% verwijderd.'
+        provider_imported_provisional: '%added% feestdag(en) geïmporteerd, %removed% verwijderd. Het jaar is bij de bron nog voorlopig.'
+        centre_saved: Werklocatie opgeslagen.
+        centre_removed: Werklocatie verwijderd.
+        municipalities_loaded: '%count% gemeenten geladen.'
+leave:
+    back: Terug naar de soorten
+    year_previous: Vorig jaar
+    year_next: Volgend jaar
+    nav:
+        label: Verlof
+        balances: Mijn saldo's
+        types: Soorten
+        allowances: Tegoeden
+        settings: Instellingen
+    unit:
+        natural_days: Kalenderdagen
+        working_days: Werkdagen
+        hours: Uren
+    source:
+        none: Niets
+        allowance: Jaartegoed
+        overtime: Bekrachtigde overuren
+    rounding:
+        nearest: Naar de dichtstbijzijnde halve dag
+        up: Naar boven
+        down: Naar beneden
+    line_kind:
+        adjustment: Correctie
+        carry_over: Overdracht
+        protected_carry_over: Beschermde overdracht
+    part:
+        full: Hele dag
+        morning: Ochtend
+        afternoon: Middag
+        hours: Uren
+    seed:
+        vacation: Vakantie
+        personal: Persoonlijke dagen
+        compensatory: Compensatieverlof
+        marriage: Betaald verlof – huwelijk
+        family: Betaald verlof – ongeval, ziekte of ziekenhuisopname van een familielid
+        bereavement: Betaald verlof – overlijden
+        moving: Betaald verlof – verhuizing
+        public_duty: Betaald verlof – openbare plicht
+        unpaid: Onbetaald verlof
+        absence: Afwezigheid
+        medical: Afwezigheid – medisch (gerechtvaardigd)
+        medical_appointment: Medische afspraak
+        work_accident: Arbeidsongeval
+    balance:
+        title: Mijn verlof %year%
+        intro: Recht omvat je tegoed met zijn correcties en overdrachten; aanvragen volgen met de volgende versie.
+        empty: Geen saldo voor dit jaar.
+        col:
+            type: Soort
+            entitled: Recht
+            taken: Opgenomen
+            planned: Gepland
+            pending: In behandeling
+            remaining: Resterend
+            unit: Eenheid
+    type:
+        title: Verlofsoorten
+        intro: De verlofsoorten van de organisatie. Gearchiveerde soorten blijven op oude registraties staan.
+        empty: Nog geen verlofsoort; voeg de standaardsoorten toe.
+        seed_intro: De standaardsoorten (vakantie, persoonlijke dagen, het betaald verlof van art. 37.3 ET, onbetaald verlof, afwezigheden) kunnen op elk moment worden toegevoegd; bestaande blijven behouden.
+        seed: Standaardsoorten toevoegen
+        no_health: Geen soort, veld of notitie mag een diagnose, een oorzaak of enig gezondheidsdetail bevatten; een medische soort legt alleen vast dat de afwezigheid gerechtvaardigd is.
+        add: Nieuwe verlofsoort
+        save: Soort opslaan
+        edit: Bewerken
+        edit_title: Verlofsoort %name%
+        archive: Soort archiveren
+        restore: Soort herstellen
+        active: Actief
+        archived: Gearchiveerd
+        medical: Medisch (getoond als Afwezig)
+        col:
+            name: Naam
+            unit: Eenheid
+            source: Trekt af van
+            state: Status
+        form:
+            name: Naam
+            paid: Betaald
+            source: Trekt af van
+            unit: Eenheid
+            needs_approval: Heeft goedkeuring nodig
+            needs_attachment: Heeft een document nodig
+            medical: Medische afwezigheid
+            medical_help: Getoond als Afwezig aan iedereen zonder verlofbeheer; er wordt nooit een gezondheidsdetail opgeslagen.
+            colour: Kleur
+            max_per_request: Grootste aanvraag
+            amount_help: In dagen (halve dagen toegestaan) of uren, zoals de eenheid aangeeft.
+            carry_over: Ongebruikte dagen mogen worden overgedragen
+            carry_over_max: Grootste overdracht
+            carry_over_expiry: Overdracht vervalt op
+            carry_over_expiry_help: Maand en dag van het volgende jaar (MM-DD), bijvoorbeeld 03-31.
+        error:
+            name: De naam heeft 1 tot 80 tekens.
+            colour: Kies een kleur uit het palet.
+            max: De grootste aanvraag is meer dan nul.
+            overtime_hours: Een soort die van overuren aftrekt, telt in uren.
+            medical_source: Een medische soort trekt van geen tegoed af.
+            expiry: De vervaldatum is een maand en een dag (MM-DD).
+            carry_max: De grootste overdracht is meer dan nul.
+            unit_in_use: De eenheid van een soort met tegoeden kan niet wijzigen; maak een nieuwe soort.
+    allowance:
+        title: Tegoeden %year%
+        intro: Het jaartegoed van elke soort voor de organisatie, een groep of één werknemer (het meest specifieke wint), naar rato voor nieuwe en vertrekkende werknemers.
+        empty: Geen tegoed voor dit jaar.
+        add: Nieuw tegoed
+        save: Tegoed opslaan
+        remove_title: Een tegoed verwijderen
+        remove: Verwijderen
+        worker_balances: Saldo's van een werknemer (%year%)
+        col:
+            type: Soort
+            scope: Geldt voor
+            target: Groep of werknemer
+            amount: Hoeveelheid
+            note: Notitie
+        form:
+            type: Soort
+            scope: Geldt voor
+            year: Jaar
+            amount: Hoeveelheid
+            agreement_equivalent: Cao-equivalent van het wettelijk minimum
+            note: Notitie
+        error:
+            target: Kies de groep of de werknemer voor wie het tegoed geldt.
+            amount: De hoeveelheid is nul of meer en het jaar ligt tussen 2000 en 2100.
+            legal_minimum: Vakantie onder het wettelijk minimum (30 kalenderdagen of 22 werkdagen) vereist de cao-equivalentmarkering en een notitie van minstens 10 tekens.
+            type: Alleen een soort die van het jaartegoed aftrekt, heeft tegoeden.
+            carry_off: Deze soort staat geen overdracht toe.
+            carry_max: Een overdracht van deze soort is hoogstens %max%.
+            reason: De reden heeft 3 tot 255 tekens.
+            line_amount: De hoeveelheid is niet nul (alleen een correctie kan negatief zijn).
+            too_large: Hoogstens %max% (366 dagen of 2 080 uur).
+            negative: 'De correctie zou het recht onder nul brengen (huidig recht: %entitled%).'
+            self: Niemand wijzigt het eigen recht; een andere verlofbeheerder doet dat.
+    line:
+        add: Nieuwe correctie of overdracht
+        save: Regel opslaan
+        form:
+            kind: Soort regel
+            amount_help: In de eenheid van de soort; een correctie mag negatief zijn.
+            reason: Reden
+            expires_on: Vervalt op
+            expires_on_help: 'Leeg: een overdracht vervalt op de datum van de soort, een beschermde overdracht na de maanden van de instellingen.'
+    request:
+        error:
+            end_before_start: Het einde ligt voor het begin.
+            too_long: Een aanvraag beslaat hoogstens een jaar.
+            half_day_range: Een halve dag beslaat één datum.
+            part: Dagen voor dagsoorten, uren voor uursoorten.
+            times: Voer een begin- en een eindtijd in (HH:MM), met het einde na het begin.
+    settings:
+        title: Verlofinstellingen
+        intro: Verlofbeheer voor de organisatie. Inschakelen voegt de standaardverlofsoorten toe.
+        section: Verlof
+        form:
+            enabled: Verlofbeheer staat aan
+            enabled_help: Vereist dat de urenregistratie aanstaat.
+            rounding: Afronding naar rato
+            protected_carry_months: Maanden dat een beschermde overdracht geldt
+            colleagues_see_absences: Collega's zien Afwezig in de teamkalender
+            medical_documents: Medische afwezigheden mogen een document bevatten
+            attachment_retention_months: Maanden dat documenten na het verlof worden bewaard
+            overtime_ratio: Overuren naar verlof (procent)
+            planning_deadline: Deadline voor vakantieplanning (MM-DD)
+        error:
+            register_off: Zet eerst de urenregistratie aan.
+            protected_months: De maanden liggen tussen 1 en 60.
+            attachment_months: De maanden liggen tussen 1 en 48.
+            overtime_ratio: De verhouding ligt tussen 1 en 400 procent.
+            planning_deadline: De deadline is een maand en een dag (MM-DD).
+    flash:
+        type_saved: Verlofsoort opgeslagen.
+        type_archived: Verlofsoort gearchiveerd.
+        type_restored: Verlofsoort hersteld.
+        seeded: '%count% standaardsoort(en) toegevoegd.'
+        policy_added: Tegoed toegevoegd.
+        policy_removed: Tegoed verwijderd.
+        line_added: Regel toegevoegd.
+        settings_saved: Verlofinstellingen opgeslagen.
+    no_health_hint: Neem geen gezondheidsinformatie op (geen diagnose, oorzaak of medisch detail).
+

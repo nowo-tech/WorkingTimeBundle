@@ -25,3 +25,4 @@ security:
     # host sends anonymous visitors to the login instead.
     access_control:
         - { path: '^/working-time(/|$)', roles: IS_AUTHENTICATED_FULLY }
+        - { path: '^/(holidays|leave|agenda)(/|$)', roles: IS_AUTHENTICATED_FULLY }

@@ -6,9 +6,11 @@ namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http;
 
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseContext;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseFormatterInterface;
+use Nowo\WorkingTimeBundle\Application\Leave\StaleLeaveSettingsException;
 use Nowo\WorkingTimeBundle\Application\Register\Exception\ChainBusyException;
 use Nowo\WorkingTimeBundle\Application\Register\Exception\StaleCorrectionDecisionException;
 use Nowo\WorkingTimeBundle\Application\Register\Exception\StaleSettingsException;
+use Nowo\WorkingTimeBundle\Application\Shared\WriteConflictException;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Routing\UiRouteLoader;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -49,6 +51,12 @@ final readonly class WorkingTimeConflictFormatter implements ConflictResponseFor
             }
             if ($e instanceof ChainBusyException) {
                 return ChainBusyException::ERROR_CODE;
+            }
+            if ($e instanceof StaleLeaveSettingsException) {
+                return StaleLeaveSettingsException::ERROR_CODE;
+            }
+            if ($e instanceof WriteConflictException) {
+                return $e->errorCode;
             }
         }
 
