@@ -35,6 +35,13 @@ hashes passed to the API) the weaker 0.1.0 rule. Still out of reach: a prefix of
 have a workday older than a forged anchor's `first_kept_date`, removed together with that anchor at the new start, by
 a role that can delete with the purge flag (the residual risk below).
 
+Store each published head entry whole, `day` included, write-once outside the database (`--heads-out` to write-once
+storage, or `--publish-heads` to an audit sink kept elsewhere). The `day` is what ties a missing head to the purge
+boundary: a heads file whose `day` was forged to an old date, or stripped (the 0.1.1 rule then applies), excuses a
+prefix removed behind a forged anchor. The `chain_heads` stored with each export give no such protection on their own,
+since the application can write those rows. A late link kept after its workday was purged (an orphan correction or
+acknowledgement) is published with `day: null` and gets the weaker 0.1.1 rule.
+
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.
 When the application user owns the schema, it can drop or replace the triggers, disable them, or (in
 `session_variable` mode) set the purge flag itself, and then rewrite the register and recompute the hashes. The chain

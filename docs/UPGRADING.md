@@ -12,9 +12,10 @@ From **0.1.1**: no schema change and no migration.
 
 - Heads (`--heads-out`, `--publish-heads`, the exports' `chain_heads`) now carry `day`, the head link's workday date:
   `{"hash": "…", "seq": 12, "at": "2026-11-17T16:30:00Z", "day": "2026-11-17"}`. A missing published head is excused
-  only when its `day` is before the `first_kept_date` of the anchor at the chain's start. Write a new heads file with
-  `--heads-out` after upgrading to get this check; 0.1.1 files and export rows (no `day`) still work under the 0.1.1
-  rule (below the start), which a forged anchor at the new start can satisfy.
+  only when its `day` is before the `first_kept_date` of the anchor at the chain's start. **Regenerate your heads
+  files with the 0.1.2 `--heads-out`** after upgrading (right after a verification that passes) and store them
+  write-once outside the database: entries without `day` (0.1.1 heads files and exports) keep the weaker 0.1.1 rule
+  (`seq` below the start), which a forged anchor at the new start can satisfy.
 - `--heads` refuses (exit 2) an entry with `seq` below 1 (other than the genesis with `seq` 0), an `at` that is not
   exactly `Y-m-d\TH:i:s\Z`, or a `day` that is not a real `Y-m-d` date.
 - `ChainVerifierInterface::verify()` accepts `day` in each entry (as `VerificationReport::$headLinks`); pass it.
