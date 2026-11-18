@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle\Tests\Fixtures;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Nowo\WorkingTimeBundle\Domain\Leave\Model\LeaveSettings;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionRequest;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\RegisterSettings;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\WorkdayRevision;
@@ -54,6 +55,13 @@ final class RaceInjector
                 'tenant_id'       => $object->getTenantId(), 'enabled' => 0, 'breaks_counted' => 0, 'flex_minutes' => 0, 'min_break_minutes' => 0,
                 'task_timer_link' => 0, 'reminders_allowed' => 0, 'monthly_summary_mandatory' => 0, 'ip_evidence' => 0, 'ip_notices' => '[]',
                 'retention_years' => 4, 'correction_window_days' => 31, 'version' => 1, 'updated_at' => '2026-11-18 10:00:00',
+            ]);
+        }
+        if ($object instanceof LeaveSettings && $this->context->settingsRace) {
+            $this->context->settingsRace = false;
+            $em->getConnection()->insert($em->getClassMetadata(LeaveSettings::class)->getTableName(), [
+                'tenant_id'      => $object->getTenantId(), 'enabled' => 0, 'colleagues_see_absences' => 1, 'medical_documents' => 0, 'attachment_retention_months' => 12,
+                'overtime_ratio' => 100, 'rounding' => 'nearest', 'protected_carry_months' => 18, 'approval_chains' => '[]', 'min_staffing' => '[]', 'version' => 1, 'updated_at' => '2026-11-18 10:00:00',
             ]);
         }
         if ($object instanceof WorkdayRevision && $this->context->bumpVersions) {

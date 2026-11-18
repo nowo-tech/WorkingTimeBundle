@@ -1,0 +1,46 @@
+{#
+  One holiday calendar (contract section 11.1, holidays_manage): its days, then the forms — add a day, import a
+  CSV / ICS file, import from a provider (preview first), change the calendar, remove it.
+  Variables: page (ListPage of days), calendar (HolidayCalendar), calendar_form, day_form, import_form (FormView),
+  day_action, import_action, remove_action (URLs), providers (list of {key, label, attribution, action, form}),
+  removes (list of {form, action, label}), remove_form (FormView).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    {% if calendar.provisional %}
+        <div class="{{ nowo_ui_class('flash_warning', _b) }}" role="status" data-testid="wt-holiday-provisional">{{ 'holiday.calendar.provisional'|trans({}, _d) }}</div>
+    {% endif %}
+    {% if calendar.attribution %}<p data-testid="wt-holiday-attribution"><small>{{ calendar.attribution }}</small></p>{% endif %}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: day_form, title: 'holiday.day.add', submit: 'holiday.day.save', action: day_action, testid: 'wt-holiday-day-form'}) }}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: import_form, title: 'holiday.import.title', submit: 'holiday.import.preview', action: import_action, testid: 'wt-holiday-import-form', multipart: true, variant: 'btn_secondary'}) }}
+    {% for provider in providers %}
+        <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-holiday-provider-{{ provider.key }}">
+            <div class="{{ nowo_ui_class('card_body', _b) }}">
+                <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'holiday.provider.import_from'|trans({'%provider%': provider.label|trans({}, _d)}, _d) }}</h2>
+                {% if provider.attribution %}<p><small>{{ provider.attribution }}</small></p>{% endif %}
+                {{ form_start(provider.form, {action: provider.action}) }}
+                {% for child in provider.form %}{% if not child.rendered %}{{ form_row(child) }}{% endif %}{% endfor %}
+                <div class="{{ nowo_ui_class('form_actions', _b) }}"><button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'holiday.import.preview'|trans({}, _d) }}</button></div>
+                {{ form_end(provider.form) }}
+            </div>
+        </section>
+    {% endfor %}
+    {% if removes is not empty %}
+        <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-holiday-day-removes">
+            <div class="{{ nowo_ui_class('card_body', _b) }}">
+                <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'holiday.day.remove_title'|trans({}, _d) }}</h2>
+                {% for remove in removes %}
+                    {{ form_start(remove.form, {action: remove.action, attr: {'data-testid': 'wt-holiday-day-remove'}}) }}
+                    {{ form_widget(remove.form) }}
+                    <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'holiday.day.remove'|trans({}, _d) }} · {{ remove.label }}</button>
+                    {{ form_end(remove.form) }}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: calendar_form, title: 'holiday.calendar.edit', submit: 'holiday.calendar.save', action: null, testid: 'wt-holiday-calendar-form', variant: 'btn_secondary'}) }}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: remove_form, title: 'holiday.calendar.remove_title', submit: 'holiday.calendar.remove', action: remove_action, testid: 'wt-holiday-calendar-remove', variant: 'btn_danger'}) }}
+{% endblock %}

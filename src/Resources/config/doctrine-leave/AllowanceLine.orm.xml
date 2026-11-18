@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Append-only in code: corrections are new lines; expiry sets expired_at once. -->
+    <entity name="Nowo\WorkingTimeBundle\Domain\Leave\Model\AllowanceLine" table="working_time_leave_allowance_line">
+        <indexes>
+            <index name="wt_leave_line_worker" columns="tenant_id,worker_id,leave_year"/>
+            <index name="wt_leave_line_expiry" columns="expired_at,expires_on"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="workerId" column="worker_id" type="string" length="128"/>
+        <field name="leaveTypeId" column="leave_type_id" type="string" length="36"/>
+        <field name="leaveYear" column="leave_year" type="smallint"/>
+        <field name="lineKind" column="line_kind" type="string" length="24" enum-type="Nowo\WorkingTimeBundle\Domain\Leave\Enum\AllowanceLineKind"/>
+        <field name="amount" column="amount" type="integer"/>
+        <field name="reason" column="reason" type="string" length="255"/>
+        <field name="expiresOn" column="expires_on" type="date_immutable" nullable="true"/>
+        <field name="expiredAt" column="expired_at" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="createdById" column="created_by_id" type="string" length="128" nullable="true"/>
+    </entity>
+</doctrine-mapping>

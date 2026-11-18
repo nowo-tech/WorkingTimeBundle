@@ -7,8 +7,23 @@ namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection;
 use Nowo\TimeTrackBundle\Workday\WorkdaySourceInterface;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseFormatterInterface;
 use Nowo\UserKitBundle\PersonalData\PersonalDataEraserInterface;
+use Nowo\WorkingTimeBundle\Application\Holiday\HolidayAccess;
+use Nowo\WorkingTimeBundle\Application\Holiday\HolidayCalendarReader;
+use Nowo\WorkingTimeBundle\Application\Holiday\HolidayCalendarService;
+use Nowo\WorkingTimeBundle\Application\Holiday\HolidayProviderRegistry;
+use Nowo\WorkingTimeBundle\Application\Holiday\Port\HolidayStoreInterface;
+use Nowo\WorkingTimeBundle\Application\Leave\DayCounter;
+use Nowo\WorkingTimeBundle\Application\Leave\LeaveAccess;
+use Nowo\WorkingTimeBundle\Application\Leave\LeaveAdministration;
+use Nowo\WorkingTimeBundle\Application\Leave\LeaveBalanceReader;
+use Nowo\WorkingTimeBundle\Application\Leave\LeaveTypeSeeder;
+use Nowo\WorkingTimeBundle\Application\Leave\NoLeaveUsage;
+use Nowo\WorkingTimeBundle\Application\Leave\Port\LeaveSeedNamesInterface;
+use Nowo\WorkingTimeBundle\Application\Leave\Port\LeaveStoreInterface;
+use Nowo\WorkingTimeBundle\Application\Leave\Port\LeaveUsageInterface;
 use Nowo\WorkingTimeBundle\Application\Register\ChainVerifier;
 use Nowo\WorkingTimeBundle\Application\Register\CorrectionService;
+use Nowo\WorkingTimeBundle\Application\Register\HolidayDayAnnotations;
 use Nowo\WorkingTimeBundle\Application\Register\Notice\NoticeDispatcher;
 use Nowo\WorkingTimeBundle\Application\Register\Notice\NoticeOutbox;
 use Nowo\WorkingTimeBundle\Application\Register\Port\ExportDispatcherInterface;
@@ -17,6 +32,7 @@ use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterPurgeStoreInterface
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\TriggerInspectorInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
+use Nowo\WorkingTimeBundle\Application\Register\RegisterAnnotations;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterExportService;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterPersonalData;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterPurger;
@@ -33,6 +49,11 @@ use Nowo\WorkingTimeBundle\Bridge\UserKit\IdentifierWorkerOfUser;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\UserKitRegisterEraser;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\UserKitRegisterExportProvider;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\WorkerOfUserInterface;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\HolidayCalendarReaderInterface;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\HolidayCalendarServiceInterface;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\MunicipalityDirectoryInterface;
+use Nowo\WorkingTimeBundle\Domain\Leave\Service\LeaveAdministrationInterface;
+use Nowo\WorkingTimeBundle\Domain\Leave\Service\LeaveBalanceReaderInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\ExportFileStoreInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\IdGeneratorInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\ScheduleFallbackProviderInterface;
@@ -52,16 +73,21 @@ use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterSettingsEditorInterfa
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ScheduleServiceInterface;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Dbal\DbalRegisterPurgeStore;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Dbal\PurgeFlagResetMiddleware;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineHolidayStore;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineLeaveStore;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineRegisterStore;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\RegisterMetadataListener;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\DoctrineTriggerInspector;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\RegisterTriggerInstaller;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command\LeaveDailyCommand;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command\NoticesCommand;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command\PurgeRegisterCommand;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command\TriggersCommand;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command\VerifyRegisterCommand;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\ExportController;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\HolidayController;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\LeaveController;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\RegisterController;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\ScheduleController;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\SettingsController;
@@ -70,17 +96,33 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller\UiSupport;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterExportGenerator;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterReportBuilder;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\SyncExportDispatcher;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ActionType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\AllowanceLineType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\AllowancePolicyType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\AnswerType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ClockType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\CorrectionType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\DecisionType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ExportType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\HolidayCalendarType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\HolidayDayType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\HolidayImportConfirmType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\HolidayImportType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\HolidayProviderType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\LeaveSettingsType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\LeaveTypeType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\PreferencesType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ScheduleType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\SettingsType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\WithdrawType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\WorkCentreType;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Holiday\FestivosIoMunicipalityDirectory;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Holiday\FestivosIoProvider;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Holiday\GuardedJsonClient;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Holiday\OpenHolidaysProvider;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\EntityManagerHygieneListener;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\WorkingTimeConflictFormatter;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Leave\TranslatedLeaveSeedNames;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportHandler;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\ConfiguredScheduleFallback;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\CurrentUserWorkerDirectory;
@@ -100,6 +142,7 @@ use function is_array;
 use function is_string;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
+use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_iterator;
 
 /**
  * The bundle's services (explicit arguments, no autowiring of bundle classes). Port defaults are registered here
@@ -114,6 +157,12 @@ final class ServiceDefinitions
     /** Prefix of the bundle's service ids. */
     public const P = NowoWorkingTimeBundle::ALIAS . '.';
 
+    /** Tag of the holiday providers (built-in and the host's). */
+    public const HOLIDAY_PROVIDER_TAG = 'nowo_working_time.holiday_provider';
+
+    /** Tag of the register day annotation providers. */
+    public const DAY_ANNOTATION_TAG = 'nowo_working_time.day_annotation_provider';
+
     /**
      * Registers the services.
      *
@@ -121,11 +170,12 @@ final class ServiceDefinitions
      */
     public static function register(ContainerConfigurator $container, array $config): void
     {
-        $s      = $container->services();
-        $p      = self::P;
-        $logger = service('logger')->nullOnInvalid();
-        $events = service('event_dispatcher')->nullOnInvalid();
-        $clock  = service($p . 'clock');
+        $s                             = $container->services();
+        $p                             = self::P;
+        $logger                        = service('logger')->nullOnInvalid();
+        $events                        = service('event_dispatcher')->nullOnInvalid();
+        $clock                         = service($p . 'clock');
+        [$holidays, $festivos, $leave] = self::components($config);
 
         // Port defaults.
         $s->set($p . 'default.tenant_resolver', SingleTenantResolver::class);
@@ -194,7 +244,8 @@ final class ServiceDefinitions
             param($p . 'register.retention_years'),
             param($p . 'register.correction_window_days'),
         ])->public();
-        $s->set(ScheduleResolver::class)->args([service(RegisterStoreInterface::class), service(ScheduleFallbackProviderInterface::class), param($p . 'register.schedule.default_timezone')]);
+        $s->set(ScheduleResolver::class)->args([service(RegisterStoreInterface::class), service(ScheduleFallbackProviderInterface::class), param($p . 'register.schedule.default_timezone')])->public();
+        $s->set(RegisterAnnotations::class)->args([service(ScheduleResolver::class), tagged_iterator(self::DAY_ANNOTATION_TAG)])->public();
         $s->set(RegisterReader::class)->args([service(RegisterStoreInterface::class), service(RegisterRules::class)])->public();
         $s->alias(RegisterReaderInterface::class, RegisterReader::class)->public();
         $s->set(RevisionChain::class)->args([service(RegisterStoreInterface::class), service(TransactionRunnerInterface::class), service(IdGeneratorInterface::class)]);
@@ -240,6 +291,7 @@ final class ServiceDefinitions
             service(IdGeneratorInterface::class),
             service(WorkingTimeAuditSinkInterface::class),
             $clock,
+            $holidays ? service(HolidayCalendarReaderInterface::class) : null,
         ]);
         $s->alias(ScheduleServiceInterface::class, ScheduleService::class)->public();
         $s->set(RegisterSettingsEditor::class)->args([
@@ -316,6 +368,8 @@ final class ServiceDefinitions
             $logger,
             param($p . 'register.reminders.window_minutes'),
             param($p . 'register.monthly_summary.enabled'),
+            500,
+            service(RegisterAnnotations::class),
         ])->public();
         $s->set(RegisterPersonalData::class)->args([
             service(RegisterStoreInterface::class),
@@ -325,6 +379,13 @@ final class ServiceDefinitions
             $clock,
             service(WorkingTimeAuditSinkInterface::class),
         ])->public();
+
+        if ($holidays) {
+            self::holidays($container, $config, $festivos);
+        }
+        if ($leave) {
+            self::leave($container);
+        }
 
         // Console.
         $s->set(VerifyRegisterCommand::class)->args([service(ChainVerifierInterface::class)])->tag('console.command');
@@ -338,7 +399,7 @@ final class ServiceDefinitions
 
         // HTTP.
         $s->set(WorkingTimeConflictFormatter::class)->tag(ConflictResponseFormatterInterface::TAG, ['priority' => 16]);
-        $s->set(UiRouteLoader::class)->args([param($p . 'ui.enabled'), param($p . 'ui.register_path'), param($p . 'ui.settings_path')])->tag('routing.loader');
+        $s->set(UiRouteLoader::class)->args([param($p . 'ui.enabled'), param($p . 'ui.register_path'), param($p . 'ui.settings_path'), param($p . 'register.enabled'), $holidays, $leave, param($p . 'ui.holidays_path'), param($p . 'ui.leave_path')])->tag('routing.loader');
         $s->set(WorkingTimeTwigExtension::class)->args([service(RegisterClockInterface::class), service('router')])->tag('twig.extension');
         $ui = is_array($config['ui'] ?? null) ? $config['ui'] : [];
         if (($ui['enabled'] ?? false) === true) {
@@ -352,13 +413,19 @@ final class ServiceDefinitions
                 param($p . 'ui.layout_template'),
             ]);
             $controllers = [
-                RegisterController::class => [service(UiSupport::class), service(RegisterAccess::class), service(RegisterClockInterface::class), service(CorrectionServiceInterface::class), service(RegisterReader::class), service(RegisterStoreInterface::class), service(ScheduleResolver::class), service(TransactionRunnerInterface::class), $clock],
+                RegisterController::class => [service(UiSupport::class), service(RegisterAccess::class), service(RegisterClockInterface::class), service(CorrectionServiceInterface::class), service(RegisterReader::class), service(RegisterStoreInterface::class), service(ScheduleResolver::class), service(TransactionRunnerInterface::class), $clock, service(RegisterAnnotations::class)],
                 TeamController::class     => [service(UiSupport::class), service(RegisterAccess::class), service(CorrectionServiceInterface::class), service(RegisterReader::class), service(RegisterStoreInterface::class), service(ScheduleResolver::class), service(WorkerDirectoryInterface::class), service(TransactionRunnerInterface::class), $clock, param($p . 'ui.page_size')],
-                ScheduleController::class => [service(UiSupport::class), service(RegisterAccess::class), service(ScheduleServiceInterface::class), service(WorkerDirectoryInterface::class), $clock, param($p . 'register.schedule.default_timezone')],
+                ScheduleController::class => [service(UiSupport::class), service(RegisterAccess::class), service(ScheduleServiceInterface::class), service(WorkerDirectoryInterface::class), $clock, param($p . 'register.schedule.default_timezone'), $holidays ? service(HolidayCalendarReaderInterface::class) : null],
                 ExportController::class   => [service(UiSupport::class), service(RegisterAccess::class), service(RegisterExportServiceInterface::class), service(WorkerDirectoryInterface::class), $clock, param($p . 'register.export.formats')],
                 SettingsController::class => [service(UiSupport::class), service(RegisterSettingsEditorInterface::class), service(WorkerPreferences::class), service(TriggerInspectorInterface::class), param($p . 'register.ip_evidence_allowed')],
             ];
-            foreach ([ClockType::class, CorrectionType::class, DecisionType::class, AnswerType::class, WithdrawType::class, PreferencesType::class, ScheduleType::class, ExportType::class, SettingsType::class] as $type) {
+            if ($holidays) {
+                $controllers[HolidayController::class] = [service(UiSupport::class), service(HolidayAccess::class), service(HolidayCalendarServiceInterface::class), $clock, $festivos ? service(MunicipalityDirectoryInterface::class) : null];
+            }
+            if ($leave) {
+                $controllers[LeaveController::class] = [service(UiSupport::class), service(LeaveAccess::class), service(LeaveAdministrationInterface::class), service(LeaveBalanceReaderInterface::class), service(WorkerDirectoryInterface::class), $clock];
+            }
+            foreach ([ClockType::class, CorrectionType::class, DecisionType::class, AnswerType::class, WithdrawType::class, PreferencesType::class, ScheduleType::class, ExportType::class, SettingsType::class, ActionType::class, HolidayCalendarType::class, HolidayDayType::class, HolidayImportType::class, HolidayImportConfirmType::class, HolidayProviderType::class, WorkCentreType::class, LeaveTypeType::class, AllowancePolicyType::class, AllowanceLineType::class, LeaveSettingsType::class] as $type) {
                 $s->set($type)->tag('form.type');
             }
             foreach ($controllers as $class => $args) {
@@ -385,5 +452,108 @@ final class ServiceDefinitions
             $s->set(UserKitRegisterExportProvider::class)->args([service(RegisterPersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.export_provider')->public();
             $s->set(UserKitRegisterEraser::class)->args([service(RegisterPersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.eraser')->public();
         }
+    }
+
+    /**
+     * Which components are on: holidays, its festivos.io provider, leave.
+     *
+     * @param array<string, mixed> $config
+     *
+     * @return array{bool, bool, bool}
+     */
+    private static function components(array $config): array
+    {
+        $holidays  = is_array($config['holidays'] ?? null) ? $config['holidays'] : [];
+        $leave     = is_array($config['leave'] ?? null) ? $config['leave'] : [];
+        $providers = is_array($holidays['providers'] ?? null) ? $holidays['providers'] : [];
+        $festivos  = is_array($providers['festivos_io'] ?? null) ? $providers['festivos_io'] : [];
+        $on        = ($holidays['enabled'] ?? true) === true;
+
+        return [$on, $on && ($festivos['enabled'] ?? true) === true, ($leave['enabled'] ?? false) === true];
+    }
+
+    /**
+     * The holiday component (contract sections 7, 8.2 and 9.2): usable without the register or leave.
+     *
+     * @param array<string, mixed> $config
+     */
+    private static function holidays(ContainerConfigurator $container, array $config, bool $festivos): void
+    {
+        $s        = $container->services();
+        $p        = self::P;
+        $holidays = is_array($config['holidays'] ?? null) ? $config['holidays'] : [];
+        $client   = $holidays['http_client'] ?? null;
+        $disabled = [];
+        foreach (is_array($holidays['providers'] ?? null) ? $holidays['providers'] : [] as $key => $provider) {
+            if (is_array($provider) && ($provider['enabled'] ?? true) !== true && $key !== 'file') {
+                $disabled[] = (string) $key;
+            }
+        }
+        $s->set(DoctrineHolidayStore::class)->args([service(DoctrineTransactionRunner::class)]);
+        $s->alias(HolidayStoreInterface::class, DoctrineHolidayStore::class);
+        $s->set(HolidayCalendarReader::class)->args([service(HolidayStoreInterface::class), service(TransactionRunnerInterface::class)]);
+        $s->alias(HolidayCalendarReaderInterface::class, HolidayCalendarReader::class)->public();
+        $s->set(HolidayAccess::class)->args([service(WorkingTimeTenantResolverInterface::class), service(WorkingTimePermissionCheckerInterface::class), service(WorkerDirectoryInterface::class)])->public();
+        $s->set(GuardedJsonClient::class)->args([service($p . 'outbound_guard'), is_string($client) && $client !== '' ? service($client) : service('http_client')->nullOnInvalid()]);
+        $s->set($p . 'holiday_provider.festivos_io', FestivosIoProvider::class)
+            ->args([service(GuardedJsonClient::class), param($p . 'holidays.providers.festivos_io.base_uri'), param($p . 'holidays.providers.festivos_io.timeout')])
+            ->tag(self::HOLIDAY_PROVIDER_TAG, ['priority' => 20]);
+        $s->set($p . 'holiday_provider.openholidays', OpenHolidaysProvider::class)
+            ->args([service(GuardedJsonClient::class), service($p . 'holiday_cache')->nullOnInvalid(), param($p . 'holidays.providers.openholidays.base_uri'), param($p . 'holidays.providers.openholidays.timeout'), param($p . 'holidays.providers.openholidays.subdivisions_ttl')])
+            ->tag(self::HOLIDAY_PROVIDER_TAG, ['priority' => 10])
+            ->public();
+        $s->set(HolidayProviderRegistry::class)->args([tagged_iterator(self::HOLIDAY_PROVIDER_TAG), $disabled]);
+        $s->set(HolidayCalendarService::class)->args([
+            service(HolidayAccess::class),
+            service(HolidayStoreInterface::class),
+            service(HolidayProviderRegistry::class),
+            service(TransactionRunnerInterface::class),
+            service(IdGeneratorInterface::class),
+            service(WorkingTimeAuditSinkInterface::class),
+            service($p . 'clock'),
+            service('event_dispatcher')->nullOnInvalid(),
+            param($p . 'holidays.providers.file.enabled'),
+            param($p . 'holidays.providers.file.max_rows'),
+            param($p . 'holidays.providers.file.max_bytes'),
+        ]);
+        $s->alias(HolidayCalendarServiceInterface::class, HolidayCalendarService::class)->public();
+        if ($festivos) {
+            $s->set(FestivosIoMunicipalityDirectory::class)->args([service(GuardedJsonClient::class), service($p . 'holiday_cache'), param($p . 'holidays.providers.festivos_io.base_uri'), param($p . 'holidays.providers.festivos_io.timeout'), param($p . 'holidays.providers.festivos_io.municipalities_ttl')]);
+            $s->alias(MunicipalityDirectoryInterface::class, FestivosIoMunicipalityDirectory::class)->public();
+        }
+        $s->set(HolidayDayAnnotations::class)->args([service(HolidayCalendarReaderInterface::class)])->tag(self::DAY_ANNOTATION_TAG);
+    }
+
+    /**
+     * The leave foundations (contract sections 7 and 9.3; S2: types, allowances, balances, the day counter).
+     */
+    private static function leave(ContainerConfigurator $container): void
+    {
+        $s = $container->services();
+        $p = self::P;
+        $s->set(DoctrineLeaveStore::class)->args([service(DoctrineTransactionRunner::class)]);
+        $s->alias(LeaveStoreInterface::class, DoctrineLeaveStore::class);
+        $s->set($p . 'default.leave_usage', NoLeaveUsage::class);
+        $s->alias(LeaveUsageInterface::class, $p . 'default.leave_usage');
+        $s->set(TranslatedLeaveSeedNames::class)->args([service('translator')]);
+        $s->alias(LeaveSeedNamesInterface::class, TranslatedLeaveSeedNames::class);
+        $s->set(LeaveAccess::class)->args([service(WorkingTimeTenantResolverInterface::class), service(WorkingTimePermissionCheckerInterface::class), service(RegisterAccess::class), service(LeaveStoreInterface::class), service($p . 'clock')])->public();
+        $s->set(LeaveTypeSeeder::class)->args([service(LeaveStoreInterface::class), service(LeaveSeedNamesInterface::class), service(IdGeneratorInterface::class)]);
+        $s->set(LeaveAdministration::class)->args([
+            service(LeaveAccess::class),
+            service(LeaveStoreInterface::class),
+            service(LeaveTypeSeeder::class),
+            service(WorkerDirectoryInterface::class),
+            service(TransactionRunnerInterface::class),
+            service(IdGeneratorInterface::class),
+            service(WorkingTimeAuditSinkInterface::class),
+            service($p . 'clock'),
+            service('event_dispatcher')->nullOnInvalid(),
+        ])->public();
+        $s->alias(LeaveAdministrationInterface::class, LeaveAdministration::class)->public();
+        $s->set(LeaveBalanceReader::class)->args([service(LeaveStoreInterface::class), service(LeaveUsageInterface::class), service(WorkerDirectoryInterface::class), service(TransactionRunnerInterface::class), service($p . 'clock')]);
+        $s->alias(LeaveBalanceReaderInterface::class, LeaveBalanceReader::class)->public();
+        $s->set(DayCounter::class)->args([service(ScheduleResolver::class), service(HolidayCalendarReaderInterface::class), service(TransactionRunnerInterface::class)])->public();
+        $s->set(LeaveDailyCommand::class)->args([service(LeaveAdministration::class)])->tag('console.command');
     }
 }

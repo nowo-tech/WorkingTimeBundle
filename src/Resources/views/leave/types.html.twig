@@ -1,0 +1,21 @@
+{#
+  Leave types (leave_manage): the list, the button that seeds the missing default types and the form to add one.
+  Variables: page (ListPage), form (FormView of LeaveTypeType), seed (FormView of ActionType).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-leave-seed">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <p>{{ 'leave.type.seed_intro'|trans({}, _d) }}</p>
+            {{ form_start(seed, {action: path('nowo_working_time_leave_seed')}) }}
+            {{ form_widget(seed) }}
+            <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'leave.type.seed'|trans({}, _d) }}</button>
+            {{ form_end(seed) }}
+        </div>
+    </section>
+    <p data-testid="wt-leave-no-health">{{ 'leave.type.no_health'|trans({}, _d) }}</p>
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: form, title: 'leave.type.add', submit: 'leave.type.save', action: null, testid: 'wt-leave-type-form'}) }}
+{% endblock %}

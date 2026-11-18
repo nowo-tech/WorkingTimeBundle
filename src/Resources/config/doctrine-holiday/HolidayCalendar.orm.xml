@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Holiday component (contract section 6.7): usable without the register or leave. -->
+    <entity name="Nowo\WorkingTimeBundle\Domain\Holiday\Model\HolidayCalendar" table="holiday_calendar">
+        <indexes>
+            <index name="wt_holiday_calendar_year" columns="tenant_id,year"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="name" column="name" type="string" length="80"/>
+        <field name="scope" column="scope" type="string" length="12" enum-type="Nowo\WorkingTimeBundle\Domain\Holiday\Enum\HolidayScope"/>
+        <field name="year" column="year" type="smallint"/>
+        <field name="country" column="country" type="string" length="2" nullable="true"/>
+        <field name="subdivision" column="subdivision" type="string" length="6" nullable="true"/>
+        <field name="municipalityCode" column="municipality_code" type="string" length="5" nullable="true"/>
+        <field name="provider" column="provider" type="string" length="40"/>
+        <field name="provisional" column="provisional" type="boolean"/>
+        <field name="attribution" column="attribution" type="string" length="255" nullable="true"/>
+        <field name="sourceNote" column="source_note" type="string" length="255" nullable="true"/>
+        <field name="lastFetchedAt" column="last_fetched_at" type="nowo_wt_utc_datetime" nullable="true"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+    </entity>
+</doctrine-mapping>

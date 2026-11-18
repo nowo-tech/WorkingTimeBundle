@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle\Application\Register;
 
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\HolidayCalendarReaderInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\IdGeneratorInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeAuditSinkInterface;
@@ -41,6 +42,7 @@ final readonly class ScheduleService implements ScheduleServiceInterface
         private IdGeneratorInterface $ids,
         private WorkingTimeAuditSinkInterface $audit,
         private ClockInterface $clock,
+        private ?HolidayCalendarReaderInterface $holidays = null,
     ) {
     }
 
@@ -55,6 +57,9 @@ final readonly class ScheduleService implements ScheduleServiceInterface
         };
         if ($scope === ScheduleScope::Group && !$this->knownGroup($context->tenant, (string) $target)) {
             throw new ScheduleRefusedException('schedule.error.group');
+        }
+        if ($workCentreId !== null && !$this->knownCentre($context->tenant, $workCentreId)) {
+            throw new ScheduleRefusedException('schedule.error.work_centre');
         }
         $now     = $this->clock->now();
         [$today] = $this->resolver->at($context->settings, $context->actorProfile, $now);
@@ -122,6 +127,20 @@ final readonly class ScheduleService implements ScheduleServiceInterface
     {
         foreach ($this->directory->groups($tenant) as [$group]) {
             if ($group->value === $target) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the work centre is one of the tenant's (holiday component; without it no centre can be named).
+     */
+    private function knownCentre(TenantRef $tenant, string $centreId): bool
+    {
+        foreach ($this->holidays?->workCentres($tenant) ?? [] as $centre) {
+            if ($centre->getId() === $centreId) {
                 return true;
             }
         }

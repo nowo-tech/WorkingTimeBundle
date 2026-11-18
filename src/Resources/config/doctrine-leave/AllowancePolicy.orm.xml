@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="Nowo\WorkingTimeBundle\Domain\Leave\Model\AllowancePolicy" table="working_time_leave_policy">
+        <indexes>
+            <index name="wt_leave_policy_lookup" columns="tenant_id,leave_type_id,leave_year"/>
+        </indexes>
+        <id name="id" type="string" length="36"><generator strategy="NONE"/></id>
+        <field name="tenantId" column="tenant_id" type="string" length="128"/>
+        <field name="leaveTypeId" column="leave_type_id" type="string" length="36"/>
+        <field name="scope" column="scope" type="string" length="8" enum-type="Nowo\WorkingTimeBundle\Domain\Register\Enum\ScheduleScope"/>
+        <field name="targetId" column="target_id" type="string" length="128" nullable="true"/>
+        <field name="leaveYear" column="leave_year" type="smallint"/>
+        <field name="amount" column="amount" type="integer"/>
+        <field name="agreementEquivalent" column="agreement_equivalent" type="boolean"/>
+        <field name="note" column="note" type="string" length="255" nullable="true"/>
+        <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
+        <field name="createdById" column="created_by_id" type="string" length="128" nullable="true"/>
+    </entity>
+</doctrine-mapping>

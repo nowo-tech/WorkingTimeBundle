@@ -58,6 +58,7 @@ month:
         worked: Travaillé
         expected: Prévu
         flags: Signalements
+        note: Note
 day:
     title: 'Jour %date%'
     back_to_month: Retour au mois
@@ -191,12 +192,16 @@ schedule:
         daily_target: Objectif quotidien (minutes, horaire flexible)
         weekly_target: Objectif hebdomadaire (minutes)
         flex: Plage flexible (minutes)
+        work_centre: Centre de travail
+        work_centre_help: Les calendriers de jours fériés des jours du travailleur en proviennent ; vide signifie le centre par défaut.
+        default_centre: Centre par défaut
     error:
         group: Choisissez un groupe de l'organisation.
         worker: Choisissez un travailleur.
         past: Un horaire est en vigueur à partir d'aujourd'hui ou plus tard ; les jours passés gardent l'horaire selon lequel ils ont été mesurés.
         not_future: Seul un horaire pas encore en vigueur peut être retiré.
         invalid: L'horaire n'est pas valide (fuseau horaire, plages sans chevauchement, objectifs jusqu'à 12 heures par jour).
+        work_centre: Choisissez l'un des centres de travail de l'organisation.
 export:
     title: Exports
     intro: Votre propre copie de votre registre, et les exports pour l'inspection destinés à ceux qui peuvent les faire. Les fichiers sont téléchargeables pendant 7 jours.
@@ -344,3 +349,322 @@ notice:
     register_monthly_summary:
         subject: 'Votre temps de travail en %month%'
         body: 'Travaillé %worked% sur %expected% prévues en %days% jour(s) ; %missing% départ(s) non pointé(s).'
+holiday:
+    title: Jours fériés
+    intro: Calendriers de jours fériés (nationaux, régionaux, locaux) et centres de travail auxquels ils s'appliquent. Les imports depuis festivos.io, OpenHolidays ou un fichier CSV / ICS sont prévisualisés avant tout enregistrement.
+    empty: Aucun calendrier de jours fériés pour l'instant.
+    open: Ouvrir
+    back: Retour aux calendriers
+    back_calendar: Retour au calendrier
+    provisional: provisoire
+    scope:
+        national: National
+        regional: Régional
+        local: Local
+    origin:
+        manual: Manuel
+        file: Fichier
+        festivos_io: festivos.io
+        openholidays: OpenHolidays
+        provider: Fournisseur
+    col:
+        year: Année
+        name: Nom
+        scope: Portée
+        provider: Source
+        date: Date
+        origin: Origine
+        source: Source officielle
+        status: Statut
+    calendar:
+        title: '%name% (%year%)'
+        add: Nouveau calendrier
+        edit: Modifier le calendrier
+        save: Enregistrer le calendrier
+        empty: Ce calendrier ne contient encore aucun jour férié.
+        provisional: Cette année est provisoire à la source (jours fériés locaux pas encore publiés) ; importez-la à nouveau lorsqu'ils le seront.
+        remove_title: Supprimer le calendrier
+        remove: Supprimer le calendrier et ses jours fériés
+        form:
+            name: Nom
+            scope: Portée
+            year: Année
+            country: Pays
+            country_help: Code ISO à deux lettres (ES, PT, FR…), pour les imports.
+            subdivision: Région
+            subdivision_help: Code ISO de région (ES-MD, ES-CT…) d'un calendrier régional.
+            municipality: Commune (code INE)
+            municipality_help: Cinq chiffres (28079 Madrid) pour festivos.io ; cherchez-les dans la liste des communes.
+            source_note: Note sur la source
+        error:
+            name: Le nom compte de 1 à 80 caractères.
+            year: L'année est comprise entre 2000 et 2100.
+            year_in_use: L'année d'un calendrier contenant des jours fériés ne peut pas changer ; créez un calendrier pour l'autre année.
+            provider: Fournisseur inconnu.
+    day:
+        add: Ajouter un jour férié
+        edit: Modifier
+        edit_title: Modifier un jour férié de %calendar%
+        save: Enregistrer le jour férié
+        remove_title: Supprimer un jour férié
+        remove: Supprimer
+        form:
+            date: Date
+            name: Nom
+        error:
+            name: Le nom compte de 1 à 120 caractères.
+            year: La date doit appartenir à l'année du calendrier.
+            date: Saisissez une date valide.
+            duplicate: Le calendrier a déjà un jour férié à cette date.
+    import:
+        title: Importer un fichier CSV ou ICS
+        preview: Prévisualiser
+        confirm: Importer les nouveaux jours fériés
+        nothing: Le fichier ne contient aucune ligne.
+        preview_title: Importer dans %name% (%year%)
+        form:
+            file: Fichier
+            file_help: CSV avec un en-tête date,name,scope (virgule ou point-virgule, UTF-8) ou calendrier ICS avec des événements sur la journée entière ; 200 lignes et 256 KiB au maximum.
+        status:
+            new: Nouveau
+            duplicate: Déjà présent (conservé)
+            other_scope: Autre portée (ignoré)
+            invalid: Invalide (ignoré)
+            unchanged: Inchangé
+            removed: N'est plus listé (supprimé)
+        error:
+            file: Le fichier n'est pas un fichier texte UTF-8 respectant la limite de taille.
+            header: Le CSV doit comporter une ligne d'en-tête avec au moins les colonnes date et name.
+            too_many: Le fichier compte plus de %max% lignes.
+            empty: Le fichier ne contient aucune ligne.
+            disabled: Les imports de fichiers sont désactivés.
+    provider:
+        import_from: Importer depuis %provider%
+        festivos_io:
+            label: festivos.io (Espagne, par commune)
+            error: festivos.io n'a pas pu être lu ; rien n'a été enregistré. Vérifiez le code de la commune et l'année, puis réessayez plus tard.
+            municipality: festivos.io nécessite une commune espagnole (pays ES et code INE à cinq chiffres).
+        openholidays:
+            label: OpenHolidays (pays ou région)
+            error: L'API OpenHolidays n'a pas pu être lue ; rien n'a été enregistré. Vérifiez les codes de pays et de région, puis réessayez plus tard.
+        error:
+            unknown: Ce fournisseur n'est pas disponible.
+            location: Ce fournisseur ne peut pas répondre pour ce lieu.
+    location:
+        error:
+            country: Le pays est un code ISO à deux lettres.
+            subdivision: La région est un code ISO du pays (ES-MD).
+            municipality: La commune est un code INE à cinq chiffres.
+    centre:
+        title: Centres de travail
+        intro: Un centre de travail regroupe les calendriers qui s'appliquent aux personnes qui y travaillent ; le centre d'un travailleur provient de son horaire, sinon du centre par défaut.
+        empty: Aucun centre de travail pour l'instant ; chaque calendrier s'applique à tout le monde.
+        add: Nouveau centre de travail
+        save: Enregistrer le centre de travail
+        edit_title: Centre de travail %name%
+        calendars: '%count% calendrier(s)'
+        default: Par défaut
+        remove_title: Supprimer le centre de travail
+        remove: Supprimer le centre de travail
+        form:
+            name: Nom
+            calendars: Calendriers
+            default: Centre par défaut de l'organisation
+        error:
+            name: Le nom compte de 1 à 80 caractères.
+    municipalities:
+        title: Communes espagnoles
+        loaded: La liste des communes est chargée ; cherchez-y à %url%?query=… (par nom, province ou code INE).
+        not_loaded: La liste des communes n'est pas chargée ; chargez-la une fois (un appel à festivos.io, conservé une semaine) pour chercher les communes par nom.
+        refresh: Charger la liste des communes
+    flash:
+        calendar_saved: Calendrier enregistré.
+        calendar_removed: Calendrier supprimé.
+        day_added: Jour férié ajouté.
+        day_changed: Jour férié modifié.
+        day_removed: Jour férié supprimé.
+        imported: '%added% jour(s) férié(s) importé(s).'
+        provider_imported: '%added% jour(s) férié(s) importé(s), %removed% supprimé(s).'
+        provider_imported_provisional: '%added% jour(s) férié(s) importé(s), %removed% supprimé(s). L''année est encore provisoire à la source.'
+        centre_saved: Centre de travail enregistré.
+        centre_removed: Centre de travail supprimé.
+        municipalities_loaded: '%count% communes chargées.'
+leave:
+    back: Retour aux types
+    year_previous: Année précédente
+    year_next: Année suivante
+    nav:
+        label: Absences
+        balances: Mes soldes
+        types: Types
+        allowances: Droits annuels
+        settings: Paramètres
+    unit:
+        natural_days: Jours calendaires
+        working_days: Jours ouvrés
+        hours: Heures
+    source:
+        none: Aucune
+        allowance: Droit annuel
+        overtime: Heures supplémentaires ratifiées
+    rounding:
+        nearest: Au demi-jour le plus proche
+        up: Par excès
+        down: Par défaut
+    line_kind:
+        adjustment: Ajustement
+        carry_over: Report
+        protected_carry_over: Report protégé
+    part:
+        full: Journée entière
+        morning: Matin
+        afternoon: Après-midi
+        hours: Heures
+    seed:
+        vacation: Congés payés
+        personal: Jours personnels
+        compensatory: Repos compensateur
+        marriage: Congé payé – mariage
+        family: Congé payé – accident, maladie ou hospitalisation d'un proche
+        bereavement: Congé payé – décès
+        moving: Congé payé – déménagement
+        public_duty: Congé payé – devoir public
+        unpaid: Congé sans solde
+        absence: Absence
+        medical: Absence – médicale (justifiée)
+        medical_appointment: Rendez-vous médical
+        work_accident: Accident du travail
+    balance:
+        title: Mes absences %year%
+        intro: Le droit inclut votre droit annuel, ses ajustements et ses reports ; les demandes arriveront avec la prochaine version.
+        empty: Aucun solde pour cette année.
+        col:
+            type: Type
+            entitled: Droit
+            taken: Pris
+            planned: Planifié
+            pending: En attente
+            remaining: Restant
+            unit: Unité
+    type:
+        title: Types d'absence
+        intro: Les types d'absence de l'organisation. Les types archivés restent sur les anciens enregistrements.
+        empty: Aucun type d'absence pour l'instant ; ajoutez ceux par défaut.
+        seed_intro: Les types par défaut (congés payés, jours personnels, congés payés de l'art. 37.3 ET, congé sans solde, absences) peuvent être ajoutés à tout moment ; les existants sont conservés.
+        seed: Ajouter les types par défaut
+        no_health: Aucun type, champ ou note ne peut contenir de diagnostic, de cause ni aucune donnée de santé ; un type médical enregistre seulement que l'absence est justifiée.
+        add: Nouveau type d'absence
+        save: Enregistrer le type
+        edit: Modifier
+        edit_title: Type d'absence %name%
+        archive: Archiver le type
+        restore: Restaurer le type
+        active: Actif
+        archived: Archivé
+        medical: Médical (affiché comme Absent)
+        col:
+            name: Nom
+            unit: Unité
+            source: Puise dans
+            state: État
+        form:
+            name: Nom
+            paid: Payé
+            source: Puise dans
+            unit: Unité
+            needs_approval: Nécessite une approbation
+            needs_attachment: Nécessite un document
+            medical: Absence médicale
+            medical_help: Affichée comme Absent à toute personne sans gestion des absences ; aucune donnée de santé n'est jamais enregistrée.
+            colour: Couleur
+            max_per_request: Demande maximale
+            amount_help: En jours (demi-journées admises) ou en heures, selon l'unité.
+            carry_over: Les jours non utilisés peuvent être reportés
+            carry_over_max: Report maximal
+            carry_over_expiry: Le report expire le
+            carry_over_expiry_help: Mois et jour de l'année suivante (MM-DD), par exemple 03-31.
+        error:
+            name: Le nom compte de 1 à 80 caractères.
+            colour: Choisissez une couleur de la palette.
+            max: La demande maximale est supérieure à zéro.
+            overtime_hours: Un type qui puise dans les heures supplémentaires compte en heures.
+            medical_source: Un type médical ne puise dans aucun droit annuel.
+            expiry: L'expiration est un mois et un jour (MM-DD).
+            carry_max: Le report maximal est supérieur à zéro.
+            unit_in_use: L'unité d'un type ayant des droits annuels ne peut pas changer ; créez un nouveau type.
+    allowance:
+        title: Droits annuels %year%
+        intro: Le droit annuel de chaque type pour l'organisation, un groupe ou un travailleur (le plus précis prévaut), au prorata pour les arrivées et les départs.
+        empty: Aucun droit annuel pour cette année.
+        add: Nouveau droit annuel
+        save: Enregistrer le droit annuel
+        remove_title: Supprimer un droit annuel
+        remove: Supprimer
+        worker_balances: Soldes d'un travailleur (%year%)
+        col:
+            type: Type
+            scope: S'applique à
+            target: Groupe ou travailleur
+            amount: Montant
+            note: Note
+        form:
+            type: Type
+            scope: S'applique à
+            year: Année
+            amount: Montant
+            agreement_equivalent: Équivalent conventionnel du minimum légal
+            note: Note
+        error:
+            target: Choisissez le groupe ou le travailleur auquel le droit annuel s'applique.
+            amount: Le montant est supérieur ou égal à zéro et l'année est comprise entre 2000 et 2100.
+            legal_minimum: Des congés payés inférieurs au minimum légal (30 jours calendaires ou 22 jours ouvrés) nécessitent la marque d'équivalent conventionnel et une note d'au moins 10 caractères.
+            type: Seul un type qui puise dans le droit annuel a des droits annuels.
+            carry_off: Ce type n'autorise pas le report.
+            carry_max: Un report de ce type est de %max% au maximum.
+            reason: Le motif compte de 3 à 255 caractères.
+            line_amount: Le montant n'est pas zéro (seul un ajustement peut être négatif).
+    line:
+        add: Nouvel ajustement ou report
+        save: Enregistrer la ligne
+        form:
+            kind: Nature
+            amount_help: Dans l'unité du type ; un ajustement peut être négatif.
+            reason: Motif
+            expires_on: Expire le
+            expires_on_help: 'Vide : un report expire à la date du type, un report protégé après le nombre de mois des paramètres.'
+    request:
+        error:
+            end_before_start: La fin est antérieure au début.
+            too_long: Une demande couvre une année au maximum.
+            half_day_range: Une demi-journée couvre une seule date.
+            part: Des jours pour les types en jours, des heures pour les types en heures.
+            times: Saisissez une heure de début et une heure de fin (HH:MM), la fin étant postérieure au début.
+    settings:
+        title: Paramètres des absences
+        intro: Gestion des absences de l'organisation. L'activer ajoute les types d'absence par défaut.
+        section: Absences
+        form:
+            enabled: La gestion des absences est activée
+            enabled_help: Nécessite que le registre du temps de travail soit activé.
+            rounding: Arrondi du prorata
+            protected_carry_months: Mois de validité d'un report protégé
+            colleagues_see_absences: Les collègues voient Absent dans le calendrier de l'équipe
+            medical_documents: Les absences médicales peuvent comporter un document
+            attachment_retention_months: Mois de conservation des documents après l'absence
+            overtime_ratio: Heures supplémentaires en repos (pourcentage)
+            planning_deadline: Date limite de planification des congés (MM-DD)
+        error:
+            register_off: Activez d'abord le registre du temps de travail.
+            protected_months: Les mois sont compris entre 1 et 60.
+            attachment_months: Les mois sont compris entre 1 et 48.
+            overtime_ratio: Le ratio est compris entre 1 et 400 pour cent.
+            planning_deadline: La date limite est un mois et un jour (MM-DD).
+    flash:
+        type_saved: Type d'absence enregistré.
+        type_archived: Type d'absence archivé.
+        type_restored: Type d'absence restauré.
+        seeded: '%count% type(s) par défaut ajouté(s).'
+        policy_added: Droit annuel ajouté.
+        policy_removed: Droit annuel supprimé.
+        line_added: Ligne ajoutée.
+        settings_saved: Paramètres des absences enregistrés.

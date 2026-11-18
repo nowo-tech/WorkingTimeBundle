@@ -6,6 +6,10 @@ namespace App\Controller;
 
 use App\Form\LoginType;
 use Nowo\UiKitBundle\View\AuthPage;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\HolidayCalendarReaderInterface;
+use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
+use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
+use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,9 +29,24 @@ final class DemoController extends AbstractController
             'people' => [
                 ['user' => 'ana', 'name' => 'Ana Worker', 'roles' => 'ROLE_USER: clocks in and out, asks for corrections'],
                 ['user' => 'mia', 'name' => 'Mia Manager', 'roles' => 'ROLE_MANAGER: team, approvals, exports'],
-                ['user' => 'admin', 'name' => 'Ada Admin', 'roles' => 'ROLE_ADMIN: turns the register on (settings)'],
+                ['user' => 'admin', 'name' => 'Ada Admin', 'roles' => 'ROLE_ADMIN: turns the register and leave on (settings), holiday calendars, leave types and allowances'],
             ],
         ]);
+    }
+
+    /**
+     * The stand-alone holiday component as an agenda would use it: the reader alone, no register or leave call.
+     */
+    #[Route('/agenda', name: 'demo_agenda', methods: ['GET'])]
+    public function agenda(HolidayCalendarReaderInterface $holidays, ClockInterface $clock): Response
+    {
+        $year = (int) $clock->now()->format('Y');
+        $rows = [];
+        foreach ($holidays->holidaysBetween(TenantRef::default(), null, new LocalDate($year . '-01-01'), new LocalDate($year . '-12-31')) as $entry) {
+            $rows[] = ['date' => $entry->date->value, 'name' => $entry->name, 'scope' => $entry->scope->value];
+        }
+
+        return $this->render('demo/agenda.html.twig', ['year' => $year, 'rows' => $rows]);
     }
 
     #[Route('/login', name: 'demo_login', methods: ['GET', 'POST'])]

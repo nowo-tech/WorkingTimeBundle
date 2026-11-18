@@ -1,0 +1,10 @@
+{#
+  Edits a work centre (name, calendars, default) and removes it. Variables: page (ListPage, header only), form, remove
+  (FormView), id.
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_content %}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: form, title: null, submit: 'holiday.centre.save', action: null, testid: 'wt-holiday-centre-form'}) }}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: remove, title: 'holiday.centre.remove_title', submit: 'holiday.centre.remove', action: path('nowo_working_time_holiday_centre_remove', {id: id}), testid: 'wt-holiday-centre-remove', variant: 'btn_danger'}) }}
+{% endblock %}

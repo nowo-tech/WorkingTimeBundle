@@ -86,6 +86,35 @@ final readonly class ScheduleResolver
     }
 
     /**
+     * Each date's schedule and work centre over a range in two queries (holidays and leave: a schedule change in the
+     * middle of the range is honoured, and the centre of each day decides its holiday calendars). The centre is the
+     * one of the row that applies that day (null without a row, or when the row names none).
+     *
+     * @return array<string, array{schedule: DaySchedule, centre: string|null}> `Y-m-d` => the day
+     */
+    public function rangeWithCentres(RegisterSettings $settings, WorkerProfile $worker, LocalDate $from, LocalDate $to): array
+    {
+        $tenant     = new TenantRef($settings->getTenantId());
+        $candidates = $this->store->scheduleCandidates($tenant, $to);
+        $days       = [];
+        for ($date = $from; $date->compare($to) <= 0; $date = $date->plusDays(1)) {
+            $valid = [];
+            foreach ($candidates as $candidate) {
+                if ($candidate->validFrom()->compare($date) <= 0) {
+                    $valid[] = $candidate;
+                }
+            }
+            $row                = self::choose($valid, $worker);
+            $days[$date->value] = [
+                'schedule' => self::day($settings, $row?->definition() ?? $this->fallback->fallback($tenant, $date) ?? new ScheduleDefinition($this->defaultTimezone), $date),
+                'centre'   => $row?->getWorkCentreId(),
+            ];
+        }
+
+        return $days;
+    }
+
+    /**
      * The most specific row among the candidates (newest validity first).
      *
      * @param list<ScheduleAssignment> $candidates

@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle\Application\Register\Notice;
 
 use DateTimeImmutable;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
+use Nowo\WorkingTimeBundle\Application\Register\RegisterAnnotations;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterReader;
 use Nowo\WorkingTimeBundle\Application\Register\ScheduleResolver;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
@@ -58,6 +59,7 @@ final readonly class NoticeDispatcher
         private int $windowMinutes = 15,
         private bool $monthlySummary = true,
         private int $budget = 500,
+        private ?RegisterAnnotations $annotations = null,
     ) {
     }
 
@@ -110,7 +112,8 @@ final readonly class NoticeDispatcher
     private function reminder(RegisterSettings $settings, WorkerProfile $worker, LocalDate $date, DaySchedule $schedule, DateTimeImmutable $now): bool
     {
         $side = HoursWindow::reminder($date, $schedule, $now, $this->windowMinutes);
-        if ($side === null) {
+        if ($side === null || $this->annotations?->isDayOff($settings, $worker, $date) === true) {
+            // A public holiday (or a full day of leave) asks for no clocking.
             return false;
         }
         $tenant  = new TenantRef($settings->getTenantId());
@@ -128,8 +131,13 @@ final readonly class NoticeDispatcher
     private function firstWorkingDay(RegisterSettings $settings, WorkerProfile $worker, LocalDate $date): bool
     {
         $first = null;
+        $offs  = $this->annotations?->between($settings, $worker, new LocalDate($date->month() . '-01'), $date) ?? [];
         foreach ($this->schedules->range($settings, $worker, new LocalDate($date->month() . '-01'), $date) as $day => $schedule) {
-            if ($schedule->isWorkingDay()) {
+            $off = false;
+            foreach ($offs[$day] ?? [] as $annotation) {
+                $off = $off || $annotation->fullDay;
+            }
+            if ($schedule->isWorkingDay() && !$off) {
                 $first = $day;
                 break;
             }

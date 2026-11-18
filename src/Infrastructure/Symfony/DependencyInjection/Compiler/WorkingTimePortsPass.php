@@ -7,6 +7,9 @@ namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Comp
 use Dompdf\Dompdf;
 use LogicException;
 use Nowo\Brand\Contract\BrandProviderInterface;
+use Nowo\OutboundUrlGuardBundle\Guard\ConfiguredAllowPrivateResolver;
+use Nowo\OutboundUrlGuardBundle\Guard\OutboundUrlGuardFactory;
+use Nowo\OutboundUrlGuardBundle\Guard\RuntimeOutboundUrlGuard;
 use Nowo\TimeTrackBundle\Service\TimerService;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponsePolicy;
 use Nowo\TransactionDoctrine\WriteUnit\WriteUnit;
@@ -21,6 +24,7 @@ use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeNotifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimePermissionCheckerInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeTenantResolverInterface;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ServiceDefinitions;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Holiday\GuardedJsonClient;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\ConflictFallbackListener;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportHandler;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportMessage;
@@ -38,6 +42,7 @@ use function class_exists;
 use function in_array;
 use function is_array;
 use function is_string;
+use function sprintf;
 
 /**
  * Points the port aliases at the host's services, the defaults or the installed bridges, and wires the optional
@@ -85,6 +90,35 @@ final class WorkingTimePortsPass implements CompilerPassInterface
         $this->pdf($container);
         $this->exports($container);
         $this->timerLink($container);
+        $this->holidays($container);
+    }
+
+    /**
+     * The holiday component's outbound guard and cache pool (contract section 10): the configured services; the
+     * default guard id without OutboundUrlGuardBundle registered gets a guard of the bundle's own with the same safe
+     * policy (no private targets, DNS checked and pinned).
+     */
+    private function holidays(ContainerBuilder $container): void
+    {
+        $p = ServiceDefinitions::P;
+        if (!$container->has(GuardedJsonClient::class)) {
+            return;
+        }
+        $guard = $container->getParameter($p . 'holidays.outbound_guard');
+        if (is_string($guard) && $container->has($guard)) {
+            $container->setAlias($p . 'outbound_guard', $guard);
+        } elseif ($guard === RuntimeOutboundUrlGuard::class) {
+            $container->setDefinition($p . 'outbound_guard', (new Definition(RuntimeOutboundUrlGuard::class))->setArguments([
+                (new Definition(OutboundUrlGuardFactory::class))->setArguments([(new Definition(ConfiguredAllowPrivateResolver::class))->setArguments([false])]),
+            ]));
+        } else {
+            throw new LogicException(sprintf('nowo_working_time.holidays.outbound_guard "%s" is not a service: register NowoOutboundUrlGuardBundle or name the service of your OutboundUrlGuardInterface.', is_string($guard) ? $guard : ''));
+        }
+        $pool = $container->getParameter($p . 'holidays.cache_pool');
+        if (!is_string($pool) || !$container->has($pool)) {
+            throw new LogicException(sprintf('nowo_working_time.holidays.cache_pool "%s" is not a service: enable framework.cache or name a PSR-6 pool (the municipality list and the OpenHolidays regions are cached there).', is_string($pool) ? $pool : ''));
+        }
+        $container->setAlias($p . 'holiday_cache', $pool);
     }
 
     private function brand(ContainerBuilder $container): void

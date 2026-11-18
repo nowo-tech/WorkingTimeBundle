@@ -7,6 +7,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Holiday component** (S2, contract sections 6.7, 7 and 9.2; usable with the register and leave switched off):
+  holiday calendars (national, regional, local; country, ISO region and INE municipality for the providers), days by
+  hand, work centres (the calendars of an office; one default per tenant), CSV (`date,name,scope`) and ICS imports
+  with a preview (`new` / `duplicate` / `other_scope` / `invalid`) and a confirm that checks every row again, and
+  provider imports: **festivos.io** (Spain by INE municipality: national, regional and local days with the bulletin
+  they cite; provisional years flagged; CC BY 4.0 attribution on every screen that shows the data) and **OpenHolidays**
+  (country or region; multi-day holidays give one row per day). A provider runs only on an admin action (preview, then
+  confirm, which asks the provider again and replaces only that provider's earlier days), through OutboundUrlGuard
+  (no private targets, DNS pinned), with a timeout and no redirects, and is sent only the place and the year. Hosts add
+  their own providers by tagging a `HolidayProviderInterface` (`nowo_working_time.holiday_provider`).
+- `HolidayCalendarReaderInterface`: the stand-alone entry point for agendas (`holidaysBetween()`, `isHoliday()`,
+  `holidayMap()` for workers whose work centre changes from day to day, `workCentres()`); `HolidayCalendarServiceInterface`
+  (administration, `holidays_manage`); `MunicipalityDirectoryInterface` (festivos.io's town list: a search reads the
+  cache only; loading the list is a button).
+- Holiday pages under `ui.holidays_path` (`/holidays`): calendars, days, imports, providers, work centres and the town
+  list (`GET /holidays/municipalities?query=`, UI JSON).
+- **Leave foundations** (S2, contract sections 6.6 and 9.3; spec 204 FR-002 – FR-009): leave types (seeded when a
+  tenant enables leave, editable, archivable; no field for any health detail), allowance policies (tenant → group →
+  worker, the legal vacation minimum refused unless marked as the agreement's equivalent with a note), allowance lines
+  (adjustments, carry-overs that expire on the type's date, protected carry-overs that last `protected_carry_months`),
+  pro-rata by natural days employed with the tenant's rounding, hour allowances × the worker's `contractRatio`,
+  balances (`LeaveBalanceReaderInterface`), the day counter (`Application\Leave\DayCounter`: natural days, working days
+  of the dated schedule minus each day's work-centre holidays, hours capped at the scheduled day; spec 204 SC-001 fixture
+  year at 100 %), leave settings (versioned; enabling needs the register and seeds the types), and
+  `nowo:working-time:leave:daily` (expires carry-overs, one audit row per tenant).
+- Leave pages under `ui.leave_path` (`/leave`: own balances; `/leave/manage`: types and allowances) and the leave
+  settings at `ui.settings_path`/leave. The request workflow arrives with S3.
+- **Register day annotations** (`RegisterDayAnnotationProviderInterface`, tagged `nowo_working_time.day_annotation_provider`):
+  public holidays of the worker's calendars show on the month view, ask for no clock reminder and are no first working
+  day for the monthly summary. The schedule form names the work centre of a row.
+- Translations of the new pages in the ten shipped locales.
+
+### Changed
+
+- `RegisterUnavailableException` and `PermissionDeniedException` now extend the new shared
+  `Domain\Shared\Exception\NotAvailableException` (404) and `AccessDeniedException` (403); the register's
+  `WorkingTimeExceptionInterface` extends `Domain\Shared\Exception\WorkingTimeException`. Catching the old classes
+  works as before.
+- `symfony/string` is a direct requirement (town search).
+- The holiday component is on by default (`holidays.enabled: true`, as documented since 0.1.0): its tables join the
+  schema and its pages are served when `ui.enabled` is on. Its routes need `holidays_manage`.
+
 ## [0.1.2] - 2026-11-18
 
 ### Fixed

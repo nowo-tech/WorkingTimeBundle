@@ -1,0 +1,51 @@
+{#
+  Allowances (leave_manage): the policies of a year with their remove buttons, the forms to add a policy and a line
+  (adjustment, carry-over, protected carry-over), and a worker's balances. Variables: page (ListPage of policies),
+  policy_form, line_form (FormView), removes (list of {form, action, label}), workers (label => ref), worker (selected
+  ref), year, balances (null or list of balance rows).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    {% if removes is not empty %}
+        <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-leave-policy-removes">
+            <div class="{{ nowo_ui_class('card_body', _b) }}">
+                <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'leave.allowance.remove_title'|trans({}, _d) }}</h2>
+                {% for remove in removes %}
+                    {{ form_start(remove.form, {action: remove.action, attr: {'data-testid': 'wt-leave-policy-remove'}}) }}
+                    {{ form_widget(remove.form) }}
+                    <button type="submit" class="{{ nowo_ui_class('btn_secondary', _b) }}">{{ 'leave.allowance.remove'|trans({}, _d) }} · {{ remove.label }}</button>
+                    {{ form_end(remove.form) }}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: policy_form, title: 'leave.allowance.add', submit: 'leave.allowance.save', action: null, testid: 'wt-leave-policy-form'}) }}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: line_form, title: 'leave.line.add', submit: 'leave.line.save', action: null, testid: 'wt-leave-line-form'}) }}
+    <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-leave-worker-balances">
+        <div class="{{ nowo_ui_class('card_body', _b) }}">
+            <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'leave.allowance.worker_balances'|trans({'%year%': year}, _d) }}</h2>
+            <ul>
+                {% for label, ref in workers %}
+                    <li><a href="{{ path('nowo_working_time_leave_allowances', {year: year, worker: ref}) }}"{% if ref == worker %} aria-current="true"{% endif %}>{{ label }}</a></li>
+                {% endfor %}
+            </ul>
+            {% if balances is not null %}
+                {% if balances is empty %}
+                    <p>{{ 'leave.balance.empty'|trans({}, _d) }}</p>
+                {% else %}
+                    <table class="{{ nowo_ui_class('table', _b) }}" data-testid="wt-leave-balance-table">
+                        <thead><tr><th scope="col">{{ 'leave.balance.col.type'|trans({}, _d) }}</th><th scope="col">{{ 'leave.balance.col.entitled'|trans({}, _d) }}</th><th scope="col">{{ 'leave.balance.col.remaining'|trans({}, _d) }}</th><th scope="col">{{ 'leave.balance.col.unit'|trans({}, _d) }}</th></tr></thead>
+                        <tbody>
+                            {% for row in balances %}
+                                <tr><td>{{ row.type }}</td><td>{{ row.entitled }}</td><td>{{ row.remaining }}</td><td>{{ row.unit }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

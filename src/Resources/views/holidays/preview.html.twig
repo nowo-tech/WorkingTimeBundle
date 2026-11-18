@@ -1,0 +1,18 @@
+{#
+  The preview of an import (file or provider; spec 204 FR-008): every row with its status, the provider's attribution
+  and provisional notice, and the confirm form (nothing is saved before it; a provider is asked again on confirm).
+  Variables: page (ListPage of rows), error (translation key or null), provisional (bool), attribution (string or
+  null), confirm (FormView or null), action (URL).
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_list_after %}
+    {%- set _b = page.bundle -%}
+    {%- set _d = 'NowoWorkingTimeBundle' -%}
+    {% if error %}<div class="{{ nowo_ui_class('flash_error', _b) }}" role="alert" data-testid="wt-holiday-import-error">{{ error|trans({'%max%': 200}, _d) }}</div>{% endif %}
+    {% if provisional %}<div class="{{ nowo_ui_class('flash_warning', _b) }}" role="status" data-testid="wt-holiday-provisional">{{ 'holiday.calendar.provisional'|trans({}, _d) }}</div>{% endif %}
+    {% if attribution %}<p data-testid="wt-holiday-attribution"><small>{{ attribution }}</small></p>{% endif %}
+    {% if confirm %}
+        {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: confirm, title: null, submit: 'holiday.import.confirm', action: action, testid: 'wt-holiday-import-confirm'}) }}
+    {% endif %}
+{% endblock %}

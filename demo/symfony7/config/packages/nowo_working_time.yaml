@@ -1,4 +1,5 @@
-# Demo configuration: the register on a private entity manager, UI routes on, exports built in the request (no Messenger).
+# Demo configuration: the register on a private entity manager, UI routes on, exports built in the request (no Messenger);
+# the holiday component (stand-alone: /agenda reads it without the register) and the leave foundations.
 nowo_working_time:
     doctrine:
         entity_manager: nowo_working_time
@@ -9,10 +10,17 @@ nowo_working_time:
             manage_team: [ROLE_MANAGER]
             export: [ROLE_MANAGER]
             manage_settings: [ROLE_ADMIN]
+            holidays_manage: [ROLE_ADMIN]
+            leave_manage: [ROLE_ADMIN]
+            leave_request: [ROLE_USER]
     register:
         enabled: true
         export:
             async: sync
             formats: [pdf, csv]
+    holidays:
+        enabled: true
+    leave:
+        enabled: true
     ui:
         enabled: true

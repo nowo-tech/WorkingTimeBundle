@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-0.1 ships the working-hours register. The security model is contract sections 6 (integrity: hash chain, triggers,
+0.1 ships the working-hours register; 0.2 adds the holiday component and the leave foundations (types, allowances, balances). The security model is contract sections 6 (integrity: hash chain, triggers,
 purge guard), 13 (permission matrix, deny by default), 14 (privacy and GDPR) and 15 (concurrency).
 
 | Input | Handling |
@@ -12,6 +12,9 @@ purge guard), 13 (permission matrix, deny by default), 14 (privacy and GDPR) and
 | Downloads | An own copy is its requester's only; an inspection export needs `export` at download time, also for its requester |
 | Concurrent writes | A stale version or a chain head taken by another writer answers 409 + `Retry-After` (one replay first); nothing half-written is stored |
 | Instants | Stored in UTC whatever the PHP default time zone (`nowo_wt_utc_datetime` DBAL type) |
+| Holiday providers (0.2) | Called only on an admin action (`holidays_manage`: preview, then confirm), never on a page view or a schedule; fixed https base URIs from configuration; every request through OutboundUrlGuard (private and reserved targets refused, DNS pinned), timeout, no redirects; only the place (country, region, INE code) and the year are sent; any failure is one translated error and saves nothing; names are stripped of control and format characters, source URLs kept only when http(s) |
+| Holiday files (0.2) | CSV / ICS only, UTF-8, at most `max_rows` rows and `max_bytes` bytes; nothing is saved by the preview; the confirm takes back only dates and names and checks them again (year, duplicates, length) |
+| Leave foundations (0.2) | No type, field or note holds a diagnosis, a cause or any health detail (the medical flag only hides the type as *Absent*); allowance-line reasons never reach audit rows; settings saves are versioned (409 + `Retry-After` when stale); every lookup is scoped by the tenant and re-checked with `===` |
 
 ## Integrity: what the bundle guarantees and what it cannot
 

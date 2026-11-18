@@ -53,7 +53,10 @@ their register.
 | `clock` | Today, month, day, clocking, own correction requests, answers to recorded corrections, own exports, preferences |
 | `manage_team` (subject: the worker) | Team, a worker's day, decisions on correction requests, recorded corrections, schedules |
 | `export` | Inspection exports of a worker or the team (ZIP) |
-| `manage_settings` | Register settings (open while the register is off) |
+| `manage_settings` | Register settings (open while the register is off) and leave settings (open while leave is off) |
+| `holidays_manage` | Holiday calendars, days, imports, providers, work centres, the town list |
+| `leave_manage` | Leave types (seed, edit, archive), allowance policies and lines, a worker's balances |
+| `leave_request` | Own leave balances (requests from S3) |
 
 No tenant, the register off, nobody signed in, not an active member, or another tenant's row: **404**. A missing
 permission: **403**. Nobody decides or records a correction on their own day.
@@ -77,10 +80,35 @@ Public interfaces: `RegisterClockInterface`, `RegisterReaderInterface`, `Correct
 `ChainVerifierInterface` (namespace `Nowo\WorkingTimeBundle\Domain\Register\Service`), plus
 `Application\Register\RegisterPersonalData` (GDPR export / erasure) and `WorkerPreferences`.
 
+### Holidays (stand-alone) and leave foundations (0.2)
+
+```php
+use Nowo\WorkingTimeBundle\Domain\Holiday\Service\HolidayCalendarReaderInterface;
+use Nowo\WorkingTimeBundle\Domain\Holiday\WorkCentreId;
+use Nowo\WorkingTimeBundle\Domain\Shared\{LocalDate, TenantRef};
+
+// An agenda without the register or leave: the public holidays of a work centre (null: the tenant's default centre,
+// else every calendar of the tenant).
+$days = $holidays->holidaysBetween(new TenantRef($org), new WorkCentreId($centre), new LocalDate('2026-01-01'), new LocalDate('2026-12-31'));
+$off  = $holidays->isHoliday(new TenantRef($org), null, new LocalDate('2026-05-15'));
+
+// Leave: a worker's balances of a year (entitled, taken, planned, pending, remaining in stored units).
+$balances = $leaveBalances->balances(new TenantRef($org), new WorkerRef($user), 2026);
+
+// The day counter (spec 204 FR-009): working days of the dated schedule minus each day's holidays.
+$count = $dayCounter->count($registerSettings, $workerProfile, LeaveUnit::WorkingDays, new LocalDate('2026-08-03'), new LocalDate('2026-08-14'));
+```
+
+Imports: on a calendar page, *Import from festivos.io* needs the country `ES` and the town's INE code (search the town
+list once it is loaded), *Import from OpenHolidays* a country and, for a regional calendar, its ISO region (`ES-MD`);
+both show a preview first and ask the provider again on confirm. A CSV has a `date,name[,scope]` header. A custom
+provider implements `Domain\Port\HolidayProviderInterface` and is tagged `nowo_working_time.holiday_provider`.
+
 ## 4. Jobs (scheduler or cron)
 
 | Command | When | Exit codes |
 | --- | --- | --- |
+| `nowo:working-time:leave:daily` | daily (leave on) | 0; marks the carry-overs past their expiry, one audit row per tenant |
 | `nowo:working-time:notices` | every 5 minutes | 1 when a notice could not be delivered (it stays in the outbox) |
 | `nowo:working-time:purge [--dry-run]` | daily | 0 done, 1 error, 2 the triggers refused the deletes (guard misconfigured) |
 | `nowo:working-time:verify [--tenant] [--worker] [--heads=<file>] [--heads-out=<file>] [--publish-heads]` | weekly | 1 on a broken chain (audited, `ChainBroken` event), 2 for an unreadable or 0.1.0 (hash-only) heads file; `--heads-out` writes `{hash, seq, at}` per chain; publish or keep the heads outside the database (SECURITY.md) |

@@ -1,0 +1,11 @@
+{#
+  One leave type (leave_manage): its form and the archive / restore button. Variables: page (ListPage, header only),
+  form, archive (FormView), archived (bool), id.
+#}
+{% extends '@NowoUiKit/page/list.html.twig' %}
+
+{% block nowo_ui_content %}
+    <p data-testid="wt-leave-no-health">{{ 'leave.type.no_health'|trans({}, 'NowoWorkingTimeBundle') }}</p>
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: form, title: null, submit: 'leave.type.save', action: null, testid: 'wt-leave-type-form'}) }}
+    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: archive, title: null, submit: archived ? 'leave.type.restore' : 'leave.type.archive', action: path('nowo_working_time_leave_type_archive', {id: id}), testid: 'wt-leave-type-archive', variant: 'btn_secondary'}) }}
+{% endblock %}
