@@ -18,6 +18,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function is_array;
 use function is_file;
+use function is_int;
 use function is_string;
 use function json_decode;
 use function json_encode;
@@ -29,6 +30,10 @@ use const JSON_THROW_ON_ERROR;
 /**
  * `nowo:working-time:verify` (weekly, contract section 12): checks every register chain (or one tenant's / worker's);
  * exit 1 on a broken chain (each also audited and raised as `ChainBroken`).
+ *
+ * `--heads-out` writes `{"tenant\u001fworker": {"hash", "seq", "at"}}`; `--heads` reads that file back. A file written by
+ * 0.1.0 (a bare hash per chain) is refused (exit 2): without the link's `seq` a purge cannot be told apart from a
+ * removed tail (audit ST-D1), so it would weaken the check; write a new file with `--heads-out` instead.
  */
 #[AsCommand(name: 'nowo:working-time:verify', description: 'Verify the working-time register hash chains')]
 final class VerifyRegisterCommand extends Command
@@ -45,7 +50,7 @@ final class VerifyRegisterCommand extends Command
     {
         $this->addOption('tenant', null, InputOption::VALUE_REQUIRED, 'Only this tenant')
             ->addOption('worker', null, InputOption::VALUE_REQUIRED, 'Only this worker')
-            ->addOption('heads', null, InputOption::VALUE_REQUIRED, 'JSON file of heads published earlier ({"tenant\\u001fworker": "hash"}, as --heads-out writes): each must still be a link')
+            ->addOption('heads', null, InputOption::VALUE_REQUIRED, 'JSON file of heads published earlier ({"tenant\\u001fworker": {"hash": "…", "seq": 12, "at": "…"}}, as --heads-out writes): each must still be a link unless a purge removed it')
             ->addOption('heads-out', null, InputOption::VALUE_REQUIRED, 'Write the current heads to this JSON file (keep it outside the database)')
             ->addOption('publish-heads', null, InputOption::VALUE_NONE, 'Record every head through the audit sink (working_time.chain_head)');
     }
@@ -64,16 +69,24 @@ final class VerifyRegisterCommand extends Command
 
                 return Command::INVALID;
             }
-            foreach ($decoded as $key => $hash) {
-                if (is_string($key) && is_string($hash)) {
-                    $published[$key] = $hash;
+            foreach ($decoded as $key => $head) {
+                if (is_string($head)) {
+                    $io->error('The heads file was written by 0.1.0 (a hash without its seq): a purge cannot be told apart from a removed tail with it. Write a new one with --heads-out (see UPGRADING.md).');
+
+                    return Command::INVALID;
                 }
+                if (!is_string($key) || !is_array($head) || !is_string($head['hash'] ?? null) || !is_int($head['seq'] ?? null)) {
+                    $io->error(sprintf('The heads file has an invalid entry (%s): each chain needs {"hash", "seq", "at"}.', $key));
+
+                    return Command::INVALID;
+                }
+                $published[$key] = ['hash' => $head['hash'], 'seq' => $head['seq']];
             }
         }
         $report = $this->verifier->verify(is_string($tenant) ? new TenantRef($tenant) : null, is_string($worker) ? new WorkerRef($worker) : null, $published);
         $out    = $input->getOption('heads-out');
         if (is_string($out)) {
-            file_put_contents($out, json_encode($report->heads, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
+            file_put_contents($out, json_encode($report->headLinks, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
         }
         if ($input->getOption('publish-heads') === true) {
             $io->writeln(sprintf('%d head(s) published.', $this->verifier->publishHeads($report)));

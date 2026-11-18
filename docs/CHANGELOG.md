@@ -7,9 +7,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-11-17
+### Fixed
 
-x
+- **Published heads after a purge** (audit ST-D1, ST-D1b): `--heads-out`, `--publish-heads` and the exports'
+  `chain_heads` now record each head with its `seq` (`{hash, seq, at}`; exports `{hash, seq}`), and a missing
+  published head is accepted only when its `seq` is below the chain's start (the first link, or the last anchor's
+  `first_kept_seq` for a chain the purge emptied). Before, any purge of the chain, or any anchor carrying the head's
+  hash, excused it, so `verify --heads` no longer caught a removed tail. The genesis is a head only with `seq` 0. A
+  0.1.0 heads file (bare hashes) is refused (exit 2); see UPGRADING.md. A chain the purge emptied reports its last
+  anchor as its head.
+- **Forged purge anchors**: an anchor past the chain's first link is reported as `anchor_after_start`, and an anchor
+  keeping less than `seq` 2 (a purge never writes one) as `anchor_seq_invalid`.
+- **Single entity manager by name** (audit ST Info): `doctrine.entity_manager` set to the default manager's name is
+  treated as shared like `null`, so the bundle releases only its own entities and refuses to write over the host's
+  pending changes instead of clearing the whole entity manager.
+- UPGRADING: the 0.1.0 section describes a first install (`composer require`), not an upgrade from 0.0.0.
+
+## [0.1.0] - 2026-11-17
 
 ### Added
 

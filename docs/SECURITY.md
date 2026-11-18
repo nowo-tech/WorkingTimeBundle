@@ -21,6 +21,15 @@ a segment opened or closed without a link, a head older than the newest segment,
 earlier heads are given (`--heads`, the `chain_heads` stored with every export, or heads published to the audit sink
 with `--publish-heads`). `triggers:check` verifies that every trigger exists, is enabled and has the shipped body.
 
+A published head carries its link's `seq` (`{hash, seq, at}`; exports `{hash, seq}`). A head that is no longer a link
+is accepted only when its `seq` is below the chain's start (the first link, or the last anchor's `first_kept_seq` for a
+chain the purge emptied): a removed tail is found even after the chain's purges, and an anchor carrying the head's hash
+does not excuse it (audit ST-D1, ST-D1b). An anchor past the chain's first link is reported as `anchor_after_start`,
+and one keeping less than `seq` 2 as `anchor_seq_invalid`, since a purge only removes a non-empty prefix. Heads without
+a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Still out of reach: any prefix
+of a chain, published heads included, removed together with a forged anchor at the new start (the whole chain being
+the extreme case), by a role that can delete with the purge flag (the residual risk below).
+
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.
 When the application user owns the schema, it can drop or replace the triggers, disable them, or (in
 `session_variable` mode) set the purge flag itself, and then rewrite the register and recompute the hashes. The chain
@@ -37,6 +46,8 @@ register that must stand up to an inspection, the host should:
 4. Keep `nowo:working-time:triggers:check` in the deploy and in monitoring.
 
 ## Shared entity manager (`doctrine.entity_manager: null`)
+
+The same applies when `doctrine.entity_manager` names the registry's default manager (for example `default`).
 
 With the private entity manager (default) the bundle clears it after each unit of work. With the host's default entity
 manager the bundle never flushes or clears the host's work: before a register write it refuses (LogicException) when

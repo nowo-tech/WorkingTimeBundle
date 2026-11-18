@@ -29,7 +29,8 @@ use function str_starts_with;
  *
  * Never flushes the host's entity manager (rule 6): with `entity_manager: null` it is the default one, used only in
  * explicit transactions; there the runner forgets only the bundle's entities and refuses to write while the host has
- * pending changes of its own (audit ST-M4).
+ * pending changes of its own (audit ST-M4). A configured name that resolves to the registry's default manager (for
+ * example `default`) is the same shared manager and gets the same safeguards.
  */
 final readonly class DoctrineTransactionRunner implements TransactionRunnerInterface
 {
@@ -101,12 +102,12 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
 
     /**
      * Forgets the bundle's managed entities: the whole unit of work on the private entity manager; on a shared one
-     * (`entity_manager: null`) only the bundle's own entities, so the host's managed entities and pending changes stay
-     * (audit ST-M4).
+     * (`entity_manager: null`, or the default manager's name) only the bundle's own entities, so the host's managed
+     * entities and pending changes stay (audit ST-M4).
      */
     public function release(EntityManagerInterface $manager): void
     {
-        if ($this->managerName !== null) {
+        if (!$this->shared($manager)) {
             $manager->clear(); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
 
             return;
@@ -129,7 +130,7 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
      */
     private function refuseForeignChanges(EntityManagerInterface $manager): void
     {
-        if ($this->managerName !== null) {
+        if (!$this->shared($manager)) {
             return;
         }
         $unitOfWork = $manager->getUnitOfWork();
@@ -137,10 +138,19 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
         foreach ([$unitOfWork->getScheduledEntityInsertions(), $unitOfWork->getScheduledEntityUpdates(), $unitOfWork->getScheduledEntityDeletions()] as $pending) {
             foreach ($pending as $entity) {
                 if (!str_starts_with($entity::class, self::ENTITY_NAMESPACE)) {
-                    throw new LogicException('nowo_working_time shares the default entity manager (doctrine.entity_manager: null) and will not flush the host\'s pending changes: flush them before calling the register, or give the bundle its private entity manager.');
+                    throw new LogicException('nowo_working_time shares the default entity manager (doctrine.entity_manager: null or the default manager\'s name) and will not flush the host\'s pending changes: flush them before calling the register, or give the bundle its private entity manager.');
                 }
             }
         }
+    }
+
+    /**
+     * Whether the bundle's entity manager is the host's default one: `entity_manager: null`, or a configured name that
+     * resolves to the registry's default manager.
+     */
+    private function shared(EntityManagerInterface $manager): bool
+    {
+        return $this->managerName === null || $manager === $this->registry->getManager();
     }
 
     /**
