@@ -29,7 +29,6 @@ use function array_keys;
 use function count;
 use function explode;
 use function is_string;
-use function max;
 
 /**
  * Checks every register chain (spec 198 FR-018 / SC-002, contract section 6.3): each link's hash against its row (in
@@ -59,10 +58,11 @@ final readonly class ChainVerifier implements ChainVerifierInterface
      * Verifies the chains.
      *
      * A published head is a hash with the link's `seq` and creation time (`--heads-out`, `--publish-heads`): it may be
-     * missing only when its `seq` is below the chain's start. A bare hash (0.1.0) carries no `seq`: the weaker rule
-     * applies, and an anchor carrying that hash excuses it.
+     * missing only when its `seq` is below the chain's start and its workday (`day`) before the start anchor's
+     * `first_kept_date`; without a `day`, below the start is enough (0.1.1 rule). A bare hash (0.1.0) carries no `seq`: the weaker rule applies, and an anchor carrying that
+     * hash excuses it.
      *
-     * @param array<string, array{hash: string, seq: int, at?: string|null}|string> $publishedHeads "tenant\x1Fworker" => a head published earlier (it must still be a link)
+     * @param array<string, array{hash: string, seq: int, at?: string|null, day?: string|null}|string> $publishedHeads "tenant\x1Fworker" => a head published earlier (it must still be a link)
      */
     public function verify(?TenantRef $tenant = null, ?WorkerRef $worker = null, array $publishedHeads = []): VerificationReport
     {
@@ -85,11 +85,11 @@ final readonly class ChainVerifier implements ChainVerifierInterface
         $tips   = [];
         $now    = $this->clock?->now() ?? new DateTimeImmutable();
         foreach ($chains as [$chainTenant, $chainWorker]) {
-            $key                                                             = $chainTenant->value . "\x1F" . $chainWorker->value;
-            [$count, $failure, $head, $headAt, $walked, $headSeq, $startSeq] = $this->walk($chainTenant, $chainWorker);
+            $key                                                                       = $chainTenant->value . "\x1F" . $chainWorker->value;
+            [$count, $failure, $head, $headAt, $walked, $headSeq, $startSeq, $headDay] = $this->walk($chainTenant, $chainWorker);
             $links += $count;
             $heads[$key] = $head;
-            $tips[$key]  = ['hash' => $head, 'seq' => $headSeq, 'at' => $headAt instanceof DateTimeImmutable ? WorkdayRevision::iso($headAt) : null];
+            $tips[$key]  = ['hash' => $head, 'seq' => $headSeq, 'at' => $headAt instanceof DateTimeImmutable ? WorkdayRevision::iso($headAt) : null, 'day' => $headDay];
             $failure ??= $this->runner->read(fn (): ?array => $this->crossCheck($chainTenant, $chainWorker, $walked, $headAt, $startSeq, $now, $expected[$key] ?? [])); // @igor-ignore - the runner calls this closure at once and keeps nothing
             if ($failure !== null) {
                 $broken[] = ['tenant' => $chainTenant->value, 'worker' => $chainWorker->value, ...$failure];
@@ -102,7 +102,7 @@ final readonly class ChainVerifier implements ChainVerifierInterface
     }
 
     /**
-     * Records every chain's head (`{hash, seq, at}`) through the audit sink (`working_time.chain_head`): an external
+     * Records every chain's head (`{hash, seq, at, day}`) through the audit sink (`working_time.chain_head`): an external
      * copy of the heads that a later verification compares with (a removed tail or a removed chain no longer has its
      * published head).
      */
@@ -127,17 +127,21 @@ final readonly class ChainVerifier implements ChainVerifierInterface
     }
 
     /**
-     * The walk's result: links walked, the first failure, the head (hash, time, seq) and the first walked `seq` (null: no
-     * link). A chain the purge emptied has its last anchor as its head: the next link continues from it.
+     * The walk's result: links walked, the first failure, the head (hash, time, seq), the first walked `seq` (null: no
+     * link) and the head's workday date (`day`). A chain the purge emptied has its last anchor as its head: the next link
+     * continues from it, and its day is the one before the anchor's `first_kept_date` (every purged day is older).
      *
-     * @return array{0: int, 1: array{seq: int, reason: string}|null, 2: string, 3: ?DateTimeImmutable, 4: array{opened: array<string, string>, closed: array<string, string>}, 5: int, 6: ?int}
+     * @return array{0: int, 1: array{seq: int, reason: string}|null, 2: string, 3: ?DateTimeImmutable, 4: array{opened: array<string, string>, closed: array<string, string>}, 5: int, 6: ?int, 7: ?string}
      */
     private function walk(TenantRef $tenant, WorkerRef $worker): array
     {
-        $anchors = [];
+        $anchors    = [];
+        $lastAnchor = null;
         foreach ($this->runner->read(fn (): array => $this->store->anchors($tenant, $worker)) as $anchor) {
             $anchors[$anchor->getFirstKeptSeq()] = $anchor->getAnchorHash();
+            $lastAnchor                          = $anchor;
         }
+        $headWorkday  = null;
         $previousHash = ChainCodecs::GENESIS;
         $previousSeq  = 0;
         $count        = 0;
@@ -145,7 +149,7 @@ final readonly class ChainVerifier implements ChainVerifierInterface
         $startSeq     = null;
         $seen         = ['opened' => [], 'closed' => []];
         do {
-            [$batch, $failure] = $this->runner->read(function () use ($tenant, $worker, &$previousHash, &$previousSeq, &$count, &$headAt, &$startSeq, &$seen, $anchors): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
+            [$batch, $failure] = $this->runner->read(function () use ($tenant, $worker, &$previousHash, &$previousSeq, &$count, &$headAt, &$headWorkday, &$startSeq, &$seen, $anchors): array { // @igor-ignore - the runner calls this closure at once and keeps nothing
                 $batch    = $this->store->chainBatch($tenant, $worker, $previousSeq, self::BATCH);
                 $segments = $this->segments($batch);
                 foreach ($batch as $revision) {
@@ -172,6 +176,7 @@ final readonly class ChainVerifier implements ChainVerifierInterface
                     $previousHash = $revision->getHash();
                     $previousSeq  = $revision->getSeq();
                     $headAt       = $revision->getCreatedAt();
+                    $headWorkday  = $revision->getWorkdayId();
                     $payload      = $revision->getPayload();
                     foreach (['opened', 'closed'] as $side) {
                         if ($revision->getKind()->isClock() && is_string($payload[$side] ?? null) && is_string($payload['at'] ?? null)) {
@@ -183,16 +188,15 @@ final readonly class ChainVerifier implements ChainVerifierInterface
                 return [$batch, null];
             });
             if ($failure !== null) {
-                return [$count, $failure, $previousHash, $headAt, $seen, $previousSeq, $startSeq];
+                return [$count, $failure, $previousHash, $headAt, $seen, $previousSeq, $startSeq, null];
             }
         } while (count($batch) === self::BATCH);
-        if ($count === 0 && $anchors !== []) {
-            $last = max(array_keys($anchors));
-
-            return [0, null, $anchors[$last], null, $seen, $last - 1, null];
+        if ($count === 0 && $lastAnchor instanceof ChainAnchor) {
+            return [0, null, $lastAnchor->getAnchorHash(), null, $seen, $lastAnchor->getFirstKeptSeq() - 1, null, $lastAnchor->firstKeptDate()?->plusDays(-1)->value];
         }
+        $day = $headWorkday === null ? null : $this->runner->read(fn (): ?string => $this->store->workday($headWorkday)?->date()->value);
 
-        return [$count, null, $previousHash, $headAt, $seen, $previousSeq, $startSeq];
+        return [$count, null, $previousHash, $headAt, $seen, $previousSeq, $startSeq, $day];
     }
 
     /**
@@ -203,10 +207,11 @@ final readonly class ChainVerifier implements ChainVerifierInterface
      * removes a prefix: an anchor beyond the start was not written by one) and none keeps less than `seq` 2 (a purge
      * removes at least one link). A head published earlier (an export's `chain_heads`, or a head published with
      * `--heads-out` / through the audit sink) must still be a link of the chain unless a purge removed it: its `seq` is
-     * below the chain's start (audit ST-D1 / ST-D1b).
+     * below the chain's start and its workday before the start anchor's retention boundary (audit ST-D1 / ST-D1b /
+     * ST-H2).
      *
      * @param array{opened: array<string, string>, closed: array<string, string>} $links
-     * @param list<array{0: string, 1: ?int, 2: ?DateTimeImmutable}> $expected published heads: hash, seq, since when
+     * @param list<array{0: string, 1: ?int, 2: ?LocalDate, 3: ?DateTimeImmutable}> $expected published heads: hash, seq, workday date, since when
      *
      * @return array{seq: int, reason: string}|null
      */
@@ -237,27 +242,48 @@ final readonly class ChainVerifier implements ChainVerifierInterface
             $start    = $startSeq ?? $anchor->getFirstKeptSeq();
             $boundary = $anchor->firstKeptDate();
             $latestOk = RetentionPolicy::firstKept(RegisterSettingsInput::MIN_RETENTION_YEARS, LocalDate::of($anchor->getPurgedAt(), new DateTimeZone('UTC')));
-            if ($boundary === null || $boundary->compare($latestOk) > 0 || $anchor->getPurgedAt() > $now) {
+            if ($boundary === null || $boundary->compare($latestOk) > 0 || $anchor->getPurgedAt() > $now->modify('+5 minutes')) {
                 return ['seq' => $anchor->getFirstKeptSeq(), 'reason' => 'anchor_out_of_retention'];
             }
             if ($startSeq !== null && $anchor->getFirstKeptSeq() > $startSeq) {
                 return ['seq' => $anchor->getFirstKeptSeq(), 'reason' => 'anchor_after_start'];
             }
         }
-        foreach ($expected as [$head, $seq, $since]) {
+        $startAnchor = null;
+        foreach ($anchors as $anchor) {
+            $startAnchor = $anchor->getFirstKeptSeq() === $start ? $anchor : $startAnchor;
+        }
+        foreach ($expected as [$head, $seq, $day, $since]) {
             if ($head === ChainCodecs::GENESIS ? $seq === 0 : $this->store->hasLinkHash($tenant, $worker, $head)) {
                 // The genesis is the head of a chain that was still empty (`seq` 0); any other head must still be a link.
                 continue;
             }
-            // With its `seq`, a head was removed by a purge only when it is below the chain's start. A bare hash (0.1.0:
-            // API callers, export rows) is weaker: covered by the anchor carrying it, or by a purge after the export.
-            $purged = $seq !== null ? $head !== ChainCodecs::GENESIS && $start !== null && $seq < $start : $this->bareHeadPurged($anchors, $head, $since);
+            // With its `seq`, a head was removed by a purge only when it is below the chain's start and, with its workday
+            // date, when that day is before the start anchor's `first_kept_date`: exactly what the purge deletes (audit ST
+            // hardening, ST-H2). Without a day (0.1.1 export rows and heads files) the 0.1.1 rule stays: below the start.
+            // A bare hash (0.1.0: API callers, export rows) is weaker: covered by the anchor carrying it, or by a purge
+            // after the export.
+            $purged = $seq !== null
+                ? $head !== ChainCodecs::GENESIS && $start !== null && $seq < $start && (!$day instanceof LocalDate || $this->beforeKept($startAnchor, $day))
+                : $this->bareHeadPurged($anchors, $head, $since);
             if (!$purged) {
                 return ['seq' => 0, 'reason' => 'published_head_missing'];
             }
         }
 
         return null;
+    }
+
+    /**
+     * Whether a head's workday is older than the retention boundary of the anchor at the chain's start: the purge deletes
+     * exactly the workdays before `first_kept_date`, and a forged anchor cannot move that boundary closer than four years
+     * before its purge (`anchor_out_of_retention`), so a recent head is never excused (audit ST probes d2 and e2).
+     */
+    private function beforeKept(?ChainAnchor $startAnchor, LocalDate $day): bool
+    {
+        $boundary = $startAnchor?->firstKeptDate();
+
+        return $boundary instanceof LocalDate && $day->compare($boundary) < 0;
     }
 
     /**
@@ -280,24 +306,24 @@ final readonly class ChainVerifier implements ChainVerifierInterface
     /**
      * The heads published earlier, by chain: the exports' `chain_heads` (with their date) and the given ones.
      *
-     * @param array<string, array{hash: string, seq: int, at?: string|null}|string> $published
+     * @param array<string, array{hash: string, seq: int, at?: string|null, day?: string|null}|string> $published
      *
-     * @return array<string, list<array{0: string, 1: ?int, 2: ?DateTimeImmutable}>>
+     * @return array<string, list<array{0: string, 1: ?int, 2: ?LocalDate, 3: ?DateTimeImmutable}>>
      */
     private function expectedHeads(?TenantRef $tenant, ?WorkerRef $worker, array $published): array
     {
         $expected = [];
         foreach ($this->runner->read(fn (): array => $this->store->exportsWithHeads($tenant)) as $export) { // @igor-ignore - the runner calls this closure at once and keeps nothing
             foreach ($export->getChainHeads() as $exportWorker => $head) {
-                // 0.1.1 exports record `{hash, seq}`; a 0.1.0 export row holds a bare hash.
-                [$hash, $seq] = is_string($head) ? [$head, null] : [$head['hash'], $head['seq']];
+                // 0.1.2 exports record `{hash, seq, at, day}`, 0.1.1 ones `{hash, seq}`, 0.1.0 ones a bare hash.
+                [$hash, $seq, $day] = is_string($head) ? [$head, null, null] : [$head['hash'], $head['seq'], LocalDate::tryParse($head['day'] ?? null)];
                 if ($hash !== '' && (!$worker instanceof WorkerRef || $worker->value === (string) $exportWorker)) {
-                    $expected[$export->getTenantId() . "\x1F" . $exportWorker][] = [$hash, $seq, $export->getCreatedAt()];
+                    $expected[$export->getTenantId() . "\x1F" . $exportWorker][] = [$hash, $seq, $day, $export->getCreatedAt()];
                 }
             }
         }
         foreach ($published as $key => $head) {
-            $expected[$key][] = is_string($head) ? [$head, null, null] : [$head['hash'], $head['seq'], null];
+            $expected[$key][] = is_string($head) ? [$head, null, null, null] : [$head['hash'], $head['seq'], LocalDate::tryParse($head['day'] ?? null), null];
         }
 
         return $expected;

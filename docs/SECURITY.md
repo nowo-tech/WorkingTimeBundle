@@ -21,14 +21,26 @@ a segment opened or closed without a link, a head older than the newest segment,
 earlier heads are given (`--heads`, the `chain_heads` stored with every export, or heads published to the audit sink
 with `--publish-heads`). `triggers:check` verifies that every trigger exists, is enabled and has the shipped body.
 
-A published head carries its link's `seq` (`{hash, seq, at}`; exports `{hash, seq}`). A head that is no longer a link
-is accepted only when its `seq` is below the chain's start (the first link, or the last anchor's `first_kept_seq` for a
-chain the purge emptied): a removed tail is found even after the chain's purges, and an anchor carrying the head's hash
-does not excuse it (audit ST-D1, ST-D1b). An anchor past the chain's first link is reported as `anchor_after_start`,
-and one keeping less than `seq` 2 as `anchor_seq_invalid`, since a purge only removes a non-empty prefix. Heads without
-a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Still out of reach: any prefix
-of a chain, published heads included, removed together with a forged anchor at the new start (the whole chain being
-the extreme case), by a role that can delete with the purge flag (the residual risk below).
+A published head carries its link's `seq`, time and workday date (`{hash, seq, at, day}`). A head that is no longer a
+link is accepted only when its `seq` is below the chain's start (the first link, or the last anchor's
+`first_kept_seq` for a chain the purge emptied) and its `day` is before the `first_kept_date` of the anchor at the
+start: exactly the days the purge deletes, so a late correction or acknowledgement of a purged day is no false alarm,
+and an anchor carrying the head's hash does not excuse it (audit ST-D1, ST-D1b, ST-H2). A forged anchor must keep a
+`first_kept_date` at least four years before its purge date, and that date cannot be in the future (five minutes of
+clock skew aside), so a head whose workday is younger than that cannot be hidden behind one (probes d2 and e2). An
+anchor past the chain's first link is reported as `anchor_after_start`, and one keeping less than `seq` 2 as
+`anchor_seq_invalid`, since a purge only removes a non-empty prefix. Heads without a `day` (0.1.1 heads files and
+export rows) keep the 0.1.1 rule (below the start is enough), and heads without a `seq` (0.1.0 export rows, bare
+hashes passed to the API) the weaker 0.1.0 rule. Still out of reach: a prefix of a chain whose published heads all
+have a workday older than a forged anchor's `first_kept_date`, removed together with that anchor at the new start, by
+a role that can delete with the purge flag (the residual risk below).
+
+Store each published head entry whole, `day` included, write-once outside the database (`--heads-out` to write-once
+storage, or `--publish-heads` to an audit sink kept elsewhere). The `day` is what ties a missing head to the purge
+boundary: a heads file whose `day` was forged to an old date, or stripped (the 0.1.1 rule then applies), excuses a
+prefix removed behind a forged anchor. The `chain_heads` stored with each export give no such protection on their own,
+since the application can write those rows. A late link kept after its workday was purged (an orphan correction or
+acknowledgement) is published with `day: null` and gets the weaker 0.1.1 rule.
 
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.
 When the application user owns the schema, it can drop or replace the triggers, disable them, or (in

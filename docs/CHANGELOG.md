@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **Published heads below a forged start** (audit ST hardening, probes d2 and e2; ST-H2): `--heads-out`,
+  `--publish-heads` and the exports' `chain_heads` now also record the head link's workday date (`day`). A published
+  head below the chain's start is excused only when that day is before the `first_kept_date` of the anchor at the
+  start, which is exactly what the purge deletes. A recent head removed together with a forged anchor at the new start,
+  or behind a forged anchor past a removed chain, is reported as `published_head_missing`, while a late correction,
+  acknowledgement or approval of a purged day (created after the boundary) is no longer a false alarm. Entries without
+  a `day` (0.1.1 heads files and export rows) keep the 0.1.1 rule (below the start); `at` is informational only.
+- `anchor_out_of_retention` tolerates five minutes of clock skew for a purge date ahead of the verifier's clock.
+- `--heads` refuses (exit 2) an entry whose `seq` is below 1 unless it is the genesis with `seq` 0, an `at` that is not
+  exactly a UTC ISO 8601 time (overflowing values such as `2026-02-31T25:61:00Z` included) and a `day` that is not a
+  real `Y-m-d` date.
+- Demo e2e: the correction step amends the start to one hour before the clock-in instead of a fixed 07:30, so the
+  suite no longer fails when it runs before 07:30 in the tenant's time zone.
+
 ## [0.1.1] - 2026-11-18
 
 ### Fixed

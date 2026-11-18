@@ -34,6 +34,19 @@ export function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * A start one hour before the given clock-in, as HH:MM in the tenant's time zone (UTC), never before midnight of the
+ * same day: an amended start that always comes before the clocked segment's end, whatever time the suite runs.
+ */
+export function earlierStart(clockIn: Date): string {
+  const earlier = new Date(clockIn.getTime() - 60 * 60 * 1000);
+  if (earlier.toISOString().slice(0, 10) !== clockIn.toISOString().slice(0, 10)) {
+    return '00:00';
+  }
+
+  return earlier.toISOString().slice(11, 16);
+}
+
 /** The current month as YYYY-MM (UTC). */
 export function thisMonth(): string {
   return today().slice(0, 7);
