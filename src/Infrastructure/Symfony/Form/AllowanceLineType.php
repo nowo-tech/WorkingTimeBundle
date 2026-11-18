@@ -39,7 +39,7 @@ final class AllowanceLineType extends AbstractType
             $this->addTypedField('year', IntegerType::class, ['label' => 'leave.allowance.form.year', 'attr' => ['min' => 2000, 'max' => 2100]]);
             $this->addTypedField('kind', ChoiceType::class, ['label' => 'leave.line.form.kind', 'choices' => ['leave.line_kind.adjustment' => 'adjustment', 'leave.line_kind.carry_over' => 'carry_over', 'leave.line_kind.protected_carry_over' => 'protected_carry_over']]);
             $this->addTypedField('amount', NumberType::class, ['label' => 'leave.allowance.form.amount', 'scale' => 2, 'help' => 'leave.line.form.amount_help']);
-            $this->addTypedField('reason', TextType::class, ['label' => 'leave.line.form.reason', 'attr' => ['maxlength' => 255]]);
+            $this->addTypedField('reason', TextType::class, ['label' => 'leave.line.form.reason', 'help' => 'leave.no_health_hint', 'attr' => ['maxlength' => 255]]);
             $this->addTypedField('expiresOn', DateType::class, ['label' => 'leave.line.form.expires_on', 'widget' => 'single_text', 'input' => 'string', 'required' => false, 'help' => 'leave.line.form.expires_on_help']);
         });
     }

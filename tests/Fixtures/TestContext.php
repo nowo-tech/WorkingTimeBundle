@@ -30,6 +30,12 @@ final class TestContext
     /** First saves of settings the RaceInjector makes before ours (the same primary key). */
     public bool $settingsRace = false;
 
+    /** Racing seeds of a leave type code the RaceInjector still simulates (audit TD-M1). */
+    public int $seedRaces = 0;
+
+    /** Racing holiday days the RaceInjector still simulates (audit TD-L1). */
+    public int $dayRaces = 0;
+
     public ?string $actor = null;
 
     /** @var array<string, array<string, WorkerProfile>> tenant => worker => profile */

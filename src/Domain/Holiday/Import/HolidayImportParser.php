@@ -95,10 +95,11 @@ final class HolidayImportParser
      *
      * @param list<HolidayEntry> $fetched one per date
      * @param list<HolidayEntry> $existing the calendar's days
+     * @param string|null $provider the provider key (tells host providers, all of origin `provider`, apart)
      *
      * @return list<ImportPreviewRow> by date
      */
-    public static function compare(array $fetched, array $existing, HolidayOrigin $origin): array
+    public static function compare(array $fetched, array $existing, HolidayOrigin $origin, ?string $provider = null): array
     {
         $byDate = [];
         foreach ($existing as $day) {
@@ -109,11 +110,11 @@ final class HolidayImportParser
         foreach ($fetched as $entry) {
             $listed[$entry->date->value] = true;
             $day                         = $byDate[$entry->date->value] ?? null;
-            $status                      = $day === null ? ImportStatus::New : ($day->origin === $origin ? ImportStatus::Unchanged : ImportStatus::Duplicate);
+            $status                      = $day === null ? ImportStatus::New : ($day->isFrom($origin, $provider) ? ImportStatus::Unchanged : ImportStatus::Duplicate);
             $rows[]                      = new ImportPreviewRow($entry->date->value, $entry->name, $status, $entry->scope, $entry->sourceRef, $entry->sourceUrl);
         }
         foreach ($existing as $day) {
-            if ($day->origin === $origin && !isset($listed[$day->date->value])) {
+            if ($day->isFrom($origin, $provider) && !isset($listed[$day->date->value])) {
                 $rows[] = new ImportPreviewRow($day->date->value, $day->name, ImportStatus::Removed, $day->scope);
             }
         }

@@ -41,7 +41,7 @@ final class AllowancePolicyType extends AbstractType
             $this->addTypedField('year', IntegerType::class, ['label' => 'leave.allowance.form.year', 'attr' => ['min' => 2000, 'max' => 2100]]);
             $this->addTypedField('amount', NumberType::class, ['label' => 'leave.allowance.form.amount', 'scale' => 2, 'help' => 'leave.type.form.amount_help']);
             $this->addTypedField('agreementEquivalent', CheckboxType::class, ['label' => 'leave.allowance.form.agreement_equivalent', 'required' => false]);
-            $this->addTypedField('note', TextType::class, ['label' => 'leave.allowance.form.note', 'required' => false, 'attr' => ['maxlength' => 255]]);
+            $this->addTypedField('note', TextType::class, ['label' => 'leave.allowance.form.note', 'required' => false, 'help' => 'leave.no_health_hint', 'attr' => ['maxlength' => 255]]);
         });
     }
 

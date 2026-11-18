@@ -34,6 +34,7 @@ class HolidayDay
         private HolidayOrigin $origin,
         ?string $sourceRef,
         ?string $sourceUrl,
+        private ?string $provider = null,
     ) {
         $entry             = $this->entryOf($date, $name, $sourceRef, $sourceUrl);
         $this->holidayDate = $date->toDateTime();
@@ -47,13 +48,13 @@ class HolidayDay
      *
      * @throws HolidayRefusedException `holiday.day.error.name` | `holiday.day.error.year`
      */
-    public static function create(string $id, HolidayCalendar $calendar, LocalDate $date, string $name, HolidayOrigin $origin = HolidayOrigin::Manual, ?string $sourceRef = null, ?string $sourceUrl = null): self
+    public static function create(string $id, HolidayCalendar $calendar, LocalDate $date, string $name, HolidayOrigin $origin = HolidayOrigin::Manual, ?string $sourceRef = null, ?string $sourceUrl = null, ?string $provider = null): self
     {
         if ($date->year() !== $calendar->getYear()) {
             throw new HolidayRefusedException('holiday.day.error.year');
         }
 
-        return new self(Uuid::assert($id), $calendar->getTenantId(), $calendar->getId(), $date, $name, $origin, $sourceRef, $sourceUrl);
+        return new self(Uuid::assert($id), $calendar->getTenantId(), $calendar->getId(), $date, $name, $origin, $sourceRef, $sourceUrl, $origin === HolidayOrigin::Manual || $origin === HolidayOrigin::Import ? null : $provider);
     }
 
     /**
@@ -67,6 +68,7 @@ class HolidayDay
         $this->holidayDate = $date->toDateTime(); // @igor-ignore - entity state, not a service
         $this->name        = $entry->name; // @igor-ignore - entity state, not a service
         $this->origin      = HolidayOrigin::Manual; // @igor-ignore - entity state, not a service
+        $this->provider    = null; // @igor-ignore - entity state, not a service
         $this->sourceRef   = null; // @igor-ignore - entity state, not a service
         $this->sourceUrl   = null; // @igor-ignore - entity state, not a service
     }
@@ -107,6 +109,12 @@ class HolidayDay
         return $this->origin;
     }
 
+    /** Key of the provider that brought it (null by hand or from a file). */
+    public function getProvider(): ?string
+    {
+        return $this->provider;
+    }
+
     /** Bulletin reference a provider cites. */
     public function getSourceRef(): ?string
     {
@@ -124,7 +132,7 @@ class HolidayDay
      */
     public function entry(HolidayCalendar $calendar): HolidayEntry
     {
-        return new HolidayEntry($this->date(), $this->name, $calendar->getScope(), $this->origin, $this->sourceRef, $this->sourceUrl, $this->calendarId);
+        return new HolidayEntry($this->date(), $this->name, $calendar->getScope(), $this->origin, $this->sourceRef, $this->sourceUrl, $this->calendarId, $this->provider);
     }
 
     /**

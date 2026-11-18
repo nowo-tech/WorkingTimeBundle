@@ -623,6 +623,9 @@ leave:
             carry_max: Um transporte deste tipo é, no máximo, %max%.
             reason: O motivo tem de 3 a 255 caracteres.
             line_amount: A quantidade não é zero (só um ajuste pode ser negativo).
+            too_large: No máximo %max% (366 dias ou 2 080 horas).
+            negative: 'O ajuste deixaria o direito abaixo de zero (direito atual: %entitled%).'
+            self: Ninguém altera a sua própria atribuição; fá-lo outro gestor de ausências.
     line:
         add: Novo ajuste ou transporte
         save: Guardar a linha
@@ -668,3 +671,5 @@ leave:
         policy_removed: Dotação removida.
         line_added: Linha adicionada.
         settings_saved: Definições de ausências guardadas.
+    no_health_hint: Não inclua informação de saúde (nenhum diagnóstico, causa ou detalhe médico).
+

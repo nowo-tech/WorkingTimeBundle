@@ -623,6 +623,9 @@ leave:
             carry_max: Un report de ce type est de %max% au maximum.
             reason: Le motif compte de 3 à 255 caractères.
             line_amount: Le montant n'est pas zéro (seul un ajustement peut être négatif).
+            too_large: Au maximum %max% (366 jours ou 2 080 heures).
+            negative: 'L''ajustement ferait passer le droit sous zéro (droit actuel : %entitled%).'
+            self: Personne ne modifie sa propre allocation ; un autre gestionnaire des congés le fait.
     line:
         add: Nouvel ajustement ou report
         save: Enregistrer la ligne
@@ -668,3 +671,5 @@ leave:
         policy_removed: Droit annuel supprimé.
         line_added: Ligne ajoutée.
         settings_saved: Paramètres des absences enregistrés.
+    no_health_hint: N'incluez aucune information de santé (ni diagnostic, ni cause, ni détail médical).
+

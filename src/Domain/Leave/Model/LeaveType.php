@@ -65,6 +65,9 @@ class LeaveType
 
     private bool $archived = false;
 
+    /** Optimistic lock (Doctrine `version`, audit TD-L6). */
+    private int $version = 1;
+
     private function __construct(
         private string $id,
         private string $tenantId,
@@ -117,7 +120,8 @@ class LeaveType
             throw new LeaveRefusedException('leave.type.error.medical_source');
         }
         $expiry = $input->carryOverExpiry === null ? '' : trim($input->carryOverExpiry);
-        if ($expiry !== '' && (preg_match('/^(\d{2})-(\d{2})$/D', $expiry, $m) !== 1 || !checkdate((int) $m[1], (int) $m[2], 2024))) {
+        if ($expiry !== '' && (preg_match('/^(\d{2})-(\d{2})$/D', $expiry, $m) !== 1 || !checkdate((int) $m[1], (int) $m[2], 2023))) {
+            // A common year: 29 February would never come in most years (audit TD-L2).
             throw new LeaveRefusedException('leave.type.error.expiry');
         }
         $carry = $input->carryOver && $input->source === AllowanceSource::Allowance;
@@ -158,6 +162,12 @@ class LeaveType
     public function getId(): string
     {
         return $this->id;
+    }
+
+    /** Version (optimistic lock). */
+    public function getVersion(): int
+    {
+        return $this->version;
     }
 
     /** Tenant reference. */

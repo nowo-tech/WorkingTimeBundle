@@ -74,12 +74,6 @@ class WorkCentre
         $this->isDefault   = $default; // @igor-ignore - entity state, not a service
     }
 
-    /** Sets or clears the default flag. */
-    public function setDefault(bool $default): void
-    {
-        $this->isDefault = $default; // @igor-ignore - entity state, not a service
-    }
-
     /**
      * Forgets a removed calendar.
      */

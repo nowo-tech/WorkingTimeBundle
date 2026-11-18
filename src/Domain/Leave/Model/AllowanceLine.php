@@ -13,6 +13,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\Uuid;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 
+use function abs;
 use function mb_strlen;
 use function preg_replace;
 use function trim;
@@ -25,6 +26,9 @@ use function trim;
  */
 class AllowanceLine
 {
+    /** The reason of a line whose worker had their personal data erased. */
+    public const ERASED = '[erased]';
+
     private ?DateTimeImmutable $expiresOn;
 
     private ?DateTimeImmutable $expiredAt = null;
@@ -58,6 +62,10 @@ class AllowanceLine
         }
         if ($amount === 0 || ($kind !== AllowanceLineKind::Adjustment && $amount < 0) || $year < 2000 || $year > 2100) {
             throw new LeaveRefusedException('leave.allowance.error.line_amount');
+        }
+
+        if (abs($amount) > $type->getUnit()->maxAmount()) {
+            throw new LeaveRefusedException('leave.allowance.error.too_large', ['%max%' => $type->getUnit()->format($type->getUnit()->maxAmount())]);
         }
 
         return new self(Uuid::assert($id), $type->getTenantId(), $worker->value, $type->getId(), $year, $kind, $amount, $reason, $expiresOn, $at->setTimezone(new DateTimeZone('UTC')), $by?->value);

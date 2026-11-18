@@ -117,6 +117,7 @@ final class ConfigurationTreeTest extends TestCase
         yield 'leave without holidays' => [['leave' => ['enabled' => true], 'holidays' => ['enabled' => false]], 'requires nowo_working_time.register.enabled'];
         yield 'lock factory without service' => [['leave' => ['lock' => ['store' => 'lock_factory']]], 'leave.lock.lock_factory'];
         yield 'unknown lock store' => [['leave' => ['lock' => ['store' => 'database']]], 'leave.lock.store'];
+        yield 'a provider timeout over 30 seconds (audit TD-L3)' => [['holidays' => ['providers' => ['festivos_io' => ['timeout' => 31]]]], 'timeout'];
         yield 'attachments without store' => [['leave' => ['attachments' => ['enabled' => true]]], 'leave.attachments.store'];
         yield 'retention below four years' => [['register' => ['retention_years' => 3]], 'retention_years'];
         yield 'db_user guard without user' => [['integrity' => ['purge_guard' => 'db_user']], 'purge_db_user'];

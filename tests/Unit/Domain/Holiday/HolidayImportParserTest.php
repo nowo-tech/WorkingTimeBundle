@@ -76,6 +76,21 @@ final class HolidayImportParserTest extends TestCase
         self::assertSame('2026-12-31', HolidayImportParser::date(' 31/12/2026 ')?->format('Y-m-d'));
     }
 
+    public function testHostProvidersOnlyReplaceTheirOwnDays(): void
+    {
+        $a        = new HolidayEntry(new LocalDate('2026-03-01'), 'Feed A', HolidayScope::Local, HolidayOrigin::Provider, provider: 'feed_a');
+        $b        = new HolidayEntry(new LocalDate('2026-03-02'), 'Feed B', HolidayScope::Local, HolidayOrigin::Provider, provider: 'feed_b');
+        $rows     = HolidayImportParser::compare([], [$a, $b], HolidayOrigin::Provider, 'feed_a');
+        $statuses = array_map(static fn (ImportPreviewRow $row): array => [$row->date, $row->status], $rows);
+
+        self::assertSame([['2026-03-01', ImportStatus::Removed]], $statuses, 'feed B\'s day is not feed A\'s to remove (audit TD-L4)');
+        self::assertTrue($b->isFrom(HolidayOrigin::Provider, 'feed_b'));
+        self::assertFalse($b->isFrom(HolidayOrigin::Provider, 'feed_a'));
+        self::assertTrue($a->isFrom(HolidayOrigin::Provider, 'feed_a'));
+        $sameDate = new HolidayEntry(new LocalDate('2026-03-02'), 'Feed A', HolidayScope::Local, HolidayOrigin::Provider, provider: 'feed_a');
+        self::assertSame(ImportStatus::Duplicate, HolidayImportParser::compare([$b], [$sameDate], HolidayOrigin::Provider, 'feed_b')[0]->status, 'another feed\'s day on that date is kept');
+    }
+
     public function testAProviderImportComparesWithTheCalendar(): void
     {
         $day      = static fn (string $date, string $name, HolidayOrigin $origin): HolidayEntry => new HolidayEntry(new LocalDate($date), $name, HolidayScope::Local, $origin);

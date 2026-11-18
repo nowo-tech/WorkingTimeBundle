@@ -37,8 +37,8 @@ interface HolidayCalendarServiceInterface
     /** One calendar of the tenant. */
     public function calendar(string $id): HolidayCalendar;
 
-    /** Creates (`$id` null) or changes a calendar. */
-    public function saveCalendar(?string $id, HolidayCalendarInput $input): HolidayCalendar;
+    /** Creates (`$id` null) or changes a calendar; with `$expectedVersion` an edit of a newer version is a 409. */
+    public function saveCalendar(?string $id, HolidayCalendarInput $input, ?int $expectedVersion = null): HolidayCalendar;
 
     /** Removes a calendar, its days and its place in the work centres. */
     public function removeCalendar(string $id): void;

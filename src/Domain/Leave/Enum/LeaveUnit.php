@@ -32,6 +32,15 @@ enum LeaveUnit: string
         return $this->isDays() ? 2 : 60;
     }
 
+    /**
+     * The largest amount of one allowance, policy or line (audit TD-L5): 366 days (732 half-days) or 2 080 hours
+     * (124 800 minutes, a full-time year).
+     */
+    public function maxAmount(): int
+    {
+        return $this->isDays() ? 732 : 124_800;
+    }
+
     /** A form value (days or hours, decimals allowed) as a stored amount, rounded to the nearest half-day / minute. */
     public function fromInput(float $value): int
     {

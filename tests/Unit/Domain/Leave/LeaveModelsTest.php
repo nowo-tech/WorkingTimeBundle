@@ -49,6 +49,8 @@ final class LeaveModelsTest extends TestCase
         self::assertSame('-0:45', LeaveUnit::Hours->format(-45));
         self::assertFalse(LeaveUnit::Hours->isDays());
         self::assertSame('leave.unit.hours', LeaveUnit::Hours->labelKey());
+        self::assertSame(732, LeaveUnit::NaturalDays->maxAmount());
+        self::assertSame(124_800, LeaveUnit::Hours->maxAmount());
         self::assertSame('leave.source.overtime', AllowanceSource::Overtime->labelKey());
         self::assertSame('leave.line_kind.carry_over', AllowanceLineKind::CarryOver->labelKey());
         self::assertSame('leave.part.morning', DayPart::Morning->labelKey());
@@ -139,6 +141,7 @@ final class LeaveModelsTest extends TestCase
         yield 'medical with an allowance' => [new LeaveTypeInput('A', source: AllowanceSource::Allowance, medical: true), 'leave.type.error.medical_source'];
         yield 'expiry text' => [new LeaveTypeInput('A', source: AllowanceSource::Allowance, carryOver: true, carryOverExpiry: 'March'), 'leave.type.error.expiry'];
         yield 'expiry date' => [new LeaveTypeInput('A', source: AllowanceSource::Allowance, carryOver: true, carryOverExpiry: '02-30'), 'leave.type.error.expiry'];
+        yield 'expiry on 29 February (never comes in a common year)' => [new LeaveTypeInput('A', source: AllowanceSource::Allowance, carryOver: true, carryOverExpiry: '02-29'), 'leave.type.error.expiry'];
         yield 'carry max' => [new LeaveTypeInput('A', source: AllowanceSource::Allowance, carryOver: true, carryOverMax: 0), 'leave.type.error.carry_max'];
     }
 
@@ -180,6 +183,7 @@ final class LeaveModelsTest extends TestCase
             [ScheduleScope::Tenant, null, 2101, 44, false, null, 'leave.allowance.error.amount'],
             [ScheduleScope::Tenant, null, 2026, 40, false, 'A long enough note', 'leave.allowance.error.legal_minimum'],
             [ScheduleScope::Tenant, null, 2026, 40, true, 'short', 'leave.allowance.error.legal_minimum'],
+            [ScheduleScope::Tenant, null, 2026, 733, false, null, 'leave.allowance.error.too_large'],
         ] as [$scope, $target, $year, $amount, $equivalentMark, $note, $key]) {
             try {
                 AllowancePolicy::create(Fx::uuid(9), $vacation, $scope, $target, $year, $amount, $equivalentMark, $note, Fx::at('2026-01-01'), null);
@@ -218,6 +222,8 @@ final class LeaveModelsTest extends TestCase
             [AllowanceLineKind::Adjustment, 2, 'Reason', 1999, 'leave.allowance.error.line_amount'],
             [AllowanceLineKind::Adjustment, 2, 'ab', 2026, 'leave.allowance.error.reason'],
             [AllowanceLineKind::Adjustment, 2, str_repeat('r', 256), 2026, 'leave.allowance.error.reason'],
+            [AllowanceLineKind::Adjustment, -733, 'Reason', 2026, 'leave.allowance.error.too_large'],
+            [AllowanceLineKind::CarryOver, 733, 'Reason', 2026, 'leave.allowance.error.too_large'],
         ] as [$kind, $amount, $reason, $year, $key]) {
             try {
                 AllowanceLine::create(Fx::uuid(3), $type, new WorkerRef('ana'), $year, $kind, $amount, $reason, null, Fx::at('2026-01-01'), null);
@@ -258,6 +264,7 @@ final class LeaveModelsTest extends TestCase
             [18, 12, 401, null, 'leave.settings.error.overtime_ratio'],
             [18, 12, 100, '13-01', 'leave.settings.error.planning_deadline'],
             [18, 12, 100, 'soon', 'leave.settings.error.planning_deadline'],
+            [18, 12, 100, '02-29', 'leave.settings.error.planning_deadline'],
         ] as [$months, $attachments, $ratio, $deadline, $key]) {
             try {
                 new LeaveSettingsInput(true, RoundingMode::Nearest, $months, true, false, $attachments, $ratio, $deadline);

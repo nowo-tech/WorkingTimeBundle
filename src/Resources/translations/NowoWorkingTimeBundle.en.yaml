@@ -623,6 +623,9 @@ leave:
             carry_max: A carry-over of this type is at most %max%.
             reason: The reason has 3 to 255 characters.
             line_amount: The amount is not zero (only an adjustment can be negative).
+            too_large: At most %max% (366 days or 2 080 hours).
+            negative: 'The adjustment would take the entitlement below zero (entitled now: %entitled%).'
+            self: Nobody changes their own allowance; another leave manager does.
     line:
         add: New adjustment or carry-over
         save: Save the line
@@ -668,3 +671,5 @@ leave:
         policy_removed: Allowance removed.
         line_added: Line added.
         settings_saved: Leave settings saved.
+    no_health_hint: Do not include health information (no diagnosis, cause or medical detail).
+

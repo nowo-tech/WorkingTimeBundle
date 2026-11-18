@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Doctrine;
 
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Nowo\WorkingTimeBundle\Application\Leave\Port\LeaveStoreInterface;
 use Nowo\WorkingTimeBundle\Domain\Leave\Model\AllowanceLine;
 use Nowo\WorkingTimeBundle\Domain\Leave\Model\AllowancePolicy;
 use Nowo\WorkingTimeBundle\Domain\Leave\Model\LeaveSettings;
 use Nowo\WorkingTimeBundle\Domain\Leave\Model\LeaveType;
+use Nowo\WorkingTimeBundle\Domain\Register\Enum\ScheduleScope;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
@@ -65,9 +67,9 @@ final readonly class DoctrineLeaveStore implements LeaveStoreInterface
     /**
      * See the implemented interface.
      */
-    public function type(TenantRef $tenant, string $id): ?LeaveType
+    public function type(TenantRef $tenant, string $id, bool $lock = false): ?LeaveType
     {
-        $type = $this->em()->find(LeaveType::class, $id);
+        $type = $this->em()->find(LeaveType::class, $id, $lock ? LockMode::PESSIMISTIC_WRITE : null);
 
         return $type instanceof LeaveType && $type->getTenantId() === $tenant->value && $type->getId() === $id ? $type : null;
     }
@@ -77,9 +79,14 @@ final readonly class DoctrineLeaveStore implements LeaveStoreInterface
      */
     public function typeBySeed(TenantRef $tenant, string $seedCode): ?LeaveType
     {
-        $type = $this->em()->getRepository(LeaveType::class)->findOneBy(['tenantId' => $tenant->value, 'seedCode' => $seedCode]);
+        // Byte-exact over the tenant's own types (audit TD-M1): never a collation-dependent findOneBy.
+        foreach ($this->types($tenant) as $type) {
+            if ($type->getSeedCode() === $seedCode) {
+                return $type;
+            }
+        }
 
-        return $type instanceof LeaveType && $type->getTenantId() === $tenant->value && $type->getSeedCode() === $seedCode ? $type : null;
+        return null;
     }
 
     /**
@@ -167,6 +174,48 @@ final readonly class DoctrineLeaveStore implements LeaveStoreInterface
     public function addLine(AllowanceLine $line): void
     {
         $this->em()->persist($line);
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function linesOfWorker(WorkerRef $worker): array
+    {
+        /** @var list<AllowanceLine> $rows */
+        $rows = $this->em()->createQueryBuilder()->select('l')->from(AllowanceLine::class, 'l')
+            ->where('l.workerId = :worker')->setParameter('worker', $worker->value)
+            ->orderBy('l.createdAt')->addOrderBy('l.id')->getQuery()->getResult();
+
+        return array_values(array_filter($rows, static fn (AllowanceLine $l): bool => $l->getWorkerId() === $worker->value));
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function policiesOfWorker(WorkerRef $worker): array
+    {
+        /** @var list<AllowancePolicy> $rows */
+        $rows = $this->em()->createQueryBuilder()->select('p')->from(AllowancePolicy::class, 'p')
+            ->where('p.scope = :scope AND p.targetId = :worker')->setParameter('scope', ScheduleScope::Worker)->setParameter('worker', $worker->value)
+            ->orderBy('p.createdAt')->addOrderBy('p.id')->getQuery()->getResult();
+
+        return array_values(array_filter($rows, static fn (AllowancePolicy $p): bool => $p->getTargetId() === $worker->value));
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function erasePersonalData(WorkerRef $worker): array
+    {
+        $connection = $this->em()->getConnection();
+        $lines      = $this->em()->getClassMetadata(AllowanceLine::class)->getTableName();
+        $policies   = $this->em()->getClassMetadata(AllowancePolicy::class)->getTableName();
+        $reasons    = (int) $connection->executeStatement('UPDATE ' . $lines . ' SET reason = ? WHERE worker_id = ? AND reason <> ?', [AllowanceLine::ERASED, $worker->value, AllowanceLine::ERASED]);
+        $notes      = (int) $connection->executeStatement('UPDATE ' . $policies . ' SET note = NULL WHERE scope = ? AND target_id = ? AND note IS NOT NULL', [ScheduleScope::Worker->value, $worker->value]);
+        $actors     = (int) $connection->executeStatement('UPDATE ' . $lines . ' SET created_by_id = NULL WHERE created_by_id = ?', [$worker->value])
+            + (int) $connection->executeStatement('UPDATE ' . $policies . ' SET created_by_id = NULL WHERE created_by_id = ?', [$worker->value]);
+
+        return ['reasons' => $reasons, 'notes' => $notes, 'actor_refs' => $actors];
     }
 
     /**

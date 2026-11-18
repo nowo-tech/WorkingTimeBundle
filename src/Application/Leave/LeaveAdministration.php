@@ -9,6 +9,7 @@ use Nowo\WorkingTimeBundle\Application\Shared\AfterCommitEvents;
 use Nowo\WorkingTimeBundle\Application\Shared\DuplicateRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\StaleRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
+use Nowo\WorkingTimeBundle\Application\Shared\WriteConflictException;
 use Nowo\WorkingTimeBundle\Domain\Leave\Enum\AllowanceLineKind;
 use Nowo\WorkingTimeBundle\Domain\Leave\Enum\AllowanceSource;
 use Nowo\WorkingTimeBundle\Domain\Leave\Event\LeaveAllowanceAdjusted;
@@ -44,6 +45,9 @@ use function sprintf;
  */
 final readonly class LeaveAdministration implements LeaveAdministrationInterface
 {
+    /** JSON error code of a type edit on a version that is no longer current. */
+    public const TYPE_STALE = 'leave_type_stale';
+
     /** Lines expired per batch of the daily job. */
     public const EXPIRY_BATCH = 500;
 
@@ -86,24 +90,31 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
     /**
      * See the implemented interface.
      */
-    public function saveType(?string $id, LeaveTypeInput $input): LeaveType
+    public function saveType(?string $id, LeaveTypeInput $input, ?int $expectedVersion = null): LeaveType
     {
         $context = $this->access->context(WorkingTimePermission::LeaveManage);
-        $type    = $this->runner->write(function () use ($context, $id, $input): LeaveType { // @igor-ignore - the runner calls this closure at once and keeps nothing
-            if ($id === null) {
-                $type = LeaveType::create($this->ids->generate(), $context->tenant->value, $input, $context->locale, $this->clock->now());
-                $this->store->addType($type); // @igor-ignore - persistence call on a stateless collaborator
+        try {
+            $type = $this->runner->write(function () use ($context, $id, $input, $expectedVersion): LeaveType { // @igor-ignore - the runner calls this closure at once and keeps nothing
+                if ($id === null) {
+                    $type = LeaveType::create($this->ids->generate(), $context->tenant->value, $input, $context->locale, $this->clock->now());
+                    $this->store->addType($type); // @igor-ignore - persistence call on a stateless collaborator
+
+                    return $type;
+                }
+                $type = $this->ownType($context->tenant, $id, true);
+                if ($expectedVersion !== null && $type->getVersion() !== $expectedVersion) {
+                    throw new WriteConflictException(self::TYPE_STALE);
+                }
+                if ($type->getUnit() !== $input->unit && $this->store->typeInUse($context->tenant, $type->getId())) {
+                    throw new LeaveRefusedException('leave.type.error.unit_in_use');
+                }
+                $type->change($input, $context->locale);
 
                 return $type;
-            }
-            $type = $this->ownType($context->tenant, $id);
-            if ($type->getUnit() !== $input->unit && $this->store->typeInUse($context->tenant, $type->getId())) {
-                throw new LeaveRefusedException('leave.type.error.unit_in_use');
-            }
-            $type->change($input, $context->locale);
-
-            return $type;
-        });
+            });
+        } catch (StaleRowException $e) {
+            throw new WriteConflictException(self::TYPE_STALE, $e);
+        }
         $this->record('working_time.leave_type_changed', $context->tenant, $context, null, ['type' => $type->getId(), 'change' => $id === null ? 'created' : 'changed']);
 
         return $type;
@@ -116,7 +127,7 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
     {
         $context = $this->access->context(WorkingTimePermission::LeaveManage);
         $this->runner->write(function () use ($context, $id, $archived): void { // @igor-ignore - the runner calls this closure at once and keeps nothing
-            $this->ownType($context->tenant, $id)->setArchived($archived);
+            $this->ownType($context->tenant, $id, true)->setArchived($archived);
         });
         $this->record('working_time.leave_type_changed', $context->tenant, $context, null, ['type' => $id, 'change' => $archived ? 'archived' : 'restored']);
     }
@@ -127,7 +138,9 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
     public function seedTypes(): int
     {
         $context = $this->access->context(WorkingTimePermission::LeaveManage);
-        $added   = $this->runner->write(fn (): int => $this->seeder->seed($context->tenant, $context->locale, $this->clock->now(), $context->actor)); // @igor-ignore - the runner calls this closure at once and keeps nothing
+        // A racing seed (another click, another tab) inserts the same codes: the unique (tenant, code) key refuses
+        // ours and the second attempt finds them seeded (audit TD-M1).
+        $added = WriteConflictException::writeOnceMore($this->runner, fn (): int => $this->seeder->seed($context->tenant, $context->locale, $this->clock->now(), $context->actor), 'leave_seed_conflict'); // @igor-ignore - the runner calls this closure at once and keeps nothing
         $this->record('working_time.leave_type_changed', $context->tenant, $context, null, ['change' => 'seeded', 'count' => $added]);
 
         return $added;
@@ -151,12 +164,13 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
         $context = $this->access->context(WorkingTimePermission::LeaveManage);
         if ($scope === ScheduleScope::Worker) {
             $this->access->member($context->tenant, new WorkerRef((string) $target));
+            $this->refuseOwn($context, new WorkerRef((string) $target));
         }
         if ($scope === ScheduleScope::Group && !$this->knownGroup($context->tenant, (string) $target)) {
             throw new LeaveRefusedException('leave.allowance.error.target');
         }
         $policy = $this->runner->write(function () use ($context, $typeId, $scope, $target, $year, $amount, $agreementEquivalent, $note): AllowancePolicy { // @igor-ignore - the runner calls this closure at once and keeps nothing
-            $type = $this->ownType($context->tenant, $typeId);
+            $type = $this->ownType($context->tenant, $typeId, true);
             if ($type->getSource() !== AllowanceSource::Allowance) {
                 throw new LeaveRefusedException('leave.allowance.error.type');
             }
@@ -201,10 +215,12 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
     public function addLine(string $typeId, WorkerRef $worker, int $year, AllowanceLineKind $kind, int $amount, string $reason, ?LocalDate $expiresOn = null): AllowanceLine
     {
         $context = $this->access->context(WorkingTimePermission::LeaveManage, $worker);
+        $this->refuseOwn($context, $worker);
+        $profile = $this->access->member($context->tenant, $worker);
         $events  = new AfterCommitEvents();
-        $line    = $this->runner->write(function () use ($context, $typeId, $worker, $year, $kind, $amount, $reason, $expiresOn, $events): AllowanceLine { // @igor-ignore - the runner calls this closure at once and keeps nothing
+        $line    = $this->runner->write(function () use ($context, $profile, $typeId, $worker, $year, $kind, $amount, $reason, $expiresOn, $events): AllowanceLine { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $events->clear();
-            $type = $this->ownType($context->tenant, $typeId);
+            $type = $this->ownType($context->tenant, $typeId, true);
             if ($type->getSource() !== AllowanceSource::Allowance) {
                 throw new LeaveRefusedException('leave.allowance.error.type');
             }
@@ -219,6 +235,13 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
                 AllowanceLineKind::CarryOver          => $type->getCarryOverExpiry() === null ? null : LocalDate::tryParse(sprintf('%04d-%s', $year, $type->getCarryOverExpiry())),
                 AllowanceLineKind::Adjustment         => null,
             };
+            if ($amount < 0) {
+                // An adjustment never takes the entitlement below zero (audit TD-L5); read under the type's lock.
+                $entitled = AllowanceResolver::entitlement($context->settings->rounding(), $type, $profile, $year, $this->store->policies($context->tenant, $year), $this->store->lines($context->tenant, $worker, $year), LocalDate::fromDateTime($this->clock->now()))->total();
+                if ($entitled + $amount < 0) {
+                    throw new LeaveRefusedException('leave.allowance.error.negative', ['%entitled%' => $type->getUnit()->format($entitled)]);
+                }
+            }
             $line = AllowanceLine::create($this->ids->generate(), $type, $worker, $year, $kind, $amount, $reason, $expiresOn, $this->clock->now(), $context->actor);
             $this->store->addLine($line); // @igor-ignore - persistence call on a stateless collaborator
             $events->add(new LeaveAllowanceAdjusted($context->tenant, $worker, new LeaveTypeId($type->getId()), $year, $kind, $amount));
@@ -307,18 +330,30 @@ final readonly class LeaveAdministration implements LeaveAdministrationInterface
     }
 
     /**
-     * The tenant's type, else 404.
+     * The tenant's type, else 404; `$lock` serialises the writes of one type (its unit against its allowances).
      *
      * @throws NotAvailableException
      */
-    private function ownType(TenantRef $tenant, string $id): LeaveType
+    private function ownType(TenantRef $tenant, string $id, bool $lock = false): LeaveType
     {
-        $type = $this->store->type($tenant, $id);
+        $type = $this->store->type($tenant, $id, $lock);
         if (!$type instanceof LeaveType || $type->getTenantId() !== $tenant->value) {
             throw new NotAvailableException();
         }
 
         return $type;
+    }
+
+    /**
+     * Nobody changes their own allowance (the "never for oneself" rule of contract section 13).
+     *
+     * @throws LeaveRefusedException `leave.allowance.error.self`
+     */
+    private function refuseOwn(LeaveContext $context, WorkerRef $worker): void
+    {
+        if ($worker->isActor($context->actor)) {
+            throw new LeaveRefusedException('leave.allowance.error.self');
+        }
     }
 
     private function knownGroup(TenantRef $tenant, string $group): bool

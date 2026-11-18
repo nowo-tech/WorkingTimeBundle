@@ -29,6 +29,7 @@ use function array_map;
 use function count;
 use function hash;
 use function json_encode;
+use function str_repeat;
 
 /**
  * The holiday providers on recorded responses only (contract section 20: `MockHttpClient`, no live HTTP, no DNS):
@@ -182,6 +183,34 @@ final class ProvidersTest extends TestCase
         self::assertSame(['2026-01-01' => 'Jahreswechsel', '2026-01-02' => 'Jahreswechsel', '2026-12-31' => 'Silvester'], array_combine(array_map(static fn (HolidayEntry $e): string => $e->date->value, $result->entries), array_map(static fn (HolidayEntry $e): string => $e->name, $result->entries)));
         $this->expectExceptionObject(new HolidayRefusedException(OpenHolidaysProvider::ERROR));
         (new OpenHolidaysProvider(new GuardedJsonClient($this->guard(), new MockHttpClient(new MockResponse('{"a": 1}')))))->fetch(new HolidayLocation('DE'), 2026, '');
+    }
+
+    public function testABodyOverTheCapIsRefusedBeforeItIsRead(): void
+    {
+        $announced = new GuardedJsonClient(self::guard(), new MockHttpClient(new MockResponse(str_repeat(' ', 200) . '[]', ['response_headers' => ['content-length' => '202']])), 100);
+        $streamed  = new GuardedJsonClient(self::guard(), new MockHttpClient(new MockResponse([str_repeat(' ', 80), str_repeat(' ', 80), '[]'])), 100);
+        foreach ([$announced, $streamed] as $client) {
+            try {
+                $client->get('https://openholidaysapi.org/PublicHolidays', [], 10, OpenHolidaysProvider::ERROR);
+                self::fail('capped');
+            } catch (HolidayRefusedException $e) {
+                self::assertSame(OpenHolidaysProvider::ERROR, $e->key);
+            }
+        }
+        self::assertSame([], (new GuardedJsonClient(self::guard(), new MockHttpClient(new MockResponse('[]'))))->get('https://openholidaysapi.org/x', [], 10, 'e'), 'a small body is read (2 MiB cap by default)');
+    }
+
+    public function testOpenHolidaysRefusesRangesOverAMonth(): void
+    {
+        $body = (string) json_encode([
+            ['type' => 'Public', 'nationwide' => true, 'startDate' => '0001-01-01', 'endDate' => '2026-12-31', 'name' => [['language' => 'EN', 'text' => 'Hostile']]],
+            ['type' => 'Public', 'nationwide' => true, 'startDate' => '2026-03-10', 'endDate' => '2026-03-01', 'name' => [['language' => 'EN', 'text' => 'Backwards']]],
+            ['type' => 'Public', 'nationwide' => true, 'startDate' => '2026-08-01', 'endDate' => '2026-08-31', 'name' => [['language' => 'EN', 'text' => 'A month']]],
+        ]);
+        $result = (new OpenHolidaysProvider(new GuardedJsonClient(self::guard(), new MockHttpClient(new MockResponse($body)))))->fetch(new HolidayLocation('DE'), 2026, 'en');
+
+        self::assertCount(31, $result->entries, 'the month is kept; a range over 31 days or backwards is refused (audit TD-L3)');
+        self::assertSame('2026-08-01', $result->entries[0]->date->value);
     }
 
     public function testOpenHolidaysSubdivisionsAreCachedADay(): void

@@ -37,8 +37,11 @@ interface LeaveAdministrationInterface
     /** One type of the tenant. */
     public function type(string $id): LeaveType;
 
-    /** Creates (`$id` null) or changes a type; the unit of a type in use cannot change (S3). */
-    public function saveType(?string $id, LeaveTypeInput $input): LeaveType;
+    /**
+     * Creates (`$id` null) or changes a type; the unit of a type in use cannot change; with `$expectedVersion` an
+     * edit of a newer version is a 409.
+     */
+    public function saveType(?string $id, LeaveTypeInput $input, ?int $expectedVersion = null): LeaveType;
 
     /** Archives or restores a type (never deleted while referenced). */
     public function archiveType(string $id, bool $archived): void;

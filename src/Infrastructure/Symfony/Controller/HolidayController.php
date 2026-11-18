@@ -17,6 +17,7 @@ use Nowo\WorkingTimeBundle\Domain\Holiday\Enum\ImportStatus;
 use Nowo\WorkingTimeBundle\Domain\Holiday\Exception\HolidayRefusedException;
 use Nowo\WorkingTimeBundle\Domain\Holiday\HolidayCalendarInput;
 use Nowo\WorkingTimeBundle\Domain\Holiday\HolidayLocation;
+use Nowo\WorkingTimeBundle\Domain\Holiday\Import\HolidayImportParser;
 use Nowo\WorkingTimeBundle\Domain\Holiday\ImportPreview;
 use Nowo\WorkingTimeBundle\Domain\Holiday\Model\HolidayCalendar;
 use Nowo\WorkingTimeBundle\Domain\Holiday\Model\HolidayDay;
@@ -46,6 +47,7 @@ use function count;
 use function file_get_contents;
 use function is_array;
 use function is_int;
+use function is_numeric;
 use function is_string;
 use function json_decode;
 use function json_encode;
@@ -72,6 +74,7 @@ final readonly class HolidayController
         private HolidayCalendarServiceInterface $holidays,
         private ClockInterface $clock,
         private ?MunicipalityDirectoryInterface $municipalities = null,
+        private int $maxUploadBytes = HolidayImportParser::MAX_BYTES,
     ) {
     }
 
@@ -117,7 +120,8 @@ final readonly class HolidayController
                 'country'      => $location?->country,
                 'subdivision'  => $location?->subdivision,
                 'municipality' => $location?->municipality,
-            ], [], 'wt_holiday_calendar');
+                'version'      => (string) $calendar->getVersion(),
+            ], ['versioned' => true], 'wt_holiday_calendar');
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid() && $this->saveCalendar($form, $id) instanceof HolidayCalendar) {
                 $this->ui->flash($request, 'success', 'holiday.flash.calendar_saved');
@@ -225,7 +229,8 @@ final readonly class HolidayController
             $form     = $this->ui->form(HolidayImportType::class, null, [], 'wt_holiday_import');
             $form->handleRequest($request);
             $file = $form->isSubmitted() && $form->isValid() ? $form->get('file')->getData() : null;
-            if (!$file instanceof UploadedFile) {
+            // The size is checked before the file is read (audit TD-L9).
+            if (!$file instanceof UploadedFile || $file->getSize() > $this->maxUploadBytes) {
                 $this->ui->flash($request, 'error', 'holiday.import.error.file');
 
                 return $this->ui->redirect('nowo_working_time_holiday_calendar', ['id' => $id]);
@@ -467,7 +472,7 @@ final readonly class HolidayController
                 'form'        => $this->ui->form(HolidayProviderType::class, ['country' => $location->country ?? 'ES', 'subdivision' => $location?->subdivision, 'municipality' => $location?->municipality], [], 'wt_holiday_provider_' . $provider->key())->createView(),
             ];
         }
-        $calendarForm ??= $this->ui->form(HolidayCalendarType::class, ['name' => $calendar->getName(), 'scope' => $calendar->getScope()->value, 'year' => $calendar->getYear(), 'sourceNote' => $calendar->getSourceNote(), 'country' => $location?->country, 'subdivision' => $location?->subdivision, 'municipality' => $location?->municipality], [], 'wt_holiday_calendar');
+        $calendarForm ??= $this->ui->form(HolidayCalendarType::class, ['name' => $calendar->getName(), 'scope' => $calendar->getScope()->value, 'year' => $calendar->getYear(), 'sourceNote' => $calendar->getSourceNote(), 'country' => $location?->country, 'subdivision' => $location?->subdivision, 'municipality' => $location?->municipality, 'version' => (string) $calendar->getVersion()], ['versioned' => true], 'wt_holiday_calendar');
         $dayForm ??= $this->ui->form(HolidayDayType::class, null, [], 'wt_holiday_day');
 
         return $this->ui->render('@NowoWorkingTime/holidays/calendar.html.twig', [
@@ -574,7 +579,7 @@ final readonly class HolidayController
                 is_int($data['year'] ?? null) ? $data['year'] : 0,
                 is_string($data['sourceNote'] ?? null) ? $data['sourceNote'] : null,
                 $country === '' ? null : new HolidayLocation($country, is_string($data['subdivision'] ?? null) ? trim($data['subdivision']) : null, is_string($data['municipality'] ?? null) && trim($data['municipality']) !== '' ? trim($data['municipality']) : null),
-            ));
+            ), is_numeric($data['version'] ?? null) ? (int) $data['version'] : null);
         } catch (HolidayRefusedException $e) {
             $form->addError(new FormError($this->ui->trans($e->key))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
         } catch (InvalidArgumentException $e) {

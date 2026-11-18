@@ -4,6 +4,10 @@
                   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
     <!-- Leave component (contract section 6.6). No column holds a diagnosis, a cause or any health detail. -->
     <entity name="Nowo\WorkingTimeBundle\Domain\Leave\Model\LeaveType" table="working_time_leave_type">
+        <unique-constraints>
+            <!-- One seeded type per code and tenant (audit TD-M1); custom types have no code (NULL repeats). -->
+            <unique-constraint name="wt_leave_type_seed" columns="tenant_id,seed_code"/>
+        </unique-constraints>
         <indexes>
             <index name="wt_leave_type_tenant" columns="tenant_id,archived"/>
         </indexes>
@@ -24,6 +28,7 @@
         <field name="carryOverExpiry" column="carry_over_expiry" type="string" length="5" nullable="true"/>
         <field name="archived" column="archived" type="boolean"/>
         <field name="sortOrder" column="sort_order" type="integer"/>
+        <field name="version" column="version" type="integer" version="true"/>
         <field name="createdAt" column="created_at" type="nowo_wt_utc_datetime"/>
     </entity>
 </doctrine-mapping>

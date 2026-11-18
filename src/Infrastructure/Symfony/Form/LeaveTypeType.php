@@ -10,6 +10,7 @@ use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -45,6 +46,9 @@ final class LeaveTypeType extends AbstractType
             $this->addTypedField('carryOver', CheckboxType::class, ['label' => 'leave.type.form.carry_over', 'required' => false]);
             $this->addTypedField('carryOverMax', NumberType::class, ['label' => 'leave.type.form.carry_over_max', 'required' => false, 'scale' => 2]);
             $this->addTypedField('carryOverExpiry', TextType::class, ['label' => 'leave.type.form.carry_over_expiry', 'required' => false, 'help' => 'leave.type.form.carry_over_expiry_help', 'attr' => ['maxlength' => 5, 'placeholder' => '03-31']]);
+            if ($options['versioned'] === true) {
+                $this->addTypedField('version', HiddenType::class, []);
+            }
         });
     }
 
@@ -59,6 +63,7 @@ final class LeaveTypeType extends AbstractType
             'csrf_token_id'      => 'nowo_working_time_leave_type',
             'allow_extra_fields' => false,
             'translation_domain' => NowoWorkingTimeBundle::TRANSLATION_DOMAIN,
+            'versioned'          => false,
             'colours'            => [],
         ]);
     }

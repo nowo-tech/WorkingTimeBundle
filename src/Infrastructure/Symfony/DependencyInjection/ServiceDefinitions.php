@@ -16,6 +16,7 @@ use Nowo\WorkingTimeBundle\Application\Leave\DayCounter;
 use Nowo\WorkingTimeBundle\Application\Leave\LeaveAccess;
 use Nowo\WorkingTimeBundle\Application\Leave\LeaveAdministration;
 use Nowo\WorkingTimeBundle\Application\Leave\LeaveBalanceReader;
+use Nowo\WorkingTimeBundle\Application\Leave\LeavePersonalData;
 use Nowo\WorkingTimeBundle\Application\Leave\LeaveTypeSeeder;
 use Nowo\WorkingTimeBundle\Application\Leave\NoLeaveUsage;
 use Nowo\WorkingTimeBundle\Application\Leave\Port\LeaveSeedNamesInterface;
@@ -46,6 +47,8 @@ use Nowo\WorkingTimeBundle\Application\Register\WorkerPreferences;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
 use Nowo\WorkingTimeBundle\Bridge\TimeTrack\TimeTrackWorkdaySource;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\IdentifierWorkerOfUser;
+use Nowo\WorkingTimeBundle\Bridge\UserKit\UserKitLeaveEraser;
+use Nowo\WorkingTimeBundle\Bridge\UserKit\UserKitLeaveExportProvider;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\UserKitRegisterEraser;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\UserKitRegisterExportProvider;
 use Nowo\WorkingTimeBundle\Bridge\UserKit\WorkerOfUserInterface;
@@ -420,7 +423,7 @@ final class ServiceDefinitions
                 SettingsController::class => [service(UiSupport::class), service(RegisterSettingsEditorInterface::class), service(WorkerPreferences::class), service(TriggerInspectorInterface::class), param($p . 'register.ip_evidence_allowed')],
             ];
             if ($holidays) {
-                $controllers[HolidayController::class] = [service(UiSupport::class), service(HolidayAccess::class), service(HolidayCalendarServiceInterface::class), $clock, $festivos ? service(MunicipalityDirectoryInterface::class) : null];
+                $controllers[HolidayController::class] = [service(UiSupport::class), service(HolidayAccess::class), service(HolidayCalendarServiceInterface::class), $clock, $festivos ? service(MunicipalityDirectoryInterface::class) : null, param($p . 'holidays.providers.file.max_bytes')];
             }
             if ($leave) {
                 $controllers[LeaveController::class] = [service(UiSupport::class), service(LeaveAccess::class), service(LeaveAdministrationInterface::class), service(LeaveBalanceReaderInterface::class), service(WorkerDirectoryInterface::class), $clock];
@@ -555,5 +558,10 @@ final class ServiceDefinitions
         $s->alias(LeaveBalanceReaderInterface::class, LeaveBalanceReader::class)->public();
         $s->set(DayCounter::class)->args([service(ScheduleResolver::class), service(HolidayCalendarReaderInterface::class), service(TransactionRunnerInterface::class)])->public();
         $s->set(LeaveDailyCommand::class)->args([service(LeaveAdministration::class)])->tag('console.command');
+        $s->set(LeavePersonalData::class)->args([service(LeaveStoreInterface::class), service(TransactionRunnerInterface::class), service(WorkingTimeAuditSinkInterface::class)])->public();
+        if (interface_exists(PersonalDataEraserInterface::class)) {
+            $s->set(UserKitLeaveExportProvider::class)->args([service(LeavePersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.export_provider')->public();
+            $s->set(UserKitLeaveEraser::class)->args([service(LeavePersonalData::class), service(WorkerOfUserInterface::class)])->tag('nowo_user_kit.personal_data.eraser')->public();
+        }
     }
 }

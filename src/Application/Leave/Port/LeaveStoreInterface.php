@@ -31,8 +31,8 @@ interface LeaveStoreInterface
      */
     public function types(TenantRef $tenant): array;
 
-    /** One type of the tenant. */
-    public function type(TenantRef $tenant, string $id): ?LeaveType;
+    /** One type of the tenant; `$lock` takes its row `FOR UPDATE` inside the running write (audit TD-L6). */
+    public function type(TenantRef $tenant, string $id, bool $lock = false): ?LeaveType;
 
     /** The tenant's seeded type of a code. */
     public function typeBySeed(TenantRef $tenant, string $seedCode): ?LeaveType;
@@ -68,6 +68,29 @@ interface LeaveStoreInterface
 
     /** Persists a new line. */
     public function addLine(AllowanceLine $line): void;
+
+    /**
+     * A worker's lines in every tenant (GDPR export), oldest first; references re-checked with `===`.
+     *
+     * @return list<AllowanceLine>
+     */
+    public function linesOfWorker(WorkerRef $worker): array;
+
+    /**
+     * The worker-scoped policies of a worker in every tenant (GDPR export).
+     *
+     * @return list<AllowancePolicy>
+     */
+    public function policiesOfWorker(WorkerRef $worker): array;
+
+    /**
+     * Erases a worker's free text and actor references (GDPR erasure, contract section 14.4): the reasons of their
+     * lines and the notes of their own policies are blanked (the amounts stay: they hold the balance until
+     * retention), and they are forgotten as the creator of other people's lines and policies.
+     *
+     * @return array{reasons: int, notes: int, actor_refs: int}
+     */
+    public function erasePersonalData(WorkerRef $worker): array;
 
     /**
      * Lines of every tenant whose expiry date is before the date and that are not marked expired yet.

@@ -9,6 +9,7 @@ use Nowo\FormKitBundle\Form\FormOptionsTrait;
 use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -31,7 +32,7 @@ final class HolidayCalendarType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $this->withBuilder($builder, function (): void {
+        $this->withBuilder($builder, function () use ($options): void {
             $this->addTypedField('name', TextType::class, ['label' => 'holiday.calendar.form.name', 'attr' => ['maxlength' => 80]]);
             $this->addTypedField('scope', ChoiceType::class, ['label' => 'holiday.calendar.form.scope', 'choices' => ['holiday.scope.national' => 'national', 'holiday.scope.regional' => 'regional', 'holiday.scope.local' => 'local']]);
             $this->addTypedField('year', IntegerType::class, ['label' => 'holiday.calendar.form.year', 'attr' => ['min' => 2000, 'max' => 2100]]);
@@ -39,6 +40,9 @@ final class HolidayCalendarType extends AbstractType
             $this->addTypedField('subdivision', TextType::class, ['label' => 'holiday.calendar.form.subdivision', 'required' => false, 'help' => 'holiday.calendar.form.subdivision_help', 'attr' => ['maxlength' => 6, 'placeholder' => 'ES-MD']]);
             $this->addTypedField('municipality', TextType::class, ['label' => 'holiday.calendar.form.municipality', 'required' => false, 'help' => 'holiday.calendar.form.municipality_help', 'attr' => ['maxlength' => 5, 'inputmode' => 'numeric', 'placeholder' => '28079']]);
             $this->addTypedField('sourceNote', TextType::class, ['label' => 'holiday.calendar.form.source_note', 'required' => false, 'attr' => ['maxlength' => 255]]);
+            if ($options['versioned'] === true) {
+                $this->addTypedField('version', HiddenType::class, []);
+            }
         });
     }
 
@@ -53,6 +57,7 @@ final class HolidayCalendarType extends AbstractType
             'csrf_token_id'      => 'nowo_working_time_holiday_calendar',
             'allow_extra_fields' => false,
             'translation_domain' => NowoWorkingTimeBundle::TRANSLATION_DOMAIN,
+            'versioned'          => false,
 
         ]);
     }

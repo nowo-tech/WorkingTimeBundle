@@ -53,6 +53,9 @@ class HolidayCalendar
 
     private ?DateTimeImmutable $lastFetchedAt = null;
 
+    /** Optimistic lock (Doctrine `version`, audit TD-L6). */
+    private int $version = 1;
+
     private function __construct(
         private string $id,
         private string $tenantId,
@@ -137,6 +140,12 @@ class HolidayCalendar
     public function getId(): string
     {
         return $this->id;
+    }
+
+    /** Version (optimistic lock). */
+    public function getVersion(): int
+    {
+        return $this->version;
     }
 
     /** Tenant reference. */

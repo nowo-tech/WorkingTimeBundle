@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Doctrine;
 
+use Doctrine\DBAL\LockMode;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 use Nowo\WorkingTimeBundle\Application\Holiday\Port\HolidayStoreInterface;
 use Nowo\WorkingTimeBundle\Domain\Holiday\Model\HolidayCalendar;
@@ -45,9 +47,9 @@ final readonly class DoctrineHolidayStore implements HolidayStoreInterface
     /**
      * See the implemented interface.
      */
-    public function calendar(TenantRef $tenant, string $id): ?HolidayCalendar
+    public function calendar(TenantRef $tenant, string $id, bool $lock = false): ?HolidayCalendar
     {
-        $calendar = $this->em()->find(HolidayCalendar::class, $id);
+        $calendar = $this->em()->find(HolidayCalendar::class, $id, $lock ? LockMode::PESSIMISTIC_WRITE : null);
 
         return $calendar instanceof HolidayCalendar && $calendar->getTenantId() === $tenant->value && $calendar->getId() === $id ? $calendar : null;
     }
@@ -161,6 +163,19 @@ final readonly class DoctrineHolidayStore implements HolidayStoreInterface
     public function addCentre(WorkCentre $centre): void
     {
         $this->em()->persist($centre);
+    }
+
+    /**
+     * See the implemented interface.
+     */
+    public function makeDefault(TenantRef $tenant, string $centreId): void
+    {
+        $em    = $this->em();
+        $table = $em->getClassMetadata(WorkCentre::class)->getTableName();
+        // Two statements in the caller's transaction (a CASE over bound booleans is typed differently per platform):
+        // the others off, then this one on; a concurrent switch waits for the first statement's row locks.
+        $em->getConnection()->executeStatement('UPDATE ' . $table . ' SET is_default = ? WHERE tenant_id = ? AND id <> ?', [false, $tenant->value, $centreId], [ParameterType::BOOLEAN, ParameterType::STRING, ParameterType::STRING]);
+        $em->getConnection()->executeStatement('UPDATE ' . $table . ' SET is_default = ? WHERE tenant_id = ? AND id = ?', [true, $tenant->value, $centreId], [ParameterType::BOOLEAN, ParameterType::STRING, ParameterType::STRING]);
     }
 
     /**

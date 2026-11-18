@@ -21,6 +21,9 @@ php bin/console doctrine:schema:update --dump-sql --em=nowo_working_time   # or 
   `working_time_leave_settings`. They are created whether or not the parts are on (the mappings are always registered);
   the reference and identifier columns get the binary NO PAD collation on MySQL / MariaDB through the metadata listener
   as before. No change to the register tables or their triggers.
+- **Columns added by the audit TD round** (same release): `working_time_leave_type.version` and the unique key
+  `wt_leave_type_seed` on `(tenant_id, seed_code)` (`seed_code` gets the binary NO PAD collation on MySQL / MariaDB),
+  `holiday_calendar.version`, `holiday_day.provider`.
 - **Holidays are on by default** (`holidays.enabled: true`). With `ui.enabled` the pages are served under
   `ui.holidays_path` (`/holidays`) to holders of `holidays_manage` (map a role: `permissions.roles.holidays_manage`).
   Set `holidays.enabled: false` to keep them off.
@@ -35,6 +38,10 @@ php bin/console doctrine:schema:update --dump-sql --em=nowo_working_time   # or 
 - **Beacon migration note** (contract section 18.2): Beacon's holiday scope `autonomous` is `regional` here; holiday
   origins keep Beacon's values (`manual`, `file`, `festivos_io`, `openholidays`); amounts keep Beacon's stored units
   (half-days, minutes).
+- `HolidayCalendarServiceInterface::saveCalendar()` and `LeaveAdministrationInterface::saveType()` take an optional
+  `$expectedVersion` (the version the form showed); a newer version answers `WriteConflictException` (409). The
+  storage ports `HolidayStoreInterface` / `LeaveStoreInterface` (application ports, implemented by the bundle) gained
+  methods.
 - `RegisterController` (internal) takes the `RegisterAnnotations` service; hosts that build it by hand pass it.
 
 ## To 0.1.2

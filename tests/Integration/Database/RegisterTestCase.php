@@ -78,8 +78,23 @@ abstract class RegisterTestCase extends KernelTestCase
         $this->schema($triggers);
     }
 
+    /**
+     * Bounds the lock waits of a test session to 10 s (PostgreSQL `lock_timeout`, MySQL / MariaDB
+     * `innodb_lock_wait_timeout`): a test that waits on itself fails fast instead of holding the machine.
+     */
+    public static function boundLockWaits(Connection $connection): void
+    {
+        $platform = $connection->getDatabasePlatform();
+        if ($platform instanceof PostgreSQLPlatform) {
+            $connection->executeStatement("SET lock_timeout = '10s'");
+        } elseif ($platform instanceof AbstractMySQLPlatform) {
+            $connection->executeStatement('SET SESSION innodb_lock_wait_timeout = 10');
+        }
+    }
+
     protected function schema(bool $triggers): void
     {
+        self::boundLockWaits($this->connection());
         $em       = $this->em();
         $metadata = [];
         foreach ($em->getMetadataFactory()->getAllMetadata() as $class) {

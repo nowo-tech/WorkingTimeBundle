@@ -155,7 +155,7 @@ final readonly class LeaveController
         return $this->ui->guard(function () use ($request, $id): Response { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $context = $this->access->context(WorkingTimePermission::LeaveManage);
             $type    = $this->administration->type($id);
-            $form    = $this->typeForm($type->input($context->locale));
+            $form    = $this->typeForm($type->input($context->locale), $type->getVersion());
             $form->handleRequest($request);
             if ($form->isSubmitted() && $form->isValid() && $this->saveType($form, $id) instanceof LeaveType) {
                 $this->ui->flash($request, 'success', 'leave.flash.type_saved');
@@ -436,7 +436,7 @@ final readonly class LeaveController
     /**
      * @return FormInterface<mixed>
      */
-    private function typeForm(?LeaveTypeInput $input): FormInterface
+    private function typeForm(?LeaveTypeInput $input, ?int $version = null): FormInterface
     {
         $data = $input instanceof LeaveTypeInput ? [
             'name'            => $input->name,
@@ -457,7 +457,11 @@ final readonly class LeaveController
             $colours[$colour] = $colour;
         }
 
-        return $this->ui->form(LeaveTypeType::class, $data, ['colours' => $colours], 'wt_leave_type');
+        if ($version !== null) {
+            $data['version'] = (string) $version;
+        }
+
+        return $this->ui->form(LeaveTypeType::class, $data, ['colours' => $colours, 'versioned' => $version !== null], 'wt_leave_type');
     }
 
     /**
@@ -483,7 +487,7 @@ final readonly class LeaveController
                 ($data['carryOver'] ?? false) === true,
                 $amount($data['carryOverMax'] ?? null),
                 is_string($data['carryOverExpiry'] ?? null) && $data['carryOverExpiry'] !== '' ? $data['carryOverExpiry'] : null,
-            ));
+            ), is_numeric($data['version'] ?? null) ? (int) $data['version'] : null);
         } catch (LeaveRefusedException $e) {
             $form->addError(new FormError($this->ui->trans($e->key, $e->params))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
         }

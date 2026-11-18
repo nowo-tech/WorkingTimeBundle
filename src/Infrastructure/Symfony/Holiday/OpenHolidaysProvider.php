@@ -49,6 +49,9 @@ final readonly class OpenHolidaysProvider implements HolidayProviderInterface
     /** Error translation key. */
     public const ERROR = 'holiday.provider.openholidays.error';
 
+    /** Longest holiday accepted from the API, in days. */
+    public const MAX_SPAN_DAYS = 31;
+
     /**
      * Wires the collaborators.
      */
@@ -116,6 +119,13 @@ final readonly class OpenHolidaysProvider implements HolidayProviderInterface
             if ($name === null || !$start instanceof LocalDate || !$end instanceof LocalDate) {
                 continue;
             }
+            // A holiday spans days, not years (audit TD-L3): a range over a month is refused, and the walk starts at
+            // 1 January at the earliest.
+            if ((int) $start->toDateTime()->diff($end->toDateTime())->days > self::MAX_SPAN_DAYS || $end->compare($start) < 0) {
+                continue;
+            }
+            $first = new LocalDate(sprintf('%04d-01-01', $year));
+            $start = $start->compare($first) < 0 ? $first : $start;
             for ($day = $start; $day->compare($end) <= 0 && $day->year() <= $year; $day = $day->plusDays(1)) {
                 if ($day->year() === $year && !isset($entries[$day->value])) {
                     try {

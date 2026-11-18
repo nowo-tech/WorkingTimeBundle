@@ -23,8 +23,8 @@ interface HolidayStoreInterface
      */
     public function calendars(TenantRef $tenant): array;
 
-    /** One calendar of the tenant. */
-    public function calendar(TenantRef $tenant, string $id): ?HolidayCalendar;
+    /** One calendar of the tenant; `$lock` takes its row `FOR UPDATE` inside the running write (audit TD-L6). */
+    public function calendar(TenantRef $tenant, string $id, bool $lock = false): ?HolidayCalendar;
 
     /** Persists a new calendar. */
     public function addCalendar(HolidayCalendar $calendar): void;
@@ -71,6 +71,11 @@ interface HolidayStoreInterface
 
     /** Persists a new work centre. */
     public function addCentre(WorkCentre $centre): void;
+
+    /**
+     * Makes the centre the tenant's only default over all the tenant's rows (the others off, then this one on), whatever the loaded entities say.
+     */
+    public function makeDefault(TenantRef $tenant, string $centreId): void;
 
     /** Removes a work centre. */
     public function removeCentre(WorkCentre $centre): void;

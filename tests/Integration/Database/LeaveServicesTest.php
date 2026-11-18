@@ -173,7 +173,7 @@ final class LeaveServicesTest extends RegisterTestCase
     public function testTheDayCounterFollowsTheScheduleAndEachDaysCentre(): void
     {
         $this->leaveOn();
-        $this->ctx()->grant('acme', 'ana', 'holidays_manage', 'manage_team');
+        $this->ctx()->grant('acme', 'hr', 'holidays_manage', 'manage_team');
         $holidays = $this->service(HolidayCalendarServiceInterface::class);
         $spain    = $holidays->saveCalendar(null, new HolidayCalendarInput('Spain', HolidayScope::National, 2026));
         $madrid   = $holidays->saveCalendar(null, new HolidayCalendarInput('Madrid', HolidayScope::Local, 2026));
@@ -231,7 +231,8 @@ final class LeaveServicesTest extends RegisterTestCase
     {
         $this->bootLeave($groups);
         $this->enable(workers: []);
-        $this->actAs('ana', 'leave_manage', 'manage_settings');
+        $this->ctx()->member('acme', 'hr', 'HR');
+        $this->actAs('hr', 'leave_manage', 'manage_settings');
         $this->admin()->updateSettings(new LeaveSettingsInput(true), 0);
 
         return $this->admin();

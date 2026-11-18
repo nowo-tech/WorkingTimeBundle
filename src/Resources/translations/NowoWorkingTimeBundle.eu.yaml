@@ -623,6 +623,9 @@ leave:
             carry_max: Mota honen eramatea gehienez %max% da.
             reason: Arrazoiak 3 eta 255 karaktere ditu.
             line_amount: Kopurua ez da zero (doikuntza batek bakarrik izan dezake negatiboa).
+            too_large: Gehienez %max% (366 egun edo 2 080 ordu).
+            negative: 'Doikuntzak eskubidea zerotik behera utziko luke (oraingo eskubidea: %entitled%).'
+            self: Inork ez du bere esleipena aldatzen; baimenen beste kudeatzaile batek egiten du.
     line:
         add: Doikuntza edo eramate berria
         save: Gorde lerroa
@@ -668,3 +671,5 @@ leave:
         policy_removed: Esleipena kendu da.
         line_added: Lerroa gehitu da.
         settings_saved: Absentzien ezarpenak gorde dira.
+    no_health_hint: Ez sartu osasun-informaziorik (ez diagnostikorik, ez kausarik, ez xehetasun medikorik).
+

@@ -623,6 +623,9 @@ leave:
             carry_max: Een overdracht van deze soort is hoogstens %max%.
             reason: De reden heeft 3 tot 255 tekens.
             line_amount: De hoeveelheid is niet nul (alleen een correctie kan negatief zijn).
+            too_large: Hoogstens %max% (366 dagen of 2 080 uur).
+            negative: 'De correctie zou het recht onder nul brengen (huidig recht: %entitled%).'
+            self: Niemand wijzigt het eigen recht; een andere verlofbeheerder doet dat.
     line:
         add: Nieuwe correctie of overdracht
         save: Regel opslaan
@@ -668,3 +671,5 @@ leave:
         policy_removed: Tegoed verwijderd.
         line_added: Regel toegevoegd.
         settings_saved: Verlofinstellingen opgeslagen.
+    no_health_hint: Neem geen gezondheidsinformatie op (geen diagnose, oorzaak of medisch detail).
+

@@ -623,6 +623,9 @@ leave:
             carry_max: Un traspaso de este tipo es como máximo %max%.
             reason: El motivo tiene de 3 a 255 caracteres.
             line_amount: La cantidad no es cero (solo un ajuste puede ser negativo).
+            too_large: Como máximo %max% (366 días o 2 080 horas).
+            negative: 'El ajuste dejaría el derecho por debajo de cero (derecho actual: %entitled%).'
+            self: Nadie modifica su propia asignación; lo hace otra persona gestora de permisos.
     line:
         add: Nuevo ajuste o traspaso
         save: Guardar la línea
@@ -668,3 +671,5 @@ leave:
         policy_removed: Asignación eliminada.
         line_added: Línea añadida.
         settings_saved: Ajustes de ausencias guardados.
+    no_health_hint: No incluyas información de salud (ni diagnóstico, ni causa, ni detalle médico).
+

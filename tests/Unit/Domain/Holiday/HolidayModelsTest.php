@@ -173,6 +173,12 @@ final class HolidayModelsTest extends TestCase
         self::assertSame('https://www.bocm.es/1', $day->getSourceUrl());
         $entry = $day->entry($calendar);
         self::assertSame(HolidayScope::Local, $entry->scope);
+        self::assertNull($day->getProvider(), 'built-in providers are told apart by their origin');
+        $feed = HolidayDay::create(Fx::uuid(4), $calendar, new LocalDate('2026-03-01'), 'Feed', HolidayOrigin::Provider, null, null, 'feed_a');
+        self::assertSame('feed_a', $feed->getProvider());
+        self::assertSame('feed_a', $feed->entry($calendar)->provider);
+        self::assertNull(HolidayDay::create(Fx::uuid(5), $calendar, new LocalDate('2026-03-02'), 'File', HolidayOrigin::Import, null, null, 'feed_a')->getProvider());
+        self::assertSame(1, $calendar->getVersion());
         self::assertSame(Fx::uuid(1), $entry->calendarId);
         $day->change(new LocalDate('2026-05-14'), 'San Isidro (moved)');
         self::assertSame(HolidayOrigin::Manual, $day->getOrigin(), 'edited by hand: a manual day');
@@ -200,8 +206,6 @@ final class HolidayModelsTest extends TestCase
         self::assertTrue($centre->isDefault());
         $centre->forget(Fx::uuid(2));
         self::assertSame([Fx::uuid(3)], $centre->calendarIds());
-        $centre->setDefault(false);
-        self::assertFalse($centre->isDefault());
         (new ReflectionProperty(WorkCentre::class, 'calendarIds'))->setValue($centre, [Fx::uuid(4), 7, 'not-a-uuid']);
         self::assertSame([Fx::uuid(4)], $centre->calendarIds(), 'a damaged json list keeps only well-formed ids');
         try {

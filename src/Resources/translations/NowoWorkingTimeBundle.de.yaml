@@ -623,6 +623,9 @@ leave:
             carry_max: Ein Übertrag dieser Art beträgt höchstens %max%.
             reason: Der Grund hat 3 bis 255 Zeichen.
             line_amount: Der Betrag ist nicht null (nur eine Anpassung kann negativ sein).
+            too_large: Höchstens %max% (366 Tage oder 2 080 Stunden).
+            negative: 'Die Anpassung würde den Anspruch unter null bringen (aktueller Anspruch: %entitled%).'
+            self: Niemand ändert den eigenen Anspruch; das macht eine andere für Abwesenheiten zuständige Person.
     line:
         add: Neue Anpassung oder neuer Übertrag
         save: Zeile speichern
@@ -668,3 +671,5 @@ leave:
         policy_removed: Anspruch entfernt.
         line_added: Zeile hinzugefügt.
         settings_saved: Abwesenheitseinstellungen gespeichert.
+    no_health_hint: Keine Gesundheitsangaben eintragen (keine Diagnose, keine Ursache, keine medizinischen Details).
+

@@ -58,6 +58,9 @@ class AllowancePolicy
         if ($amount < 0 || $year < 2000 || $year > 2100) {
             throw new LeaveRefusedException('leave.allowance.error.amount');
         }
+        if ($amount > $type->getUnit()->maxAmount()) {
+            throw new LeaveRefusedException('leave.allowance.error.too_large', ['%max%' => $type->getUnit()->format($type->getUnit()->maxAmount())]);
+        }
         $note = $note === null ? '' : trim($note);
         if ($type->getSeedCode() === 'vacation' && $scope !== ScheduleScope::Worker && $amount < self::legalMinimum($type->getUnit())) {
             if (!$agreementEquivalent || mb_strlen($note) < 10) {

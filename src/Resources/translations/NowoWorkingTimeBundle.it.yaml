@@ -623,6 +623,9 @@ leave:
             carry_max: Un riporto di questo tipo è al massimo %max%.
             reason: Il motivo ha da 3 a 255 caratteri.
             line_amount: La quantità non è zero (solo una rettifica può essere negativa).
+            too_large: Al massimo %max% (366 giorni o 2 080 ore).
+            negative: 'La rettifica porterebbe il diritto sotto zero (diritto attuale: %entitled%).'
+            self: Nessuno modifica la propria assegnazione; lo fa un altro responsabile dei permessi.
     line:
         add: Nuova rettifica o riporto
         save: Salva la riga
@@ -668,3 +671,5 @@ leave:
         policy_removed: Dotazione rimossa.
         line_added: Riga aggiunta.
         settings_saved: Impostazioni assenze salvate.
+    no_health_hint: Non includere informazioni sanitarie (nessuna diagnosi, causa o dettaglio medico).
+

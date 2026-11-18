@@ -41,6 +41,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   day for the monthly summary. The schedule form names the work centre of a row.
 - Translations of the new pages in the ten shipped locales.
 
+### Fixed
+
+Audit TD on the S2 pull request (contention and input bounds; no security impact above Low, no advisory):
+
+- **Racing seeds** no longer duplicate leave types or the vacation default (TD-M1): a unique key on
+  `(tenant_id, seed_code)`, seeds looked up byte-exact over the tenant's own types, and the losing seed runs once more
+  (a second refusal is a 409 + `Retry-After`, `leave_seed_conflict`).
+- **Two default work centres** can no longer coexist (TD-M2): the switch is one `UPDATE … SET is_default = (id = :id)`
+  over the tenant's centres.
+- **A racing import confirm** (file or provider) is no longer a 500 (TD-L1): it runs once more and skips the dates the
+  other confirm stored; a second refusal is a 409 + `Retry-After` (`holiday_import_conflict`).
+- A carry-over expiry or a planning deadline on **29 February** is refused (it would never come in a common year;
+  TD-L2).
+- **Hostile provider answers** (TD-L3): response bodies are capped at 2 MiB (announced or received); an OpenHolidays
+  holiday longer than 31 days, or ending before it starts, is skipped, and the walk starts at 1 January at the
+  earliest; provider timeouts are 1–30 seconds in the configuration.
+- **Host providers** keep their own days (TD-L4): the provider key is stored on each imported day, so confirming one
+  host provider never removes another's.
+- **Amounts are bounded** (TD-L5): a policy or a line holds at most 366 days or 2 080 hours, and an adjustment never
+  takes the entitlement below zero. Nobody adds an allowance line or a worker policy for themselves.
+- **Leave type and holiday calendar edits are versioned** (TD-L6): the row is locked `FOR UPDATE` in every write that
+  depends on it (policies, lines, days, imports), and an edit of a newer version answers 409 + `Retry-After`
+  (`leave_type_stale`, `holiday_calendar_stale`).
+- **GDPR** (TD-L7): the allowance lines and the worker's own policies are in the personal data export (section
+  `working_time_leave`, `LeavePersonalData`, UserKit bridge) and in the erasure (reasons and notes blanked, the worker
+  forgotten as creator of other people's rows; amounts kept until retention).
+- The allowance-line reason and the policy note carry the "Do not include health information" hint (TD-L8).
+- A holiday file is refused by its size before it is read (TD-L9).
+- `docs/CONCURRENCY.md`: the write paths and how each one behaves under contention.
+
 ### Changed
 
 - `RegisterUnavailableException` and `PermissionDeniedException` now extend the new shared

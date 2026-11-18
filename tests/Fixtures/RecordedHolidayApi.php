@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Tests\Fixtures;
 
+use Closure;
 use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -33,6 +34,9 @@ final class RecordedHolidayApi
     /** @var list<string> URL with its query, per request */
     public array $requests = [];
 
+    /** Runs once, before the next answer (a competing writer in a race test). */
+    public ?Closure $beforeNext = null;
+
     /**
      * A mock client answering from the recordings.
      */
@@ -48,6 +52,11 @@ final class RecordedHolidayApi
     {
         $query            = is_array($options['query'] ?? null) && $options['query'] !== [] ? '?' . http_build_query($options['query']) : '';
         $this->requests[] = $url . $query;
+        $before           = $this->beforeNext;
+        $this->beforeNext = null;
+        if ($before instanceof Closure) {
+            $before();
+        }
 
         return match ($this->fail) {
             '404'      => new MockResponse('{"error":"not found"}', ['http_code' => 404]),

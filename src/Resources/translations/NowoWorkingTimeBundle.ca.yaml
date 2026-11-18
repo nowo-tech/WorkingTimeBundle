@@ -623,6 +623,9 @@ leave:
             carry_max: Un traspàs d'aquest tipus és com a màxim %max%.
             reason: El motiu té de 3 a 255 caràcters.
             line_amount: La quantitat no és zero (només un ajust pot ser negatiu).
+            too_large: Com a màxim %max% (366 dies o 2 080 hores).
+            negative: 'L''ajust deixaria el dret per sota de zero (dret actual: %entitled%).'
+            self: Ningú no modifica la seva pròpia assignació; ho fa una altra persona gestora de permisos.
     line:
         add: Nou ajust o traspàs
         save: Desa la línia
@@ -668,3 +671,5 @@ leave:
         policy_removed: Assignació eliminada.
         line_added: Línia afegida.
         settings_saved: Configuració d'absències desada.
+    no_health_hint: No hi incloguis informació de salut (cap diagnòstic, causa ni detall mèdic).
+

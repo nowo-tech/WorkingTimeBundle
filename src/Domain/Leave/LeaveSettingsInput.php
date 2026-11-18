@@ -40,7 +40,7 @@ final readonly class LeaveSettingsInput
         if ($overtimeRatio < 1 || $overtimeRatio > 400) {
             throw new LeaveRefusedException('leave.settings.error.overtime_ratio');
         }
-        if ($planningDeadline !== null && (preg_match('/^(\d{2})-(\d{2})$/D', $planningDeadline, $m) !== 1 || !checkdate((int) $m[1], (int) $m[2], 2024))) {
+        if ($planningDeadline !== null && (preg_match('/^(\d{2})-(\d{2})$/D', $planningDeadline, $m) !== 1 || !checkdate((int) $m[1], (int) $m[2], 2023))) {
             throw new LeaveRefusedException('leave.settings.error.planning_deadline');
         }
     }

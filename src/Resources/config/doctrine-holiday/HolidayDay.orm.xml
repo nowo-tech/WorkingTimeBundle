@@ -17,5 +17,6 @@
         <field name="origin" column="origin" type="string" length="16" enum-type="Nowo\WorkingTimeBundle\Domain\Holiday\Enum\HolidayOrigin"/>
         <field name="sourceRef" column="source_ref" type="string" length="120" nullable="true"/>
         <field name="sourceUrl" column="source_url" type="string" length="255" nullable="true"/>
+        <field name="provider" column="provider" type="string" length="40" nullable="true"/>
     </entity>
 </doctrine-mapping>

@@ -45,11 +45,21 @@ final readonly class HolidayEntry
         ?string $sourceRef = null,
         ?string $sourceUrl = null,
         public ?string $calendarId = null,
+        public ?string $provider = null,
     ) {
         $this->name      = self::cleanName($name) ?? throw new InvalidArgumentException('holiday.day.error.name');
         $ref             = $sourceRef === null ? null : self::cleanName($sourceRef);
         $this->sourceRef = $ref;
         $this->sourceUrl = self::cleanUrl($sourceUrl);
+    }
+
+    /**
+     * Whether the entry came from the given source: the same origin and, for a host provider (origin `provider`), the
+     * same provider key (audit TD-L4: one host provider never removes another's days).
+     */
+    public function isFrom(HolidayOrigin $origin, ?string $provider): bool
+    {
+        return $this->origin === $origin && ($origin !== HolidayOrigin::Provider || $this->provider === $provider);
     }
 
     /**
