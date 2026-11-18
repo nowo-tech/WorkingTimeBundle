@@ -10,6 +10,7 @@ use DateTimeZone;
 use InvalidArgumentException;
 
 use function checkdate;
+use function is_string;
 use function preg_match;
 use function sprintf;
 use function substr;
@@ -26,6 +27,18 @@ final readonly class LocalDate
     {
         if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $value, $m) !== 1 || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
             throw new InvalidArgumentException(sprintf('"%s" is not a Y-m-d date.', $value));
+        }
+    }
+
+    /**
+     * A strict `Y-m-d` date, or null when the value is not one (no overflow: `2026-02-31` is refused).
+     */
+    public static function tryParse(mixed $value): ?self
+    {
+        try {
+            return is_string($value) ? new self($value) : null;
+        } catch (InvalidArgumentException) {
+            return null;
         }
     }
 

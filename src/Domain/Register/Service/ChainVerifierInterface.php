@@ -19,7 +19,7 @@ interface ChainVerifierInterface
      * unless a purge removed them (an anchor past their `seq`). A bare hash (0.1.0) has no `seq`: only the anchor of the
      * purge that removed exactly that link excuses it.
      *
-     * @param array<string, array{hash: string, seq: int, at?: string|null}|string> $publishedHeads
+     * @param array<string, array{hash: string, seq: int, at?: string|null, day?: string|null}|string> $publishedHeads
      */
     public function verify(?TenantRef $tenant = null, ?WorkerRef $worker = null, array $publishedHeads = []): VerificationReport;
 

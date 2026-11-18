@@ -156,7 +156,7 @@ final class ChainIntegrityTest extends RegisterTestCase
         $tester = new CommandTester((new Application($this->kernel))->find('nowo:working-time:verify'));
         self::assertSame(0, $tester->execute(['--heads-out' => $file, '--publish-heads' => true]));
         $recorded = json_decode($this->text('SELECT chain_heads FROM nowo_working_time_export'), true);
-        self::assertEquals(['ana' => ['hash' => $this->text('SELECT hash FROM nowo_working_time_revision ORDER BY seq DESC'), 'seq' => 4, 'at' => '2026-11-18T18:30:00Z']], $recorded, 'the export records the head with its seq and time');
+        self::assertEquals(['ana' => ['hash' => $this->text('SELECT hash FROM nowo_working_time_revision ORDER BY seq DESC'), 'seq' => 4, 'at' => '2026-11-18T18:30:00Z', 'day' => '2026-11-18']], $recorded, 'the export records the head with its seq, time and day');
 
         // The whole register removed with the purge flag (or TRUNCATE): nothing left but published heads to compare.
         $this->installer()->uninstall($this->connection());
@@ -181,6 +181,8 @@ final class ChainIntegrityTest extends RegisterTestCase
             'a seq below 1 for another hash'  => ['hash' => str_repeat('a', 64), 'seq' => 0, 'at' => null],
             'the genesis with a negative seq' => ['hash' => ChainCodecs::GENESIS, 'seq' => -1, 'at' => null],
             'an unreadable time'              => ['hash' => str_repeat('a', 64), 'seq' => 3, 'at' => 'yesterday'],
+            'an overflowing time'             => ['hash' => str_repeat('a', 64), 'seq' => 3, 'at' => '2026-02-31T25:61:00Z'],
+            'an overflowing day'              => ['hash' => str_repeat('a', 64), 'seq' => 3, 'at' => null, 'day' => '2026-02-31'],
         ] as $case => $entry) {
             file_put_contents($file, (string) json_encode(['acme' . "\x1F" . 'ana' => $entry]));
             self::assertSame(2, $tester->execute(['--heads' => $file]), $case);
@@ -196,7 +198,7 @@ final class ChainIntegrityTest extends RegisterTestCase
         $report = $this->service(ChainVerifierInterface::class)->verify(null, null, ['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0, 'at' => null]]);
 
         self::assertTrue($report->isIntact(), 'a chain published while it was still empty has nothing to lose');
-        self::assertSame(['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0, 'at' => null]], $report->headLinks);
+        self::assertSame(['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0, 'at' => null, 'day' => null]], $report->headLinks);
     }
 
     public function testTheVerifyCommandReportsAnIntactRegister(): void

@@ -10,13 +10,15 @@
 
 From **0.1.1**: no schema change and no migration.
 
-- A published head below the chain's start is now excused only when its `at` is earlier than the start anchor's
-  `first_kept_date` plus one day. Heads files written by 0.1.1 already carry `at`; keep using them.
-- `--heads` refuses (exit 2) an entry with `seq` below 1 (other than the genesis with `seq` 0) or an unreadable `at`.
-- Exports made from now on store `{hash, seq, at}` per worker in `chain_heads`. 0.1.1 rows (`{hash, seq}`) use the
-  export's date as the head's time; 0.1.0 rows keep the weaker 0.1.0 rule.
-- A head passed to `ChainVerifierInterface::verify()` with a `seq` but without `at` is excused only at the exact anchor
-  boundary (`anchor_hash` = hash, `first_kept_seq` = seq + 1). Pass `at` (as `VerificationReport::$headLinks` does).
+- Heads (`--heads-out`, `--publish-heads`, the exports' `chain_heads`) now carry `day`, the head link's workday date:
+  `{"hash": "…", "seq": 12, "at": "2026-11-17T16:30:00Z", "day": "2026-11-17"}`. A missing published head is excused
+  only when its `day` is before the `first_kept_date` of the anchor at the chain's start. Write a new heads file with
+  `--heads-out` after upgrading to get this check; 0.1.1 files and export rows (no `day`) still work under the 0.1.1
+  rule (below the start), which a forged anchor at the new start can satisfy.
+- `--heads` refuses (exit 2) an entry with `seq` below 1 (other than the genesis with `seq` 0), an `at` that is not
+  exactly `Y-m-d\TH:i:s\Z`, or a `day` that is not a real `Y-m-d` date.
+- `ChainVerifierInterface::verify()` accepts `day` in each entry (as `VerificationReport::$headLinks`); pass it.
+- `publishHeads()` records `{hash, seq, at, day}` in the `working_time.chain_head` audit entry.
 
 ## To 0.1.1
 
