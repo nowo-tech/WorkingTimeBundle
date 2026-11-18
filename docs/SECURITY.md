@@ -26,8 +26,9 @@ is accepted only when its `seq` is below the chain's start (the first link, or t
 chain the purge emptied): a removed tail is found even after the chain's purges, and an anchor carrying the head's hash
 does not excuse it (audit ST-D1, ST-D1b). An anchor past the chain's first link is reported as `anchor_after_start`,
 and one keeping less than `seq` 2 as `anchor_seq_invalid`, since a purge only removes a non-empty prefix. Heads without
-a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Still out of reach: a whole chain removed together with a
-forged anchor past its published head, by a role that can delete with the purge flag (the residual risk below).
+a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Still out of reach: any prefix
+of a chain, published heads included, removed together with a forged anchor at the new start (the whole chain being
+the extreme case), by a role that can delete with the purge flag (the residual risk below).
 
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.
 When the application user owns the schema, it can drop or replace the triggers, disable them, or (in
