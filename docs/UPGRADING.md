@@ -8,6 +8,16 @@
 
 ## Unreleased
 
+From **0.1.1**: no schema change and no migration.
+
+- A published head below the chain's start is now excused only when its `at` is earlier than the start anchor's
+  `first_kept_date` plus one day. Heads files written by 0.1.1 already carry `at`; keep using them.
+- `--heads` refuses (exit 2) an entry with `seq` below 1 (other than the genesis with `seq` 0) or an unreadable `at`.
+- Exports made from now on store `{hash, seq, at}` per worker in `chain_heads`. 0.1.1 rows (`{hash, seq}`) use the
+  export's date as the head's time; 0.1.0 rows keep the weaker 0.1.0 rule.
+- A head passed to `ChainVerifierInterface::verify()` with a `seq` but without `at` is excused only at the exact anchor
+  boundary (`anchor_hash` = hash, `first_kept_seq` = seq + 1). Pass `at` (as `VerificationReport::$headLinks` does).
+
 ## To 0.1.1
 
 From **0.1.0**:

@@ -21,14 +21,17 @@ a segment opened or closed without a link, a head older than the newest segment,
 earlier heads are given (`--heads`, the `chain_heads` stored with every export, or heads published to the audit sink
 with `--publish-heads`). `triggers:check` verifies that every trigger exists, is enabled and has the shipped body.
 
-A published head carries its link's `seq` (`{hash, seq, at}`; exports `{hash, seq}`). A head that is no longer a link
-is accepted only when its `seq` is below the chain's start (the first link, or the last anchor's `first_kept_seq` for a
-chain the purge emptied): a removed tail is found even after the chain's purges, and an anchor carrying the head's hash
-does not excuse it (audit ST-D1, ST-D1b). An anchor past the chain's first link is reported as `anchor_after_start`,
+A published head carries its link's `seq` and time (`{hash, seq, at}`; 0.1.1 exports `{hash, seq}`, where the
+export's date stands in for the time). A head that is no longer a link is accepted only when its `seq` is below the
+chain's start (the first link, or the last anchor's `first_kept_seq` for a chain the purge emptied) and its time is
+earlier than the `first_kept_date` of the anchor at the start plus one day: a removed tail is found even after the
+chain's purges, and an anchor carrying the head's hash does not excuse it (audit ST-D1, ST-D1b). An anchor past the chain's first link is reported as `anchor_after_start`,
 and one keeping less than `seq` 2 as `anchor_seq_invalid`, since a purge only removes a non-empty prefix. Heads without
-a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Still out of reach: any prefix
-of a chain, published heads included, removed together with a forged anchor at the new start (the whole chain being
-the extreme case), by a role that can delete with the purge flag (the residual risk below).
+a `seq` (0.1.0 export rows, bare hashes passed to the API) keep the weaker 0.1.0 rule. Since a forged anchor must keep
+a retention boundary at least four years before its purge date (`anchor_out_of_retention` otherwise), a head younger
+than that boundary can no longer be hidden behind one (audit ST hardening, probes d2 and e2). Still out of reach: a
+prefix of a chain whose published heads are all older than a forged anchor's `first_kept_date` (plus one day), removed
+together with that anchor at the new start, by a role that can delete with the purge flag (the residual risk below).
 
 **Residual risk (audit ST-I1).** The triggers are only as strong as the database role the application connects with.
 When the application user owns the schema, it can drop or replace the triggers, disable them, or (in

@@ -30,7 +30,7 @@ class RegisterExport
 
     private ?string $sha256 = null;
 
-    /** @var array<string, array{hash: string, seq: int}|string> worker ref => chain head with its seq ('' for an empty chain; a bare hash in 0.1.0 rows) */
+    /** @var array<string, array{hash: string, seq: int, at?: string}|string> worker ref => chain head with its seq and time ('' for an empty chain; a bare hash in 0.1.0 rows) */
     private array $chainHeads = [];
 
     private ?DateTimeImmutable $readyAt = null;
@@ -79,7 +79,7 @@ class RegisterExport
     /**
      * Marks the export ready.
      *
-     * @param array<string, array{hash: string, seq: int}|string> $chainHeads
+     * @param array<string, array{hash: string, seq: int, at?: string}|string> $chainHeads
      */
     public function complete(string $fileName, string $contentType, string $sha256, array $chainHeads, DateTimeImmutable $at, int $downloadDays): void
     {
@@ -211,7 +211,7 @@ class RegisterExport
     }
 
     /**
-     * @return array<string, array{hash: string, seq: int}|string>
+     * @return array<string, array{hash: string, seq: int, at?: string}|string>
      */
     public function getChainHeads(): array
     {

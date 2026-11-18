@@ -156,7 +156,7 @@ final class ChainIntegrityTest extends RegisterTestCase
         $tester = new CommandTester((new Application($this->kernel))->find('nowo:working-time:verify'));
         self::assertSame(0, $tester->execute(['--heads-out' => $file, '--publish-heads' => true]));
         $recorded = json_decode($this->text('SELECT chain_heads FROM nowo_working_time_export'), true);
-        self::assertEquals(['ana' => ['hash' => $this->text('SELECT hash FROM nowo_working_time_revision ORDER BY seq DESC'), 'seq' => 4]], $recorded, 'the export records the head with its seq (ST-D1b)');
+        self::assertEquals(['ana' => ['hash' => $this->text('SELECT hash FROM nowo_working_time_revision ORDER BY seq DESC'), 'seq' => 4, 'at' => '2026-11-18T18:30:00Z']], $recorded, 'the export records the head with its seq and time');
 
         // The whole register removed with the purge flag (or TRUNCATE): nothing left but published heads to compare.
         $this->installer()->uninstall($this->connection());
@@ -166,6 +166,8 @@ final class ChainIntegrityTest extends RegisterTestCase
         self::assertSame('published_head_missing', $verifier->verify()->broken[0]['reason'] ?? null, 'the export\'s chain head is gone');
         $this->connection()->executeStatement('UPDATE nowo_working_time_export SET chain_heads = ?', [json_encode(['ana' => str_repeat('c', 64)])]);
         self::assertSame('published_head_missing', $verifier->verify()->broken[0]['reason'] ?? null, 'a 0.1.0 export row (bare hash) still counts');
+        $this->connection()->executeStatement('UPDATE nowo_working_time_export SET chain_heads = ?', [json_encode(['ana' => ['hash' => str_repeat('c', 64), 'seq' => 4]])]);
+        self::assertSame('published_head_missing', $verifier->verify()->broken[0]['reason'] ?? null, 'a 0.1.1 export row (no time) still counts');
         self::assertSame(1, $tester->execute(['--heads' => $file]));
         file_put_contents($file, 'nope');
         self::assertSame(2, $tester->execute(['--heads' => $file]));
@@ -175,6 +177,16 @@ final class ChainIntegrityTest extends RegisterTestCase
         file_put_contents($file, (string) json_encode(['acme' . "\x1F" . 'ana' => ['hash' => str_repeat('a', 64)]]));
         self::assertSame(2, $tester->execute(['--heads' => $file]), 'an entry without its seq');
         self::assertStringContainsString('invalid entry', $tester->getDisplay());
+        foreach ([
+            'a seq below 1 for another hash'  => ['hash' => str_repeat('a', 64), 'seq' => 0, 'at' => null],
+            'the genesis with a negative seq' => ['hash' => ChainCodecs::GENESIS, 'seq' => -1, 'at' => null],
+            'an unreadable time'              => ['hash' => str_repeat('a', 64), 'seq' => 3, 'at' => 'yesterday'],
+        ] as $case => $entry) {
+            file_put_contents($file, (string) json_encode(['acme' . "\x1F" . 'ana' => $entry]));
+            self::assertSame(2, $tester->execute(['--heads' => $file]), $case);
+        }
+        file_put_contents($file, (string) json_encode(['acme' . "\x1F" . 'ana' => ['hash' => ChainCodecs::GENESIS, 'seq' => 0, 'at' => null]]));
+        self::assertSame(1, $tester->execute(['--heads' => $file]), 'the genesis with seq 0 is a valid entry (the chain is broken for its export head)');
         unlink($file);
     }
 

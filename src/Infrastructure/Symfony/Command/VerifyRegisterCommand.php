@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command;
 
+use DateTimeImmutable;
+use DateTimeZone;
+use Nowo\WorkingTimeBundle\Domain\Register\Chain\ChainCodecs;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
@@ -75,12 +78,15 @@ final class VerifyRegisterCommand extends Command
 
                     return Command::INVALID;
                 }
-                if (!is_string($key) || !is_array($head) || !is_string($head['hash'] ?? null) || !is_int($head['seq'] ?? null)) {
-                    $io->error(sprintf('The heads file has an invalid entry (%s): each chain needs {"hash", "seq", "at"}.', $key));
+                $at = is_array($head) ? $head['at'] ?? null : null;
+                if (!is_string($key) || !is_array($head) || !is_string($head['hash'] ?? null) || !is_int($head['seq'] ?? null) || (!is_string($at) && $at !== null) || !$this->validTime($at)
+                    // Only the genesis (an empty chain) has a seq below 1 (audit ST hardening).
+                    || ($head['seq'] < 1 && ($head['hash'] !== ChainCodecs::GENESIS || $head['seq'] !== 0))) {
+                    $io->error(sprintf('The heads file has an invalid entry (%s): each chain needs {"hash", "seq", "at"}, a seq of at least 1 (0 only for the genesis) and "at" as UTC ISO 8601 or null.', $key));
 
                     return Command::INVALID;
                 }
-                $published[$key] = ['hash' => $head['hash'], 'seq' => $head['seq']];
+                $published[$key] = ['hash' => $head['hash'], 'seq' => $head['seq'], 'at' => $at];
             }
         }
         $report = $this->verifier->verify(is_string($tenant) ? new TenantRef($tenant) : null, is_string($worker) ? new WorkerRef($worker) : null, $published);
@@ -100,5 +106,13 @@ final class VerifyRegisterCommand extends Command
         $io->success(sprintf('%d chain(s), %d link(s) verified.', $report->chains, $report->links));
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * A head's time as `--heads-out` writes it (`2026-11-17T16:30:00Z`), or null (the head of an emptied chain).
+     */
+    private function validTime(?string $at): bool
+    {
+        return $at === null || (DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $at, new DateTimeZone('UTC')) instanceof DateTimeImmutable);
     }
 }

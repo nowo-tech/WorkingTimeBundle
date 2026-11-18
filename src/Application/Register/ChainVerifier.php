@@ -59,8 +59,9 @@ final readonly class ChainVerifier implements ChainVerifierInterface
      * Verifies the chains.
      *
      * A published head is a hash with the link's `seq` and creation time (`--heads-out`, `--publish-heads`): it may be
-     * missing only when its `seq` is below the chain's start. A bare hash (0.1.0) carries no `seq`: the weaker rule
-     * applies, and an anchor carrying that hash excuses it.
+     * missing only when its `seq` is below the chain's start and its time before the start anchor's `first_kept_date`
+     * (one day of slack). A bare hash (0.1.0) carries no `seq`: the weaker rule applies, and an anchor carrying that
+     * hash excuses it.
      *
      * @param array<string, array{hash: string, seq: int, at?: string|null}|string> $publishedHeads "tenant\x1Fworker" => a head published earlier (it must still be a link)
      */
@@ -203,10 +204,11 @@ final readonly class ChainVerifier implements ChainVerifierInterface
      * removes a prefix: an anchor beyond the start was not written by one) and none keeps less than `seq` 2 (a purge
      * removes at least one link). A head published earlier (an export's `chain_heads`, or a head published with
      * `--heads-out` / through the audit sink) must still be a link of the chain unless a purge removed it: its `seq` is
-     * below the chain's start (audit ST-D1 / ST-D1b).
+     * below the chain's start and its time before the start anchor's retention boundary (audit ST-D1 / ST-D1b / ST
+     * hardening).
      *
      * @param array{opened: array<string, string>, closed: array<string, string>} $links
-     * @param list<array{0: string, 1: ?int, 2: ?DateTimeImmutable}> $expected published heads: hash, seq, since when
+     * @param list<array{0: string, 1: ?int, 2: ?DateTimeImmutable, 3: ?DateTimeImmutable}> $expected published heads: hash, seq, time, since when
      *
      * @return array{seq: int, reason: string}|null
      */
@@ -244,20 +246,52 @@ final readonly class ChainVerifier implements ChainVerifierInterface
                 return ['seq' => $anchor->getFirstKeptSeq(), 'reason' => 'anchor_after_start'];
             }
         }
-        foreach ($expected as [$head, $seq, $since]) {
+        $startAnchor = null;
+        foreach ($anchors as $anchor) {
+            $startAnchor = $anchor->getFirstKeptSeq() === $start ? $anchor : $startAnchor;
+        }
+        foreach ($expected as [$head, $seq, $at, $since]) {
             if ($head === ChainCodecs::GENESIS ? $seq === 0 : $this->store->hasLinkHash($tenant, $worker, $head)) {
                 // The genesis is the head of a chain that was still empty (`seq` 0); any other head must still be a link.
                 continue;
             }
-            // With its `seq`, a head was removed by a purge only when it is below the chain's start. A bare hash (0.1.0:
-            // API callers, export rows) is weaker: covered by the anchor carrying it, or by a purge after the export.
-            $purged = $seq !== null ? $head !== ChainCodecs::GENESIS && $start !== null && $seq < $start : $this->bareHeadPurged($anchors, $head, $since);
+            // With its `seq`, a head was removed by a purge only when it is below the chain's start and older than the
+            // start anchor's retention boundary (audit ST hardening). A bare hash (0.1.0: API callers, export rows) is
+            // weaker: covered by the anchor carrying it, or by a purge after the export.
+            $purged = $seq !== null
+                ? $head !== ChainCodecs::GENESIS && $start !== null && $seq < $start && $this->beforeStart($startAnchor, $anchors, $head, $seq, $at ?? $since)
+                : $this->bareHeadPurged($anchors, $head, $since);
             if (!$purged) {
                 return ['seq' => 0, 'reason' => 'published_head_missing'];
             }
         }
 
         return null;
+    }
+
+    /**
+     * Whether a published head below the chain's start can have been removed by a purge. A purge only removes links of
+     * workdays before the start anchor's `first_kept_date`, so the head's time must be earlier than that date plus one
+     * day of slack (a night shift ends the next day): a recent head is never excused, whatever anchor was forged (audit
+     * ST probes d2 and e2). A head without a time (the head of a chain the purge emptied, which is an anchor) must be
+     * exactly an anchor's boundary: `anchor_hash` is the head and `first_kept_seq` the next `seq`.
+     *
+     * @param list<ChainAnchor> $anchors
+     */
+    private function beforeStart(?ChainAnchor $startAnchor, array $anchors, string $head, int $seq, ?DateTimeImmutable $at): bool
+    {
+        if ($at instanceof DateTimeImmutable) {
+            $boundary = $startAnchor?->firstKeptDate()?->plusDays(1)->toDateTime(new DateTimeZone('UTC'));
+
+            return $boundary instanceof DateTimeImmutable && $at < $boundary;
+        }
+        foreach ($anchors as $anchor) {
+            if ($anchor->getFirstKeptSeq() === $seq + 1 && $anchor->getAnchorHash() === $head) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -282,25 +316,36 @@ final readonly class ChainVerifier implements ChainVerifierInterface
      *
      * @param array<string, array{hash: string, seq: int, at?: string|null}|string> $published
      *
-     * @return array<string, list<array{0: string, 1: ?int, 2: ?DateTimeImmutable}>>
+     * @return array<string, list<array{0: string, 1: ?int, 2: ?DateTimeImmutable, 3: ?DateTimeImmutable}>>
      */
     private function expectedHeads(?TenantRef $tenant, ?WorkerRef $worker, array $published): array
     {
         $expected = [];
         foreach ($this->runner->read(fn (): array => $this->store->exportsWithHeads($tenant)) as $export) { // @igor-ignore - the runner calls this closure at once and keeps nothing
             foreach ($export->getChainHeads() as $exportWorker => $head) {
-                // 0.1.1 exports record `{hash, seq}`; a 0.1.0 export row holds a bare hash.
-                [$hash, $seq] = is_string($head) ? [$head, null] : [$head['hash'], $head['seq']];
+                // 0.1.2 exports record `{hash, seq, at}`, 0.1.1 ones `{hash, seq}` (the export's date stands in for the
+                // head's time), 0.1.0 ones a bare hash.
+                [$hash, $seq, $at] = is_string($head) ? [$head, null, null] : [$head['hash'], $head['seq'], $this->instant($head['at'] ?? null)];
                 if ($hash !== '' && (!$worker instanceof WorkerRef || $worker->value === (string) $exportWorker)) {
-                    $expected[$export->getTenantId() . "\x1F" . $exportWorker][] = [$hash, $seq, $export->getCreatedAt()];
+                    $expected[$export->getTenantId() . "\x1F" . $exportWorker][] = [$hash, $seq, $at, $export->getCreatedAt()];
                 }
             }
         }
         foreach ($published as $key => $head) {
-            $expected[$key][] = is_string($head) ? [$head, null, null] : [$head['hash'], $head['seq'], null];
+            $expected[$key][] = is_string($head) ? [$head, null, null, null] : [$head['hash'], $head['seq'], $this->instant($head['at'] ?? null), null];
         }
 
         return $expected;
+    }
+
+    /**
+     * A published head's time (UTC ISO 8601), null when absent or unreadable.
+     */
+    private function instant(?string $at): ?DateTimeImmutable
+    {
+        $parsed = $at === null ? false : DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $at, new DateTimeZone('UTC'));
+
+        return $parsed instanceof DateTimeImmutable ? $parsed : null;
     }
 
     /**

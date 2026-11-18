@@ -131,9 +131,9 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
                     $integrity = $this->translator->trans('export.integrity_broken', ['%seq%' => $report->broken[0]['seq'], '%reason%' => $report->broken[0]['reason']], NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $locale);
                 }
             }
-            $tip            = $this->runner->read(fn (): ?array => ($link = $this->store->chainHead($tenant, $ref)) instanceof WorkdayRevision ? ['hash' => $link->getHash(), 'seq' => $link->getSeq()] : null); // @igor-ignore - the runner calls this closure at once and keeps nothing
+            $tip            = $this->runner->read(fn (): ?array => ($link = $this->store->chainHead($tenant, $ref)) instanceof WorkdayRevision ? ['hash' => $link->getHash(), 'seq' => $link->getSeq(), 'at' => WorkdayRevision::iso($link->getCreatedAt())] : null); // @igor-ignore - the runner calls this closure at once and keeps nothing
             $head           = $tip['hash'] ?? null;
-            $heads[$worker] = $tip ?? ''; // the head with its `seq` (audit ST-D1b): a later purge excuses it only below the chain start
+            $heads[$worker] = $tip ?? ''; // the head with its `seq` and time (audit ST-D1b, ST hardening)
             $days           = $this->runner->read(fn (): array => $this->reader->worker($tenant, $ref, $from, $to, $now));
             $slug           = $base . '-' . $this->slug($name) . '-' . substr(hash('sha256', $worker), 0, 8);
             $rows           = RegisterCsv::rows($org, $days, $settings->ipEvidence());

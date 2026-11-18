@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { expectNoHorizontalScroll, login, logout, thisMonth, today } from './helpers';
+import { earlierStart, expectNoHorizontalScroll, login, logout, thisMonth, today } from './helpers';
 
 /**
  * The register end to end against the running demo (fresh stack: ana clocks out once per day, so recreate the
@@ -48,6 +48,8 @@ test.describe('Working Time demo', () => {
     await expect(clock).toHaveAttribute('data-status', 'idle');
     await expect(page.getByTestId('wt-header-clock')).toBeVisible();
 
+    // The amended start is relative to the clock-in, so the run does not depend on the time of day.
+    const earlier = earlierStart(new Date());
     await page.locator('form[data-testid="wt-clock-clock-in"] button[type="submit"]').click();
     await expect(page.getByTestId('wt-clock')).toHaveAttribute('data-status', 'working');
     await page.locator('form[data-testid="wt-clock-break-start"] button[type="submit"]').click();
@@ -64,7 +66,7 @@ test.describe('Working Time demo', () => {
     const form = page.locator('[data-testid="wt-correction-form"] form');
     await form.locator('select[name="wt_correction[operation]"]').selectOption('amend');
     await form.locator('select[name="wt_correction[segment]"]').selectOption({ index: 1 });
-    await form.locator('input[name="wt_correction[start]"]').fill('07:30');
+    await form.locator('input[name="wt_correction[start]"]').fill(earlier);
     await form.locator('textarea[name="wt_correction[reason]"]').fill('Came in earlier than the clock shows');
     await form.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(new RegExp(`/working-time/date/${today()}`));

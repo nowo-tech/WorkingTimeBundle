@@ -26,6 +26,7 @@ use function getenv;
 use function is_string;
 use function json_decode;
 use function random_bytes;
+use function str_repeat;
 use function sys_get_temp_dir;
 use function unlink;
 
@@ -232,9 +233,61 @@ final class PurgeTest extends RegisterTestCase
         self::assertSame('published_head_missing', $verifier->verify(null, null, ['acme' . "\x1F" . 'ana' => ChainCodecs::GENESIS])->broken[0]['reason'] ?? null, 'a bare genesis has no seq');
     }
 
+    /**
+     * Audit ST hardening, probe e2: links were added after the head was published, then the recent days with the head
+     * were removed with the purge flag and the chain re-rooted with a forged anchor at the new start. The head is below
+     * the start, but it is younger than the start anchor's retention boundary: no purge can have removed it.
+     */
+    public function testARecentHeadBelowAForgedStartIsNotExcused(): void
+    {
+        $this->bootForPurge();
+        $this->dayAt('2021-03-01 08:00:00');
+        $this->dayAt('2026-11-16 08:00:00');
+        $this->dayAt('2026-11-17 08:00:00');
+        $this->clock()->modify('2026-11-18 10:00:00');
+        $this->service(RegisterPurger::class)->purge();
+        $heads = $this->service(ChainVerifierInterface::class)->verify()->headLinks;
+        self::assertSame(12, $heads['acme' . "\x1F" . 'ana']['seq']);
+        $this->dayAt('2026-11-18 11:00:00');
+        $prev = $this->text('SELECT prev_hash FROM nowo_working_time_revision WHERE seq = 13');
+        $this->removeDay('2026-11-16');
+        $this->removeDay('2026-11-17');
+        $this->forgeAnchor(13, $prev, 'e2');
+        $verifier = $this->service(ChainVerifierInterface::class);
+        self::assertTrue($verifier->verify()->isIntact(), 'without published heads the re-rooted chain looks intact');
+
+        $report = $verifier->verify(null, null, $heads);
+        self::assertFalse($report->isIntact());
+        self::assertSame('published_head_missing', $report->broken[0]['reason']);
+    }
+
+    /**
+     * Audit ST hardening, probe d2: the whole chain removed and a forged anchor written past its published head. The
+     * head is recent, so the anchor cannot have taken it. A head without its time is excused only by the exact anchor
+     * boundary (`anchor_hash` = head, `first_kept_seq` = seq + 1).
+     */
+    public function testAWholeChainRemovedBehindAForgedAnchorIsFound(): void
+    {
+        $this->bootForPurge();
+        $this->dayAt('2026-11-17 08:00:00');
+        $verifier = $this->service(ChainVerifierInterface::class);
+        $heads    = $verifier->verify()->headLinks;
+        $head     = $heads['acme' . "\x1F" . 'ana'];
+        $this->removeDay('2026-11-17');
+        $this->forgeAnchor(5, str_repeat('b', 64), 'd2');
+
+        self::assertSame('published_head_missing', $verifier->verify(null, null, $heads)->broken[0]['reason'] ?? null);
+        self::assertSame('published_head_missing', $verifier->verify(null, null, ['acme' . "\x1F" . 'ana' => ['hash' => $head['hash'], 'seq' => 4, 'at' => 'not a time']])->broken[0]['reason'] ?? null, 'no time and not the anchor boundary');
+    }
+
     private function removeLastDay(): void
     {
-        $workday = $this->text("SELECT id FROM nowo_working_time_workday WHERE local_date = '2026-11-17'");
+        $this->removeDay('2026-11-17');
+    }
+
+    private function removeDay(string $date): void
+    {
+        $workday = $this->text('SELECT id FROM nowo_working_time_workday WHERE local_date = ?', [$date]);
         $this->withPurgeFlag([
             'DELETE FROM nowo_working_time_revision WHERE workday_id = ?',
             'DELETE FROM nowo_working_time_segment WHERE workday_id = ?',

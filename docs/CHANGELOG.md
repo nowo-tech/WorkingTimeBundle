@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- **Published-head time check** (audit ST hardening, probes d2 and e2): a published head below the chain's start is
+  excused only when its time (`at`) is earlier than the `first_kept_date` of the anchor at the chain start, plus one
+  day of slack for night shifts. A purge only removes workdays before that date, so a recent head removed together
+  with a forged anchor at the new start (or behind a forged anchor past a removed chain) is reported as
+  `published_head_missing`. A head without a time is excused only at the exact anchor boundary. Exports now record
+  `{hash, seq, at}`; a 0.1.1 export row (`{hash, seq}`) uses the export's date as the head's time.
+- `--heads` refuses (exit 2) an entry whose `seq` is below 1 unless it is the genesis with `seq` 0, and an entry
+  whose `at` is neither null nor a UTC ISO 8601 time.
+- Demo e2e: the correction step amends the start to one hour before the clock-in instead of a fixed 07:30, so the
+  suite no longer fails when it runs before 07:30 in the tenant's time zone.
+
 ## [0.1.1] - 2026-11-18
 
 ### Fixed
