@@ -21,14 +21,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   6): `CONFLICT_001` with `Retry-After` when nothing was committed, `CONFLICT_002` without `Retry-After` when part of
   the request was (`ConflictCode::forRequest()`, with the request's commit watermark). JSON answers gain a `code` key
   next to the existing `error`; a committed generic conflict's `error` is `concurrency_conflict_partial`. The stale
-  version pages (settings, leave settings, correction decisions) send the header too.
+  version pages (settings, leave settings, correction decisions) send the header too. The CONFLICT_002 for an earlier commit in
+  the request needs NowoTransactionDoctrineBundle with `commit_detection` (on by default).
 
 ### Changed
 
 - **transaction-doctrine `^1.7.1`** (was `^1.3`), in the bundle and both demos.
 - **Write units scoped to the private entity manager** (transaction-doctrine `forManagers()`, audit UI2-1): a deadlock
   replay clears or resets only the bundle's manager; the host's open default manager keeps its entities. Unchanged on
-  a shared manager (`doctrine.entity_manager: null` or the default manager's name).
+  a shared manager (`doctrine.entity_manager: null` or the default manager's name). A unit whose attempt grew the
+  host's identity map (a host port persisted, maybe flushed, through the host's manager) is not replayed after a
+  deadlock. What the attempt added to the host's manager is detached, so no rolled-back entity stays managed in a
+  worker, and the answer is a 409: `CONFLICT_002` when the host's manager is on another connection (audit UZ-1).
+- **`ConflictFallbackListener` answers through transaction-doctrine's responder when it exists** (`respond()`: the
+  branded HTML page and the bundle's JSON formatter), and logs one constant warning (route, method, code).
 - **`ConflictFallbackListener` is always registered**, at `kernel.exception` priority 63 (after transaction-doctrine's
   responder): on the bundle's routes only, it answers every conflict when NowoTransactionDoctrineBundle is not
   registered, and the raw transient failures the responder leaves when it is.

@@ -9,12 +9,18 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
+use Nowo\TransactionDoctrine\TransientFailureClassifier;
+use Nowo\TransactionDoctrine\TransientFailureKind;
+use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
 use Nowo\TransactionDoctrine\WriteUnit\WriteUnit;
 use Nowo\TransactionDoctrine\WriteUnit\WriteUnitInterface;
 use Nowo\WorkingTimeBundle\Application\Shared\DuplicateRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\StaleRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
+use Throwable;
 
+use function count;
+use function spl_object_id;
 use function str_starts_with;
 
 /**
@@ -29,8 +35,12 @@ use function str_starts_with;
  *   registry before the next unit (worker mode: no managed entity and no broken manager survive a call).
  * - On the private entity manager the write unit is scoped to it (transaction-doctrine >= 1.7 `forManagers()`): a
  *   replay clears or resets only the bundle's manager, never the host's open default one. Every write of a unit goes
- *   through that manager (the stores take it from manager()); a host port called inside a unit (the audit sink, the
- *   worker directory) must not persist through the host's manager, or a replay gives up with a conflict instead.
+ *   through that manager (the stores take it from manager()). Host ports called inside a unit (the audit sink, the
+ *   worker directory) must not write through the host's manager (audit UZ-1). If one does and the attempt meets a
+ *   transient failure after the host's identity map grew (a persist, with or without a flush), the unit is not
+ *   replayed: what the attempt added to the host's manager is detached (nothing else of it) and the failure ends as a
+ *   ConcurrencyConflict (409; CONFLICT_002 when the host's manager is on another connection, where its flush
+ *   committed). A host update of an entity it already managed does not grow the map and is replayed like before.
  *
  * Never flushes the host's entity manager (rule 6): with `entity_manager: null` it is the default one, used only in
  * explicit transactions; there the runner forgets only the bundle's entities and refuses to write while the host has
@@ -69,9 +79,10 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
         }
         $this->refuseForeignChanges($manager);
 
-        return $this->unit($manager)->run(function () use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
+        return $this->unit($manager)->run(function (int $attempt = 1) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $manager = $this->manager();
             $this->release($manager);
+            $host = $this->hostSnapshot($manager);
             try {
                 return $manager->wrapInTransaction(static function (EntityManagerInterface $manager) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
                     $result = $work();
@@ -83,10 +94,82 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
                 throw new DuplicateRowException($e);
             } catch (OptimisticLockException $e) {
                 throw new StaleRowException($e);
+            } catch (Throwable $e) {
+                $this->refuseReplayAfterHostWrites($manager, $host, $e, $attempt);
+
+                throw $e;
             } finally {
                 $this->release($this->manager());
             }
         });
+    }
+
+    /**
+     * The host's open default manager and the entities its identity map holds before an attempt, on the private
+     * manager only (null on a shared one, which the unit writes through, or when the host's manager is closed).
+     *
+     * @return array{EntityManagerInterface, array<int, true>}|null
+     */
+    private function hostSnapshot(EntityManagerInterface $manager): ?array
+    {
+        if ($this->shared($manager)) {
+            return null;
+        }
+        $host = $this->registry->getManager();
+        if (!$host instanceof EntityManagerInterface || !$host->isOpen()) {
+            return null;
+        }
+
+        return [$host, $this->identities($host)];
+    }
+
+    /**
+     * Audit UZ-1: an attempt that met a transient failure after the host's identity map grew (a host port persisted,
+     * maybe flushed, through the host's manager inside the unit) is not replayed. The entities the attempt added to
+     * the host's manager are detached (a rolled-back insert must not stay managed in a worker), and the failure ends as
+     * a ConcurrencyConflict, which a write unit never replays: 409, CONFLICT_002 when the host's manager is on another
+     * connection (its flush committed there).
+     *
+     * @param array{EntityManagerInterface, array<int, true>}|null $host
+     *
+     * @throws ConcurrencyConflict
+     */
+    private function refuseReplayAfterHostWrites(EntityManagerInterface $manager, ?array $host, Throwable $failure, int $attempt): void
+    {
+        if ($host === null) {
+            return;
+        }
+        $kind                   = (new TransientFailureClassifier())->classify($failure);
+        [$hostManager, $before] = $host;
+        if (!$kind instanceof TransientFailureKind || !$hostManager->isOpen() || $hostManager->getUnitOfWork()->size() <= count($before)) {
+            return;
+        }
+        foreach ($hostManager->getUnitOfWork()->getIdentityMap() as $entities) {
+            foreach ($entities as $entity) {
+                if (!isset($before[spl_object_id($entity)])) {
+                    $hostManager->detach($entity); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
+                }
+            }
+        }
+
+        throw new ConcurrencyConflict($attempt, $kind, null, $failure, $hostManager->getConnection() !== $manager->getConnection());
+    }
+
+    /**
+     * The object ids of the entities a manager's identity map holds.
+     *
+     * @return array<int, true>
+     */
+    private function identities(EntityManagerInterface $manager): array
+    {
+        $ids = [];
+        foreach ($manager->getUnitOfWork()->getIdentityMap() as $entities) {
+            foreach ($entities as $entity) {
+                $ids[spl_object_id($entity)] = true;
+            }
+        }
+
+        return $ids;
     }
 
     /**

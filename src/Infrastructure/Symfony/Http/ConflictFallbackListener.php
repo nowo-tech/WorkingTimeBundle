@@ -6,7 +6,9 @@ namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http;
 
 use Nowo\TransactionDoctrine\ConflictCode;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponsePolicy;
+use Nowo\TransactionDoctrine\Symfony\EventListener\ConcurrencyConflictResponder;
 use Nowo\TransactionDoctrine\TransientFailureClassifier;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -26,8 +28,10 @@ use Throwable;
  * host's error handling. The code is `ConflictCode::forRequest()` (the request's commit watermark when the responder's
  * bundle took one): **409 + `Retry-After` + `X-Conflict-Code: CONFLICT_001`** when nothing was committed, **409 +
  * `X-Conflict-Code: CONFLICT_002`** without `Retry-After` when part was (the status follows the policy, 503 when the
- * host configured it). JSON `{"error": …, "code": "CONFLICT_00n"}` or a short text page. Host routes are never
- * answered. Stateless (FrankenPHP worker, kernel reset off).
+ * host configured it). With the responder's bundle the answer is the responder's own `respond()` (the bundle's JSON
+ * formatter, the branded HTML page); without it, JSON `{"error": …, "code": "CONFLICT_00n"}` or a short text page.
+ * Either way one constant warning is logged (route, method, code; never the URL, SQL or a message). Host routes are
+ * never answered. Stateless (FrankenPHP worker, kernel reset off).
  */
 final readonly class ConflictFallbackListener
 {
@@ -40,8 +44,11 @@ final readonly class ConflictFallbackListener
     /**
      * Wires the collaborators.
      */
-    public function __construct(private ConflictResponsePolicy $policy = new ConflictResponsePolicy())
-    {
+    public function __construct(
+        private ConflictResponsePolicy $policy = new ConflictResponsePolicy(),
+        private ?ConcurrencyConflictResponder $responder = null,
+        private ?LoggerInterface $logger = null,
+    ) {
     }
 
     /**
@@ -58,7 +65,18 @@ final readonly class ConflictFallbackListener
         if (!$conflict instanceof Throwable) {
             return;
         }
-        $code     = ConflictCode::forRequest($request, $failure);
+        $code = ConflictCode::forRequest($request, $failure);
+        $this->logger?->warning('nowo_working_time answered a database conflict on its route.', [
+            'route'  => $request->attributes->get('_route'),
+            'method' => $request->getMethod(),
+            'code'   => $code->value,
+        ]);
+        if ($this->responder instanceof ConcurrencyConflictResponder) {
+            $event->setResponse($this->responder->respond($request, $failure));
+            $event->allowCustomResponseCode();
+
+            return;
+        }
         $headers  = $this->policy->headersFor($code) + ['Cache-Control' => 'no-store'];
         $response = WorkingTimeConflictFormatter::wantsJson($request)
             ? new JsonResponse(['error' => WorkingTimeConflictFormatter::code($failure, WorkingTimeConflictFormatter::defaultCode($code)), 'code' => $code->value], $this->policy->status, $headers)

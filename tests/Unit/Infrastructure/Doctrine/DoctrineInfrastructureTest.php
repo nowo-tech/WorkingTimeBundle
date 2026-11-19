@@ -7,6 +7,7 @@ namespace Nowo\WorkingTimeBundle\Tests\Unit\Infrastructure\Doctrine;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver;
+use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\MySQL80Platform;
@@ -221,6 +222,33 @@ final class DoctrineInfrastructureTest extends TestCase
         // `entity_manager: default` resolves to the registry's default manager: only the bundle's entities are released (audit ST Info).
         (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'default'))->release($default);
         (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'wt'))->release($private);
+    }
+
+    /**
+     * Audit UZ-1 guard: with the host's manager closed there is nothing to watch, so a transient failure goes back to
+     * the write unit unchanged (its own repair resets the closed manager).
+     */
+    public function testAClosedHostManagerLeavesTheFailureToTheWriteUnit(): void
+    {
+        $connection = $this->createStub(Connection::class);
+        $connection->method('isTransactionActive')->willReturn(false);
+        $deadlock = new DeadlockException(new class('Deadlock', '40001', 1213) extends Driver\AbstractException {
+        }, null);
+        $private = $this->createStub(EntityManagerInterface::class);
+        $private->method('isOpen')->willReturn(true);
+        $private->method('getConnection')->willReturn($connection);
+        $private->method('wrapInTransaction')->willThrowException($deadlock);
+        $host = $this->createStub(EntityManagerInterface::class);
+        $host->method('isOpen')->willReturn(false);
+        $registry = $this->createStub(ManagerRegistry::class);
+        $registry->method('getManager')->willReturnCallback(static fn (?string $name = null): EntityManagerInterface => $name === 'wt' ? $private : $host);
+
+        try {
+            (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'wt'))->write(static fn (): int => 1);
+            self::fail('The deadlock is rethrown.');
+        } catch (DeadlockException $e) {
+            self::assertSame($deadlock, $e);
+        }
     }
 
     public function testThePurgeFlagDriverRecognisesMysql(): void

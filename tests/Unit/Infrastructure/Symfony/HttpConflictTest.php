@@ -12,6 +12,7 @@ use LogicException;
 use Nowo\TransactionDoctrine\ConflictCode;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponseContext;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponsePolicy;
+use Nowo\TransactionDoctrine\Symfony\EventListener\ConcurrencyConflictResponder;
 use Nowo\TransactionDoctrine\TransientFailureKind;
 use Nowo\TransactionDoctrine\WriteUnit\CommitLedger;
 use Nowo\TransactionDoctrine\WriteUnit\CommitMark;
@@ -24,6 +25,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\WorkingTimeConflictFormat
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Routing\UiRouteLoader;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use stdClass;
 use Symfony\Component\HttpFoundation\Request;
@@ -148,6 +150,34 @@ final class HttpConflictTest extends TestCase
         self::assertSame(503, $event->getResponse()?->getStatusCode());
         self::assertSame('4', $event->getResponse()->headers->get('Retry-After'));
         self::assertSame('CONFLICT_001', $event->getResponse()->headers->get(ConflictResponsePolicy::CODE_HEADER));
+    }
+
+    /**
+     * With transaction-doctrine's responder the listener answers through its respond() (the bundle's JSON formatter,
+     * the responder's page for HTML) and logs one constant warning.
+     */
+    public function testTheResponderAnswersWhenItExists(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::exactly(2))->method('warning')->with('nowo_working_time answered a database conflict on its route.', self::callback(static fn (array $context): bool => $context['code'] === 'CONFLICT_001' && $context['method'] === 'POST'));
+        $listener = new ConflictFallbackListener(new ConflictResponsePolicy(), new ConcurrencyConflictResponder(new ConflictResponsePolicy(), [], [new WorkingTimeConflictFormatter()]), $logger);
+        $failure  = $this->handlerFailed([new LogicException('first'), $this->deadlock()]);
+
+        $json = $this->event($this->request(true, true), $failure);
+        $listener->onKernelException($json);
+        self::assertSame(409, $json->getResponse()?->getStatusCode());
+        self::assertSame('{"error":"concurrency_conflict","code":"CONFLICT_001"}', $json->getResponse()->getContent());
+        self::assertSame('CONFLICT_001', $json->getResponse()->headers->get(ConflictResponsePolicy::CODE_HEADER));
+        self::assertSame('1', $json->getResponse()->headers->get('Retry-After'));
+
+        $html = $this->event($this->request(true, false), $failure);
+        $listener->onKernelException($html);
+        self::assertSame(409, $html->getResponse()?->getStatusCode());
+        self::assertStringContainsString('CONFLICT_001', (string) $html->getResponse()->getContent());
+
+        $host = $this->event($this->request(false, false), $failure);
+        $listener->onKernelException($host);
+        self::assertNull($host->getResponse(), 'never on a host route');
     }
 
     /**

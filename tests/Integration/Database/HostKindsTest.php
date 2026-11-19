@@ -10,11 +10,13 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
+use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\RaceOutcome;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -97,6 +99,57 @@ final class HostKindsTest extends RegisterTestCase
         self::assertSame(2, $attempts, 'the deadlock was replayed');
         self::assertTrue($host->isOpen());
         self::assertTrue($host->contains($note), 'the host\'s entity stays managed across the replay');
+        $tool->dropSchema($meta);
+    }
+
+    /**
+     * Audit UZ-1: a host port persists and flushes through the host's manager inside the unit (a savepoint on the
+     * shared connection), then a deadlock rolls it back. The unit is not replayed silently: it ends as a 409
+     * (ConcurrencyConflict, nothing committed), the rolled-back entity is no longer managed by the host's manager (no
+     * stale entity in a worker), and the host's next flush stores it for real.
+     */
+    public function testAHostFlushInsideAUnitIsNotReplayedAfterADeadlock(): void
+    {
+        $this->boot();
+        $registry = $this->kernel->getContainer()->get('doctrine');
+        self::assertInstanceOf(ManagerRegistry::class, $registry);
+        $host = $registry->getManager('default');
+        self::assertInstanceOf(EntityManagerInterface::class, $host);
+        $tool = new SchemaTool($host);
+        $meta = [$host->getClassMetadata(HostNote::class)];
+        $tool->dropSchema($meta);
+        $tool->createSchema($meta);
+        $kept = new HostNote('n0', 'before the unit');
+        $host->persist($kept);
+        $host->flush();
+        $this->enable();
+
+        $outcome = new RaceOutcome();
+        $note    = new HostNote('n1', 'written by a port');
+        $failure = null;
+        try {
+            $this->service(DoctrineTransactionRunner::class)->write(static function () use ($outcome, $host, $note): never {
+                $outcome->result .= 'attempt;';
+                $host->persist($note); // a host port writing through the host's manager inside the unit
+                $host->flush();
+
+                throw new DeadlockException(new class('Deadlock found when trying to get lock', '40001', 1213) extends AbstractException { }, null);
+            });
+        } catch (ConcurrencyConflict $e) {
+            $failure = $e;
+        }
+
+        self::assertFalse($failure->committed, 'the savepoint went with the rollback');
+        self::assertInstanceOf(DeadlockException::class, $failure->getPrevious());
+        self::assertSame('not runattempt;', $outcome->result, 'one attempt: no silent replay');
+        self::assertSame(0, $this->int("SELECT COUNT(*) FROM host_note WHERE id = 'n1'"), 'the insert was rolled back');
+        self::assertFalse($host->contains($note), 'no rolled-back entity stays managed');
+        self::assertTrue($host->contains($kept), 'what the host had before the unit stays managed');
+        self::assertTrue($host->isOpen());
+
+        $host->persist($note);
+        $host->flush();
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM host_note WHERE id = 'n1'"), 'the host\'s next flush stores it');
         $tool->dropSchema($meta);
     }
 

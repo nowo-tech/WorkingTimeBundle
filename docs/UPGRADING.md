@@ -25,9 +25,18 @@ composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
   `Access-Control-Expose-Headers`. The status follows the policy as before (`conflict_response.status: 503` still
   works).
 - **A replay no longer clears the host's entity manager** on the private manager (the default): a deadlock replay of
-  the bundle's unit clears only `nowo_working_time`. A host port called inside a unit (audit sink, worker directory)
-  must not persist through the host's manager: such a replay now gives up with a 409 instead of replaying. Nothing
-  changes with `doctrine.entity_manager: null`.
+  the bundle's unit clears only `nowo_working_time`. Host ports called inside a unit (audit sink, worker directory)
+  must not write through the host's manager (audit UZ-1):
+  - a `persist()` without `flush()` ends as a 409;
+  - a `persist()` + `flush()` on the bundle's connection, then a deadlock: the unit is not replayed, the inserted
+    entities are detached from the host's manager, and the answer is a 409;
+  - the same on another connection: that flush committed, so the answer is a 409 `CONFLICT_002`. With a commit ledger
+    (`commit_detection`), any committed attempt is refused the same way; without one, an update there is repeated by
+    the replay.
+
+  See CONCURRENCY.md, "Replays and the host's entity manager". Nothing changes with `doctrine.entity_manager: null`.
+- **`CONFLICT_002` for an earlier commit needs NowoTransactionDoctrineBundle with `commit_detection`** (on by
+  default). Without it, those cases answer `CONFLICT_001`.
 - **`ConflictFallbackListener` is registered even with NowoTransactionDoctrineBundle** (priority 63, after its
   responder). It answers only the bundle's routes, so host routes are untouched; on them a raw deadlock that reached
   the kernel answers 409 instead of 500. A host that removed the listener's definition by id should keep doing so only
