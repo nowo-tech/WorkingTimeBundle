@@ -8,11 +8,14 @@ use Closure;
 use Doctrine\DBAL\Driver\AbstractException;
 use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Event\PostFlushEventArgs;
+use Doctrine\ORM\Events;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
 use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\HostWriteProbe;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\AttemptCounter;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
@@ -69,7 +72,12 @@ final class HostWritesInUnitTest extends RegisterTestCase
         self::assertInstanceOf(HostNote::class, $host->find(HostNote::class, 'n0'));
     }
 
-    public function testAHostUpdateFlushedInsideTheUnitIsNotReplayed(): void
+    /**
+     * Audit UZ3-1: the update went with the rollback, so the host's copy gets the database's value back (entity and
+     * original data). The client's retry after the 409, in the next request of the same worker (the host's manager is
+     * not cleared), writes the change for real.
+     */
+    public function testAHostUpdateFlushedInsideTheUnitIsRolledBackInTheHostAndTheRetryWritesIt(): void
     {
         $host = $this->hostManager();
         $note = new HostNote('n0', 'a');
@@ -79,11 +87,142 @@ final class HostWritesInUnitTest extends RegisterTestCase
         $conflict = $this->conflict($host, static function () use ($host, $note): void {
             $note->text = 'b';
             $host->flush();
+            $note->text = 'c'; // a second flush of the same entity: the oldest value comes back
+            $host->flush();
         });
 
         self::assertFalse($conflict->committed, 'the update went with the rollback: CONFLICT_001');
         self::assertSame('a', $this->text("SELECT text FROM host_note WHERE id = 'n0'"), 'never replayed over a lost write');
         self::assertTrue($host->contains($note), 'an entity the host had before stays managed');
+        self::assertSame('a', $note->text, 'the host\'s copy matches the database again');
+        self::assertFalse(HostWriteProbe::hasScheduledChanges($host), 'nothing pending: the next unit may start');
+
+        $retry = $this->runner()->write(static function () use ($host, $note): string {
+            $note->text = 'b';
+            $host->flush();
+
+            return 'ok';
+        });
+
+        self::assertSame('ok', $retry);
+        self::assertSame('b', $this->text("SELECT text FROM host_note WHERE id = 'n0'"), 'the retry persists b');
+    }
+
+    /**
+     * Audit UZ3-1: a rolled-back delete is managed again (with its generated id back), and the retry deletes it.
+     */
+    public function testAHostDeleteFlushedInsideTheUnitIsManagedAgainAndTheRetryDeletesIt(): void
+    {
+        $host  = $this->hostManager();
+        $note  = new HostNote('n0', 'a');
+        $event = new HostEvent('generated id');
+        $host->persist($note);
+        $host->persist($event);
+        $host->flush();
+        $eventId = $event->id;
+
+        $conflict = $this->conflict($host, static function () use ($host, $note, $event): void {
+            $host->remove($note);
+            $host->remove($event);
+            $host->flush();
+        });
+
+        self::assertFalse($conflict->committed);
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM host_note WHERE id = 'n0'"), 'the delete was rolled back');
+        self::assertTrue($host->contains($note), 'managed again');
+        self::assertTrue($host->contains($event), 'managed again');
+        self::assertSame($eventId, $event->id, 'its generated id is back');
+
+        $this->runner()->write(static function () use ($host, $note, $event): void {
+            $host->remove($note);
+            $host->remove($event);
+            $host->flush();
+        });
+
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_note'));
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_event'));
+    }
+
+    /**
+     * A rolled-back insert with a generated id is detached and its id reset: the host can persist it again.
+     */
+    public function testARolledBackInsertWithAGeneratedIdCanBePersistedAgain(): void
+    {
+        $host  = $this->hostManager();
+        $event = new HostEvent('generated id');
+
+        $this->conflict($host, static function () use ($host, $event): void {
+            $host->persist($event);
+            $host->flush();
+        });
+
+        self::assertFalse($host->contains($event));
+        self::assertNull($event->id, 'as before its flush');
+        $host->persist($event);
+        $host->flush();
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM host_event'));
+    }
+
+    /**
+     * Audit UZ3-3: an insert cascaded from an entity the host manages (no persist(), no flush()) is cancelled too.
+     */
+    public function testACascadedUnflushedHostInsertIsCancelled(): void
+    {
+        $host  = $this->hostManager();
+        $event = new HostEvent('managed');
+        $host->persist($event);
+        $host->flush();
+        $note = new HostNote('c1', 'cascaded');
+
+        $conflict = $this->conflict($host, static function () use ($event, $note): void {
+            $event->note = $note;
+        });
+
+        self::assertFalse($conflict->committed);
+        self::assertFalse($host->contains($note));
+        self::assertFalse($host->getUnitOfWork()->isScheduledForInsert($note), 'cancelled');
+        self::assertTrue($host->contains($event));
+    }
+
+    /**
+     * Audit UZ3-4: a host postFlush listener that flushes again (a nested flush) is followed too.
+     */
+    public function testANestedHostFlushFromAPostFlushListenerIsFollowed(): void
+    {
+        $host     = $this->hostManager();
+        $outer    = new HostNote('n1', 'outer');
+        $nested   = new HostNote('n2', 'nested');
+        $listener = new class($nested) {
+            private bool $done = false;
+
+            public function __construct(private readonly HostNote $nested)
+            {
+            }
+
+            public function postFlush(PostFlushEventArgs $args): void
+            {
+                if ($this->done) {
+                    return;
+                }
+                $this->done = true;
+                $args->getObjectManager()->persist($this->nested);
+                $args->getObjectManager()->flush();
+            }
+        };
+        $host->getEventManager()->addEventListener([Events::postFlush], $listener);
+        try {
+            $conflict = $this->conflict($host, static function () use ($host, $outer): void {
+                $host->persist($outer);
+                $host->flush();
+            });
+        } finally {
+            $host->getEventManager()->removeEventListener([Events::postFlush], $listener);
+        }
+
+        self::assertFalse($conflict->committed);
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_note'), 'both inserts went with the rollback');
+        self::assertFalse($host->contains($outer));
+        self::assertFalse($host->contains($nested));
     }
 
     public function testAHostInsertFlushedAndClearedInsideTheUnitIsNotReplayed(): void
@@ -191,6 +330,31 @@ final class HostWritesInUnitTest extends RegisterTestCase
         self::assertTrue($host->contains($pending));
         $host->flush();
         self::assertSame(1, $this->int("SELECT COUNT(*) FROM host_note WHERE id = 'p1'"), 'nothing of the host was lost');
+    }
+
+    /**
+     * Audit UZ3-2: the host's own transaction on its own connection is not the unit's: a port's flush inside it is
+     * not rolled back with the unit. CONFLICT_002, the entity stays managed, the host's commit stores it.
+     */
+    public function testAHostFlushInsideTheHostsOwnTransactionIsConflict002(): void
+    {
+        $this->hostKind = Host::ddd();
+        $host           = $this->hostManager();
+        $note           = new HostNote('t1', 'inside the host transaction');
+        $host->getConnection()->beginTransaction();
+
+        try {
+            $conflict = $this->conflict($host, static function () use ($host, $note): void {
+                $host->persist($note);
+                $host->flush();
+            });
+        } finally {
+            $host->getConnection()->commit();
+        }
+
+        self::assertTrue($conflict->committed, 'not undone by the unit: CONFLICT_002');
+        self::assertTrue($host->contains($note), 'not detached');
+        self::assertSame(1, $this->hostInt($host, "SELECT COUNT(*) FROM host_note WHERE id = 't1'"), 'the host\'s commit stored it');
     }
 
     public function testAHostFlushThatCommittedOnItsOwnConnectionIsConflict002(): void

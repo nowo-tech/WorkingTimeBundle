@@ -35,7 +35,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - A host flush that wrote, unflushed host inserts or changes, or a host manager that closed: the attempt is not
     replayed after a deadlock. The answer is a 409: `CONFLICT_002` only when a host flush committed on its own
     connection, otherwise `CONFLICT_001`.
-  - Inserts the rollback removed, and unflushed host inserts, are detached; nothing else of the host is touched.
+  - The host manager is put back to what the database holds (audit UZ3-1): inserts the rollback removed are
+    detached, rolled-back updates get their old values back in the entity and in Doctrine's original data, and
+    rolled-back deletes are managed again. A retry writes the change for real.
+  - Unflushed host inserts are cancelled, cascaded ones included (UZ3-3). Nothing else of the host is touched.
+  - A flush inside the host's own transaction on another connection counts as committed (`CONFLICT_002`, UZ3-2).
+    Nested host flushes are followed (UZ3-4).
   - Reads through a host manager still replay and detach nothing.
 - **BC: on the private manager a write refuses to start while a host entity manager has unflushed changes**
   (`LogicException`, audit UZ2-3), as the shared-manager mode already did.

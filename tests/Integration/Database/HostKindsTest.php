@@ -14,6 +14,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -76,7 +77,7 @@ final class HostKindsTest extends RegisterTestCase
         self::assertInstanceOf(EntityManagerInterface::class, $host);
         self::assertNotSame($host, $this->em(), 'the standard host: the bundle has its private manager');
         $tool = new SchemaTool($host);
-        $meta = [$host->getClassMetadata(HostNote::class)];
+        $meta = [$host->getClassMetadata(HostNote::class), $host->getClassMetadata(HostEvent::class)];
         $tool->dropSchema($meta);
         $tool->createSchema($meta);
         $note = new HostNote('n1', 'kept');
@@ -118,7 +119,7 @@ final class HostKindsTest extends RegisterTestCase
         $this->hostKind = Host::singleEntityManager();
         $this->boot($config);
         $tool = new SchemaTool($this->em());
-        $meta = [$this->em()->getClassMetadata(HostNote::class)];
+        $meta = [$this->em()->getClassMetadata(HostNote::class), $this->em()->getClassMetadata(HostEvent::class)];
         $tool->dropSchema($meta);
         $tool->createSchema($meta);
         $this->enable();

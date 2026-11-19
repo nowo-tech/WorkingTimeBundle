@@ -7,7 +7,8 @@ namespace Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * A host entity with a generated id (audit UZ2-5): persisted, it waits in the scheduled insertions until a flush.
+ * A host entity with a generated id (audit UZ2-5): persisted, it waits in the scheduled insertions until a flush. Its
+ * note is cascade-persisted (audit UZ3-3).
  */
 #[ORM\Entity]
 #[ORM\Table(name: 'host_event')]
@@ -20,6 +21,11 @@ class HostEvent
 
     #[ORM\Column(length: 80)]
     public string $text;
+
+    /** Cascade-persisted (audit UZ3-3). */
+    #[ORM\ManyToOne(cascade: ['persist'])]
+    #[ORM\JoinColumn(nullable: true)]
+    public ?HostNote $note = null;
 
     public function __construct(string $text)
     {

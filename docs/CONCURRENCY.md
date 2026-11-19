@@ -75,18 +75,18 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   host's open default manager keeps its entities. Every write of a unit goes through the bundle's manager (the stores
   take it from the runner). Leftover transaction levels are rolled back on every connection, as before.
 - **Host ports must not write through a host entity manager inside a unit** (the audit sink, the worker directory;
-  audits UZ-1, UZ2). Each attempt runs with a probe on every host manager (every manager of the registry except the
-  bundle's): it records the host flushes that wrote, the entities they inserted, and whether each one began outside a
-  transaction and so committed. The probe keeps nothing after the attempt. After a deadlock or lock-wait timeout, on
-  the private manager:
+  audits UZ-1, UZ2, UZ3). Each attempt runs with a probe on every host manager (every manager of the registry except
+  the bundle's). The probe records each host flush that wrote: its inserts, its updates with their old values, its
+  deletes, and whether it ran on the bundle's connection. Nested flushes are followed. The probe keeps nothing after
+  the attempt. After a deadlock or lock-wait timeout, on the private manager:
 
   | The port, inside the attempt | Outcome |
   | --- | --- |
   | Reads only (`find()`, queries, an empty `flush()`) | Replayed. Nothing of the host is detached; what it read stays managed. |
-  | `persist()` / changes without `flush()` | Not replayed: 409 `CONFLICT_001`. The new scheduled insertions are detached (cancelled), so transaction-doctrine never clears an open host manager. Unflushed changes to entities the host already had stay with the host. |
-  | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it. The entities that flush inserted are detached. Entities the host already had are not touched: an **update** of one is a **lost write**, and the host's copy keeps the values that were rolled back. `refresh()` it, or do not write it inside the unit. |
-  | `flush()` on another connection (the host's own) | It committed. Not replayed, so it is never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it inserted stays managed. |
-  | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush committed before the manager closed, else `CONFLICT_001`. |
+  | `persist()` / changes without `flush()` | Not replayed: 409 `CONFLICT_001`. The new scheduled inserts (cascaded ones included) are detached, so transaction-doctrine never clears an open host manager. Unflushed changes to entities the host already had stay with the host. |
+  | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it, and the host's manager is put back to what the database holds: inserted entities are detached (a generated id is reset); updated entities get their old values back, in the entity and in Doctrine's original data; deleted entities are managed again. A retry then writes the change for real. |
+  | `flush()` on another connection: committed, or inside the host's own transaction there | Not undone by the unit's rollback, so not replayed and never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it wrote stays managed. |
+  | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush on another connection finished before the manager closed, else `CONFLICT_001`. |
 
   The codes are those of the unit itself. A commit earlier in the same request turns any of them into `CONFLICT_002`
   (`ConflictCode::forRequest()`, with NowoTransactionDoctrineBundle's `commit_detection`).
@@ -101,13 +101,17 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
 
 ## Residual risks
 
-- A host port that writes through a host entity manager inside a unit is never replayed (the table above). Two cases
-  are still not repaired:
-  - A host update flushed on the bundle's connection is lost with the rollback. The host's copy keeps the
-    rolled-back values until it is refreshed: a later host flush sees nothing to change.
-  - An entity the port inserted and flushed there, then linked into a collection of an entity the host already had,
-    is detached while that collection still holds it.
-- A host flush on its own connection that commits and then is followed by a conflict is not undone. The answer is
-  `CONFLICT_002`, so the client reads again.
+- A host port that writes through a host entity manager inside a unit is never replayed (the table above). Some host
+  state the rollback undid is still not put back:
+  - Changes to to-many collections are not restored (the collections keep the rolled-back contents).
+  - A version column (`#[ORM\Version]`) keeps the version the rolled-back update set. The next host update then fails
+    loudly with an optimistic-lock error; it is never silent.
+  - A rolled-back insert that an entity the host already had still references (an association or a collection) is
+    detached, but the reference stays. The host's next flush cascades it back in or refuses it, depending on the
+    mapping.
+- A host flush on another connection (committed, or inside the host's own transaction) is not undone by the unit. The
+  answer is `CONFLICT_002`, so the client reads again.
+- Every write on the private manager reads every host manager of the registry (the pending-changes check and the
+  probe), so lazy managers are built.
 - A failure carrying more than 256 throwables, or a broken Messenger wrapper, answers `CONFLICT_002` (the safe
   over-approximation of transaction-doctrine's walk).

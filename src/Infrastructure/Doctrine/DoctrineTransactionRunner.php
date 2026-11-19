@@ -35,11 +35,11 @@ use function str_starts_with;
  * - On the private entity manager the write unit is scoped to it (transaction-doctrine >= 1.7 `forManagers()`): a
  *   replay clears or resets only the bundle's manager, never an open host one. Every write of a unit goes through
  *   that manager (the stores take it from manager()). Host ports called inside a unit (the audit sink, the worker
- *   directory) must not write through a host manager (audits UZ-1, UZ2). Each attempt runs with a HostWriteProbe on
- *   every host manager: after a transient failure, an attempt whose host flush wrote, whose host manager closed, or
- *   that left new unflushed host work is not replayed (ConcurrencyConflict, 409; CONFLICT_002 only when a host flush
- *   committed). Reads through a host manager never stop a replay. A unit does not start while a host manager has
- *   unflushed changes (audit UZ2-3).
+ *   directory) must not write through a host manager (audits UZ-1, UZ2, UZ3). Each attempt runs with a HostWriteProbe
+ *   on every host manager: after a transient failure, an attempt whose host flush wrote, whose host manager closed,
+ *   or that left new unflushed host work is not replayed (ConcurrencyConflict, 409; CONFLICT_002 only when a host
+ *   flush ran on another connection). What the rollback undid is put back in the host's manager. Reads through a
+ *   host manager never stop a replay. A unit does not start while a host manager has unflushed changes (UZ2-3).
  *
  * Never flushes the host's entity manager (rule 6): with `entity_manager: null` it is the default one, used only in
  * explicit transactions; there the runner forgets only the bundle's entities and refuses to write while the host has

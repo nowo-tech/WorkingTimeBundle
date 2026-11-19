@@ -29,11 +29,12 @@ composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
   must not write through a host manager (audits UZ-1, UZ2). After a deadlock in an attempt:
   - reads through a host manager are still replayed;
   - a host flush that wrote, unflushed host inserts or changes, or a host manager that closed: the attempt is not
-    replayed and the answer is a 409. It is `CONFLICT_002` only when a host flush committed on its own connection,
-    otherwise `CONFLICT_001` with `Retry-After`. Inserts the rollback removed, and unflushed inserts, are detached
-    from the host manager; nothing else of it is touched.
-  - A host update flushed on the bundle's connection is lost with the rollback, and the host's copy keeps the
-    rolled-back values. `refresh()` it.
+    replayed and the answer is a 409. It is `CONFLICT_002` when a host flush ran on another connection (committed,
+    or inside the host's own transaction there), otherwise `CONFLICT_001` with `Retry-After`.
+  - After a rollback on the bundle's connection the host manager is put back to the database: rolled-back inserts
+    are detached (generated ids reset), rolled-back updates get their old values back, and rolled-back deletes are
+    managed again. Unflushed inserts, cascaded ones included, are cancelled.
+  - To-many collection changes and version columns are not restored (see CONCURRENCY.md, residual risks).
 
   See CONCURRENCY.md, "Replays and the host's entity manager". Nothing changes with `doctrine.entity_manager: null`.
 - **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes**
