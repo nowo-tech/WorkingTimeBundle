@@ -11,6 +11,7 @@ use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostLabel;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostReadonly;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostTask;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostVersioned;
 
 /**
@@ -34,6 +35,6 @@ final class HostSchema
      */
     private static function metadata(EntityManagerInterface $manager): array
     {
-        return array_map($manager->getClassMetadata(...), [HostNote::class, HostEvent::class, HostLabel::class, HostVersioned::class, HostReadonly::class]);
+        return array_map($manager->getClassMetadata(...), [HostNote::class, HostEvent::class, HostLabel::class, HostVersioned::class, HostReadonly::class, HostTask::class]);
     }
 }

@@ -9,12 +9,15 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Events;
+use Doctrine\ORM\PersistentCollection;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\TransactionDoctrine\TransientFailureKind;
 use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
 use Throwable;
 
+use function array_combine;
 use function array_fill_keys;
+use function array_key_exists;
 use function array_pop;
 use function array_reverse;
 use function array_values;
@@ -190,10 +193,10 @@ final class HostWriteProbe
      *   UZ3-1): rolled-back inserts are detached (a generated id is reset, so the entity can be persisted again),
      *   rolled-back updates get their old values back in the entity and in the original data (no pending change, and
      *   a retry writes again), rolled-back deletes are managed again, and the owners of changed collections and the
-     *   versioned updates are refreshed (audit UZ4). Nothing else of the host is touched or cleared;
-     * - a host manager has new unflushed work (audits UZ2-5, UZ3-3; change sets computed first, so cascaded inserts
-     *   count): its scheduled inserts are detached (cancelled) and the attempt is not replayed (CONFLICT_001), so
-     *   transaction-doctrine never clears an open host manager;
+     *   versioned updates are reloaded through their persister (audits UZ4, UZ5). Nothing else is touched or cleared;
+     * - a host manager has new unflushed work (audits UZ2-5, UZ3-3, UZ5-2, UZ5-3): it is reverted (see
+     *   revertUnflushed()) and the attempt is not replayed (CONFLICT_001), so transaction-doctrine never clears an
+     *   open host manager;
      * - otherwise (reads only): null.
      */
     public function refusal(Throwable $failure, TransientFailureKind $kind, int $attempt): ?ConcurrencyConflict
@@ -206,17 +209,7 @@ final class HostWriteProbe
                 continue;
             }
             $this->restore($manager, $id);
-            $unitOfWork = $manager->getUnitOfWork();
-            // The unit never starts over unflushed host work (the runner refuses it, transaction-doctrine never replays
-            // over it), so every scheduled insertion now is one this attempt made, cascaded ones included.
-            $unitOfWork->computeChangeSets();
-            $unflushed = array_values($unitOfWork->getScheduledEntityInsertions());
-            if ($unflushed !== []) {
-                $this->detach($manager, $unflushed);
-                $refuse = true;
-            }
-            // Read from the change sets computed above: computing them again would cascade a detached insert back in.
-            $refuse = $refuse || $unitOfWork->getScheduledEntityUpdates() !== [] || $unitOfWork->getScheduledEntityDeletions() !== [];
+            $refuse = $this->revertUnflushed($manager) || $refuse;
         }
 
         return $refuse ? new ConcurrencyConflict($attempt, $kind, null, $failure, $this->committed) : null;
@@ -271,7 +264,7 @@ final class HostWriteProbe
         // Collections and versions come back from the database (UZ4-1 to UZ4-3).
         foreach ($this->refresh[$id] ?? [] as $entity) {
             if ($unitOfWork->isInIdentityMap($entity)) {
-                $this->safely(static fn () => $manager->refresh($entity)); // @igor-ignore - persistence call on the host's manager; nothing is kept on a service
+                $this->reload($manager, $entity);
             }
         }
     }
@@ -308,8 +301,90 @@ final class HostWriteProbe
         foreach ($kept as [$entity, $identifier, $data]) {
             if (!$unitOfWork->isInIdentityMap($entity)) {
                 $unitOfWork->registerManaged($entity, $identifier, $data);
+                // Its collections may still hold the detached insert (audit UZ5, residual c).
+                $this->reload($manager, $entity);
             }
         }
+    }
+
+    /**
+     * Reverts what the attempt changed in a host manager without flushing (audits UZ2-5, UZ3-3, UZ5-2, UZ5-3). The unit
+     * never starts over unflushed host work, so every change found now is the failed attempt's. Nothing is computed into
+     * the unit of work (computeChangeSets() would leave change sets the host's next flush writes):
+     *
+     * - a remove() is cancelled (the entity is managed again);
+     * - an entity whose fields or owning to-one associations differ from its original data, or whose to-many collection
+     *   is dirty or replaced, is reloaded from the database (so is an owner whose collection gained an unflushed,
+     *   cascade-persisted child, which is then reached by nothing);
+     * - a persist() is cancelled (detached).
+     *
+     * Entities with the DEFERRED_EXPLICIT change-tracking policy are reverted too, even when the change was never
+     * passed to persist().
+     *
+     * @return bool Whether the attempt left unflushed host work
+     */
+    private function revertUnflushed(EntityManagerInterface $manager): bool
+    {
+        $unitOfWork = $manager->getUnitOfWork();
+        $found      = false;
+        foreach ($unitOfWork->getScheduledEntityDeletions() as $entity) {
+            $found = true;
+            $this->safely(static fn () => $manager->persist($entity)); // @igor-ignore - cancels the attempt's remove(); nothing is kept on a service
+        }
+        $changed = [];
+        foreach ($unitOfWork->getIdentityMap() as $managed) {
+            foreach ($managed as $entity) {
+                if (!$unitOfWork->isScheduledForInsert($entity) && !$unitOfWork->isUninitializedObject($entity) && $this->changed($manager, $entity)) {
+                    $changed[] = $entity;
+                }
+            }
+        }
+        foreach ($changed as $entity) {
+            $found = true;
+            $this->reload($manager, $entity);
+        }
+        $inserts = array_values($unitOfWork->getScheduledEntityInsertions());
+        if ($inserts !== []) {
+            $found = true;
+            $this->detach($manager, $inserts);
+        }
+
+        return $found;
+    }
+
+    /**
+     * Whether a managed entity differs from its original data: a field, an owning to-one association, or a to-many
+     * collection that is dirty or no longer the managed one. Reads only.
+     */
+    private function changed(EntityManagerInterface $manager, object $entity): bool
+    {
+        $class    = $manager->getClassMetadata($entity::class);
+        $original = $manager->getUnitOfWork()->getOriginalEntityData($entity);
+        foreach ($class->getFieldNames() as $field) {
+            if (array_key_exists($field, $original) && $class->getFieldValue($entity, $field) !== $original[$field]) {
+                return true;
+            }
+        }
+        foreach ($class->getAssociationMappings() as $field => $association) {
+            $value = $class->getFieldValue($entity, $field);
+            if ($association->isToMany() ? !$value instanceof PersistentCollection || $value->isDirty() : $association->isOwningSide() && $value !== ($original[$field] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Reloads a managed entity (the callers check it) from the database through its persister (audit UZ5-1): fields, version and to-many
+     * collections come back, with no cascade (EntityManager::refresh() cascades first and would stop at a detached
+     * entity). Only postLoad runs.
+     */
+    private function reload(EntityManagerInterface $manager, object $entity): void
+    {
+        $unitOfWork = $manager->getUnitOfWork();
+        $class      = $manager->getClassMetadata($entity::class);
+        $this->safely(static fn () => $unitOfWork->getEntityPersister($class->name)->refresh(array_combine($class->getIdentifierFieldNames(), $unitOfWork->getEntityIdentifier($entity)), $entity)); // @igor-ignore - persistence call on the host's manager; nothing is kept on a service
     }
 
     /**

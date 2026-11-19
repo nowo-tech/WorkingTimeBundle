@@ -38,12 +38,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - The host manager is put back to what the database holds (audit UZ3-1): inserts the rollback removed are
     detached, rolled-back updates get their old values back in the entity and in Doctrine's original data, and
     rolled-back deletes are managed again. A retry writes the change for real.
-  - The owners of rolled-back collection changes (many-to-many links, inverse one-to-many children) and rolled-back
-    versioned entities are refreshed from the database, so a retry writes again and no phantom child is inserted
-    (UZ4-1 to UZ4-3).
+  - The owners of rolled-back collection changes (many-to-many links, inverse one-to-many children, cascade-all
+    ones included) and rolled-back versioned entities are reloaded from the database through their persister, which
+    does not cascade. A retry writes again and no phantom child is inserted (UZ4-1 to UZ4-3, UZ5-1).
   - Each entity is restored on its own: a readonly generated id that cannot be reset still answers 409 (UZ4-4). An
-    entity the host had before that a cascade detach reached is managed again (UZ4-5).
-  - Unflushed host inserts are cancelled, cascaded ones included (UZ3-3). Nothing else of the host is touched.
+    entity the host had before that a cascade detach reached is managed again and reloaded (UZ4-5).
+  - Unflushed host work of the failed attempt is reverted: `remove()` cancelled, changed entities and owners of
+    changed collections reloaded, `persist()` cancelled (UZ3-3, UZ5-2, UZ5-3). The host's next flush writes none
+    of it.
   - A flush inside the host's own transaction on another connection counts as committed (`CONFLICT_002`, UZ3-2).
     Nested host flushes are followed (UZ3-4).
   - Reads through a host manager still replay and detach nothing.

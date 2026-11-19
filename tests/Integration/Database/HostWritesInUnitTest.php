@@ -20,6 +20,7 @@ use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostLabel;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostReadonly;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostTask;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostVersioned;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostSchema;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
@@ -287,7 +288,11 @@ final class HostWritesInUnitTest extends RegisterTestCase
         self::assertSame(0, $this->int("SELECT COUNT(*) FROM host_note WHERE id = 'n9'"));
     }
 
-    public function testAnUnflushedHostUpdateIsNotReplayed(): void
+    /**
+     * Audit UZ5-3: an unflushed host update made inside the failed attempt is reverted, so the host's next flush never
+     * writes it; the next bundle write starts.
+     */
+    public function testAnUnflushedHostUpdateIsRevertedAndNeverWrittenLater(): void
     {
         $host = $this->hostManager();
         $note = new HostNote('n0', 'a');
@@ -299,7 +304,103 @@ final class HostWritesInUnitTest extends RegisterTestCase
         });
 
         self::assertFalse($conflict->committed);
-        self::assertTrue($host->contains($note), 'the host keeps its own change to flush or drop');
+        self::assertTrue($host->contains($note));
+        self::assertSame('a', $note->text, 'reverted');
+        $host->flush();
+        self::assertSame('a', $this->text("SELECT text FROM host_note WHERE id = 'n0'"), 'never written later');
+        self::assertSame('ok', $this->runner()->write(static fn (): string => 'ok'));
+    }
+
+    /**
+     * An unflushed remove() made inside the failed attempt is cancelled.
+     */
+    public function testAnUnflushedHostRemoveIsCancelled(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+
+        $this->conflict($host, static function () use ($host, $note): void {
+            $host->remove($note);
+        });
+
+        self::assertTrue($host->contains($note));
+        $host->flush();
+        self::assertSame(1, $this->int("SELECT COUNT(*) FROM host_note WHERE id = 'n0'"), 'never deleted later');
+    }
+
+    /**
+     * Audit UZ5-1: the owner of a cascade-all inverse collection is reloaded without cascading, so the rolled-back
+     * child it still held is gone and the host's next flush writes nothing.
+     */
+    public function testACascadeAllOwnerOfARolledBackChildIsReloaded(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+        $task = new HostTask('child');
+
+        $this->conflict($host, static function () use ($host, $note, $task): void {
+            $task->note = $note;
+            $note->tasks->add($task);
+            $host->flush();
+        });
+
+        self::assertFalse($host->contains($task));
+        self::assertCount(0, $note->tasks, 'the owner\'s collection is the database\'s again');
+        $host->flush();
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_task'), 'the host\'s next flush writes nothing');
+    }
+
+    /**
+     * Audit UZ5-2: a child added to a cascade-persist inverse collection without a flush is dropped with its owner's
+     * reload: no row later, and the next bundle write starts.
+     */
+    public function testAnUnflushedChildInAnInverseCollectionIsDropped(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+        $child = new HostEvent('unflushed child');
+
+        $this->conflict($host, static function () use ($note, $child): void {
+            $child->note = $note;
+            $note->events->add($child);
+        });
+
+        self::assertCount(0, $note->events);
+        $host->flush();
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_event'), 'no row later');
+        self::assertSame('ok', $this->runner()->write(static fn (): string => 'ok'), 'the next bundle write starts');
+    }
+
+    /**
+     * Audit UZ5 (residual c): a cascade-detach victim whose inverse collection holds the detached insert is managed
+     * again and reloaded, so its collection no longer holds it and the host's next flush writes nothing.
+     */
+    public function testACascadeDetachVictimIsReloaded(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+        $event = new HostEvent('linked');
+
+        $this->conflict($host, static function () use ($host, $note, $event): void {
+            $event->note = $note;
+            $note->events->add($event);
+            $host->persist($event);
+            $host->flush();
+        });
+
+        self::assertTrue($host->contains($note), 'managed again');
+        self::assertFalse($host->contains($event));
+        self::assertCount(0, $note->events, 'reloaded');
+        $host->flush();
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_event'));
     }
 
     public function testAHostManagerClosedDuringTheAttemptIsNotReplayed(): void

@@ -32,11 +32,16 @@ class HostNote
     #[ORM\OneToMany(targetEntity: HostEvent::class, mappedBy: 'note', cascade: ['persist'])]
     public Collection $events;
 
+    /** @var Collection<int, HostTask> An inverse one-to-many with cascade all (audit UZ5-1) */
+    #[ORM\OneToMany(targetEntity: HostTask::class, mappedBy: 'note', cascade: ['all'])]
+    public Collection $tasks;
+
     public function __construct(string $id, string $text)
     {
         $this->id     = $id;
         $this->text   = $text;
         $this->labels = new ArrayCollection();
         $this->events = new ArrayCollection();
+        $this->tasks  = new ArrayCollection();
     }
 }
