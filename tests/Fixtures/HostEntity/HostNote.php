@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -21,9 +23,20 @@ class HostNote
     #[ORM\Column(length: 80)]
     public string $text;
 
+    /** @var Collection<int, HostLabel> A many-to-many (audit UZ4-1) */
+    #[ORM\ManyToMany(targetEntity: HostLabel::class)]
+    #[ORM\JoinTable(name: 'host_note_label')]
+    public Collection $labels;
+
+    /** @var Collection<int, HostEvent> An inverse one-to-many that cascades inserts (audit UZ4-2) */
+    #[ORM\OneToMany(targetEntity: HostEvent::class, mappedBy: 'note', cascade: ['persist'])]
+    public Collection $events;
+
     public function __construct(string $id, string $text)
     {
-        $this->id   = $id;
-        $this->text = $text;
+        $this->id     = $id;
+        $this->text   = $text;
+        $this->labels = new ArrayCollection();
+        $this->events = new ArrayCollection();
     }
 }

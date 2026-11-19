@@ -10,7 +10,6 @@ use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Events;
-use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
 use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
@@ -18,7 +17,11 @@ use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\HostWriteProbe;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\AttemptCounter;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostLabel;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostReadonly;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostVersioned;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostSchema;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 use Throwable;
 
@@ -333,6 +336,137 @@ final class HostWritesInUnitTest extends RegisterTestCase
     }
 
     /**
+     * Audit UZ4-1: a many-to-many add flushed inside the unit and rolled back. The owner is refreshed, so its
+     * collection is the database's again, and the client's retry writes the link for real.
+     */
+    public function testARolledBackManyToManyAddIsWrittenByTheRetry(): void
+    {
+        $host  = $this->hostManager();
+        $note  = new HostNote('n0', 'a');
+        $label = new HostLabel('l1');
+        $host->persist($note);
+        $host->persist($label);
+        $host->flush();
+
+        $this->conflict($host, static function () use ($host, $note, $label): void {
+            $note->labels->add($label);
+            $host->flush();
+        });
+
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_note_label'), 'rolled back');
+        self::assertCount(0, $note->labels, 'the owner\'s collection is the database\'s again');
+        self::assertFalse(HostWriteProbe::hasScheduledChanges($host));
+
+        $this->runner()->write(static function () use ($host, $note, $label): void {
+            $note->labels->add($label);
+            $host->flush();
+        });
+
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM host_note_label'), 'the retry writes the link');
+    }
+
+    /**
+     * Audit UZ4-2: a child inserted through a cascade-persist inverse collection is rolled back. The owner's
+     * collection is reset, so the host's next flush writes no phantom row and the next bundle write starts.
+     */
+    public function testARolledBackInverseCollectionInsertLeavesNoPhantomRow(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+        $child = new HostEvent('child');
+
+        $this->conflict($host, static function () use ($host, $note, $child): void {
+            $child->note = $note;
+            $note->events->add($child);
+            $host->flush();
+        });
+
+        self::assertFalse($host->contains($child));
+        self::assertTrue($host->contains($note));
+        self::assertCount(0, $note->events, 'the inverse collection is the database\'s again');
+        $host->flush();
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_event'), 'the host\'s next flush writes nothing');
+        self::assertSame('ok', $this->runner()->write(static fn (): string => 'ok'), 'the next bundle write starts');
+    }
+
+    /**
+     * Audit UZ4-3: a versioned host entity gets its database version back, so the retry neither fails nor closes the
+     * host's manager.
+     */
+    public function testARolledBackVersionedUpdateGetsItsVersionBack(): void
+    {
+        $host      = $this->hostManager();
+        $versioned = new HostVersioned('v0', 'a');
+        $host->persist($versioned);
+        $host->flush();
+        $version = $versioned->version;
+
+        $this->conflict($host, static function () use ($host, $versioned): void {
+            $versioned->text = 'b';
+            $host->flush();
+        });
+
+        self::assertSame($version, $versioned->version, 'the database\'s version');
+        self::assertSame('a', $versioned->text);
+
+        $this->runner()->write(static function () use ($host, $versioned): void {
+            $versioned->text = 'b';
+            $host->flush();
+        });
+
+        self::assertTrue($host->isOpen());
+        self::assertSame('b', $this->text("SELECT text FROM host_versioned WHERE id = 'v0'"), 'the retry writes it');
+    }
+
+    /**
+     * Audit UZ4-4: a readonly generated id cannot be reset; the entity is still detached, the others are restored, and
+     * the answer stays a 409.
+     */
+    public function testARolledBackInsertWithAReadonlyIdStillAnswersAConflict(): void
+    {
+        $host     = $this->hostManager();
+        $readonly = new HostReadonly('readonly id');
+        $event    = new HostEvent('generated id');
+
+        $this->conflict($host, static function () use ($host, $readonly, $event): void {
+            $host->persist($readonly);
+            $host->persist($event);
+            $host->flush();
+        });
+
+        self::assertFalse($host->contains($readonly));
+        self::assertFalse($host->contains($event));
+        self::assertNull($event->id, 'the other entity is still restored');
+    }
+
+    /**
+     * Audit UZ4-5: detaching a rolled-back insert cascades (cascade detach) to an entity the host already had; that
+     * entity is managed again.
+     */
+    public function testACascadeDetachNeverDetachesAnEntityTheHostHad(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+        $event = new HostEvent('linked');
+
+        $this->conflict($host, static function () use ($host, $note, $event): void {
+            $event->note = $note;
+            $host->persist($event);
+            $host->flush();
+        });
+
+        self::assertFalse($host->contains($event));
+        self::assertTrue($host->contains($note), 'the existing note stays managed');
+        $note->text = 'edited later';
+        $host->flush();
+        self::assertSame('edited later', $this->text("SELECT text FROM host_note WHERE id = 'n0'"), 'and the host still writes it');
+    }
+
+    /**
      * Audit UZ3-2: the host's own transaction on its own connection is not the unit's: a port's flush inside it is
      * not rolled back with the unit. CONFLICT_002, the entity stays managed, the host's commit stores it.
      */
@@ -423,10 +557,7 @@ final class HostWritesInUnitTest extends RegisterTestCase
         self::assertInstanceOf(ManagerRegistry::class, $registry);
         $host = $registry->getManager('default');
         self::assertInstanceOf(EntityManagerInterface::class, $host);
-        $tool = new SchemaTool($host);
-        $meta = [$host->getClassMetadata(HostNote::class), $host->getClassMetadata(HostEvent::class)];
-        $tool->dropSchema($meta);
-        $tool->createSchema($meta);
+        HostSchema::reset($host);
         $this->enable();
 
         return $host;

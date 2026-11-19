@@ -44,9 +44,10 @@ final class HostWriteProbe
     private array $hosts = [];
 
     /**
-     * @var array<int, list<array{bool, list<object>, list<array{object, array<string, mixed>}>, list<array{object, array<string, mixed>, array<string, mixed>}>}>>
-     *                                                                                                                                                              Per host manager, the running flushes (a stack): on the bundle's connection, inserts, updates with their old
-     *                                                                                                                                                              values, deletes with their identifier and original data
+     * Per host manager, the running flushes (a stack): on the bundle's connection, inserts, updates with their old
+     * values, deletes with their identifier and original data, entities to refresh.
+     *
+     * @var array<int, list<array{bool, list<object>, list<array{object, array<string, mixed>}>, list<array{object, array<string, mixed>, array<string, mixed>}>, list<object>}>>
      */
     private array $running = [];
 
@@ -58,6 +59,9 @@ final class HostWriteProbe
 
     /** @var array<int, list<array{object, array<string, mixed>, array<string, mixed>}>> Per host manager: deletes the rollback undid */
     private array $deleted = [];
+
+    /** @var array<int, list<object>> Per host manager: collection owners and versioned updates to refresh after the rollback */
+    private array $refresh = [];
 
     /** Whether a host flush wrote during the attempt. */
     private bool $flushed = false;
@@ -122,6 +126,21 @@ final class HostWriteProbe
             }
             $old[] = [$entity, $values];
         }
+        // Audits UZ4-1 to UZ4-3: owners of changed collections (a to-many add or removal, an inverse collection that
+        // cascaded an insert) and versioned updates are refreshed after the rollback: Doctrine keeps no old value for
+        // a collection snapshot or a version.
+        $refresh = [];
+        foreach ([...$unitOfWork->getScheduledCollectionUpdates(), ...$unitOfWork->getScheduledCollectionDeletions()] as $collection) {
+            $owner = $collection->getOwner();
+            if ($owner !== null) {
+                $refresh[] = $owner;
+            }
+        }
+        foreach ($updates as $entity) {
+            if ($manager->getClassMetadata($entity::class)->isVersioned) {
+                $refresh[] = $entity;
+            }
+        }
         $gone = [];
         foreach ($deletions as $entity) {
             /** @var array<string, mixed> $identifier field => value */
@@ -129,7 +148,7 @@ final class HostWriteProbe
             $gone[]     = [$entity, $identifier, $unitOfWork->getOriginalEntityData($entity)];
         }
         $this->flushed        = true; // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
-        $this->running[$id][] = [$manager->getConnection() === $this->connection, array_values($insertions), $old, $gone]; // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
+        $this->running[$id][] = [$manager->getConnection() === $this->connection, array_values($insertions), $old, $gone, $refresh]; // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
     }
 
     /**
@@ -141,7 +160,7 @@ final class HostWriteProbe
         if (($this->running[$id] ?? []) === []) {
             return;
         }
-        [$local, $insertions, $updates, $deletions] = array_pop($this->running[$id]); // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
+        [$local, $insertions, $updates, $deletions, $refresh] = array_pop($this->running[$id]); // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
         if (!$local) {
             // Not on the bundle's connection: the unit's rollback does not undo it (audit UZ3-2).
             $this->committed = true; // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
@@ -157,6 +176,9 @@ final class HostWriteProbe
         foreach ($deletions as $deletion) {
             $this->deleted[$id][] = $deletion; // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
         }
+        foreach ($refresh as $owner) {
+            $this->refresh[$id][] = $owner; // @igor-ignore - per-attempt probe, never a service; dropped with the attempt
+        }
     }
 
     /**
@@ -167,7 +189,8 @@ final class HostWriteProbe
      *   unit's rollback (CONFLICT_001). The host's open manager is put back to what the database holds again (audit
      *   UZ3-1): rolled-back inserts are detached (a generated id is reset, so the entity can be persisted again),
      *   rolled-back updates get their old values back in the entity and in the original data (no pending change, and
-     *   a retry writes again), rolled-back deletes are managed again. Nothing else of the host is touched or cleared;
+     *   a retry writes again), rolled-back deletes are managed again, and the owners of changed collections and the
+     *   versioned updates are refreshed (audit UZ4). Nothing else of the host is touched or cleared;
      * - a host manager has new unflushed work (audits UZ2-5, UZ3-3; change sets computed first, so cascaded inserts
      *   count): its scheduled inserts are detached (cancelled) and the attempt is not replayed (CONFLICT_001), so
      *   transaction-doctrine never clears an open host manager;
@@ -187,8 +210,9 @@ final class HostWriteProbe
             // The unit never starts over unflushed host work (the runner refuses it, transaction-doctrine never replays
             // over it), so every scheduled insertion now is one this attempt made, cascaded ones included.
             $unitOfWork->computeChangeSets();
-            foreach ($unitOfWork->getScheduledEntityInsertions() as $entity) {
-                $manager->detach($entity); // @igor-ignore - an insert the attempt scheduled and never flushed; nothing is kept on a service
+            $unflushed = array_values($unitOfWork->getScheduledEntityInsertions());
+            if ($unflushed !== []) {
+                $this->detach($manager, $unflushed);
                 $refuse = true;
             }
             // Read from the change sets computed above: computing them again would cascade a detached insert back in.
@@ -210,35 +234,93 @@ final class HostWriteProbe
     }
 
     /**
-     * Puts the host's open manager back to the database after the unit's rollback undid its flushes (audit UZ3-1).
+     * Puts the host's open manager back to the database after the unit's rollback undid its flushes (audits UZ3-1,
+     * UZ4). Each entity is restored on its own: one that cannot be (a readonly id, a row gone) never stops the others.
      */
     private function restore(EntityManagerInterface $manager, int $id): void
     {
         $unitOfWork = $manager->getUnitOfWork();
-        foreach ($this->inserted[$id] ?? [] as $entity) {
+        $inserted   = $this->inserted[$id] ?? [];
+        $this->detach($manager, $inserted);
+        foreach ($inserted as $entity) {
             $class = $manager->getClassMetadata($entity::class);
-            if ($unitOfWork->isInIdentityMap($entity)) {
-                $manager->detach($entity); // @igor-ignore - the attempt's own rolled-back insert; nothing is kept on a service
-            }
             if (!$class->isIdentifierNatural()) {
-                // As before its flush: a new entity the host can persist again.
-                $class->setIdentifierValues($entity, array_fill_keys($class->getIdentifierFieldNames(), null));
+                // As before its flush: a new entity the host can persist again. A readonly id cannot be reset (UZ4-4).
+                $this->safely(static fn () => $class->setIdentifierValues($entity, array_fill_keys($class->getIdentifierFieldNames(), null)));
             }
         }
         // Latest first, so an entity updated by two flushes ends with the oldest values.
         foreach (array_reverse($this->updated[$id] ?? []) as [$entity, $values]) {
             $class = $manager->getClassMetadata($entity::class);
             foreach ($unitOfWork->isInIdentityMap($entity) ? $values : [] as $field => $value) {
-                $class->setFieldValue($entity, $field, $value);
-                $unitOfWork->setOriginalEntityProperty(spl_object_id($entity), $field, $value);
+                $this->safely(static function () use ($class, $unitOfWork, $entity, $field, $value): void {
+                    $class->setFieldValue($entity, $field, $value);
+                    $unitOfWork->setOriginalEntityProperty(spl_object_id($entity), $field, $value);
+                });
             }
         }
         foreach ($this->deleted[$id] ?? [] as [$entity, $identifier, $data]) {
             $class = $manager->getClassMetadata($entity::class);
             if (!$unitOfWork->isInIdentityMap($entity) && $unitOfWork->tryGetById($identifier, $class->rootEntityName) === false) {
-                $class->setIdentifierValues($entity, $identifier);
+                $this->safely(static function () use ($class, $unitOfWork, $entity, $identifier, $data): void {
+                    $class->setIdentifierValues($entity, $identifier);
+                    $unitOfWork->registerManaged($entity, $identifier, $data);
+                });
+            }
+        }
+        // Collections and versions come back from the database (UZ4-1 to UZ4-3).
+        foreach ($this->refresh[$id] ?? [] as $entity) {
+            if ($unitOfWork->isInIdentityMap($entity)) {
+                $this->safely(static fn () => $manager->refresh($entity)); // @igor-ignore - persistence call on the host's manager; nothing is kept on a service
+            }
+        }
+    }
+
+    /**
+     * Detaches $entities from $manager. detach() cascades to associations marked cascade detach (audit UZ4-5): an
+     * entity the host had before that a cascade detached is managed again, with its identifier and original data.
+     *
+     * @param list<object> $entities
+     */
+    private function detach(EntityManagerInterface $manager, array $entities): void
+    {
+        if ($entities === []) {
+            return;
+        }
+        $unitOfWork = $manager->getUnitOfWork();
+        $targets    = [];
+        foreach ($entities as $entity) {
+            $targets[spl_object_id($entity)] = true;
+        }
+        $kept = [];
+        foreach ($unitOfWork->getIdentityMap() as $managed) {
+            foreach ($managed as $entity) {
+                if (!isset($targets[spl_object_id($entity)])) {
+                    $kept[] = [$entity, $unitOfWork->getEntityIdentifier($entity), $unitOfWork->getOriginalEntityData($entity)];
+                }
+            }
+        }
+        foreach ($entities as $entity) {
+            if ($unitOfWork->isInIdentityMap($entity) || $unitOfWork->isScheduledForInsert($entity)) {
+                $this->safely(static fn () => $manager->detach($entity)); // @igor-ignore - the attempt's own insert; nothing is kept on a service
+            }
+        }
+        foreach ($kept as [$entity, $identifier, $data]) {
+            if (!$unitOfWork->isInIdentityMap($entity)) {
                 $unitOfWork->registerManaged($entity, $identifier, $data);
             }
+        }
+    }
+
+    /**
+     * Runs one restore step; a failure (a readonly property, a row the database no longer has) skips that step only.
+     */
+    private function safely(callable $step): void
+    {
+        try {
+            $step();
+        } catch (Throwable) {
+            // This entity stays as it is; the others are still restored and the answer stays a 409.
         }
     }
 }

@@ -34,7 +34,9 @@ composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
   - After a rollback on the bundle's connection the host manager is put back to the database: rolled-back inserts
     are detached (generated ids reset), rolled-back updates get their old values back, and rolled-back deletes are
     managed again. Unflushed inserts, cascaded ones included, are cancelled.
-  - To-many collection changes and version columns are not restored (see CONCURRENCY.md, residual risks).
+  - Owners of rolled-back collection changes and rolled-back versioned entities are refreshed from the database
+    (`EntityManager::refresh()`), so they lose unflushed in-memory changes made inside the unit. See
+    CONCURRENCY.md, residual risks.
 
   See CONCURRENCY.md, "Replays and the host's entity manager". Nothing changes with `doctrine.entity_manager: null`.
 - **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes**

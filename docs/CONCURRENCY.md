@@ -84,7 +84,7 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   | --- | --- |
   | Reads only (`find()`, queries, an empty `flush()`) | Replayed. Nothing of the host is detached; what it read stays managed. |
   | `persist()` / changes without `flush()` | Not replayed: 409 `CONFLICT_001`. The new scheduled inserts (cascaded ones included) are detached, so transaction-doctrine never clears an open host manager. Unflushed changes to entities the host already had stay with the host. |
-  | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it, and the host's manager is put back to what the database holds: inserted entities are detached (a generated id is reset); updated entities get their old values back, in the entity and in Doctrine's original data; deleted entities are managed again. A retry then writes the change for real. |
+  | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it, and the host's manager is put back to what the database holds. Inserted entities are detached (a generated id is reset unless it is readonly); an entity the host had before is managed again if a cascade detach reached it. Updated entities get their old values back, in the entity and in Doctrine's original data. Deleted entities are managed again. The owners of changed collections (many-to-many links, inverse one-to-many children) and versioned entities are refreshed from the database. A retry then writes the change for real. Each entity is restored on its own: one that cannot be never stops the others, and the answer stays a 409. |
   | `flush()` on another connection: committed, or inside the host's own transaction there | Not undone by the unit's rollback, so not replayed and never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it wrote stays managed. |
   | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush on another connection finished before the manager closed, else `CONFLICT_001`. |
 
@@ -102,13 +102,13 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
 ## Residual risks
 
 - A host port that writes through a host entity manager inside a unit is never replayed (the table above). Some host
-  state the rollback undid is still not put back:
-  - Changes to to-many collections are not restored (the collections keep the rolled-back contents).
-  - A version column (`#[ORM\Version]`) keeps the version the rolled-back update set. The next host update then fails
-    loudly with an optimistic-lock error; it is never silent.
-  - A rolled-back insert that an entity the host already had still references (an association or a collection) is
-    detached, but the reference stays. The host's next flush cascades it back in or refuses it, depending on the
-    mapping.
+  state is still not put back:
+  - A refreshed owner loses any unflushed change the host had made to it before the port's flush (the unit refuses to
+    start over unflushed host work, so this needs a change made inside the unit and never flushed).
+  - An entity whose restore fails (a readonly generated id, a refresh of a row the database no longer has) keeps its
+    in-memory state; the answer is still a 409.
+  - An entity the host had before that a cascade detach reached is managed again with its identifier and original
+    data, but its own collections are not refreshed.
 - A host flush on another connection (committed, or inside the host's own transaction) is not undone by the unit. The
   answer is `CONFLICT_002`, so the client reads again.
 - Every write on the private manager reads every host manager of the registry (the pending-changes check and the

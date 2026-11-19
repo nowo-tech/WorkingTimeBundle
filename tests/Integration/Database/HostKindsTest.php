@@ -7,15 +7,14 @@ namespace Nowo\WorkingTimeBundle\Tests\Integration\Database;
 use Doctrine\DBAL\Driver\AbstractException;
 use Doctrine\DBAL\Exception\DeadlockException;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
-use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostSchema;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 use PHPUnit\Framework\Attributes\DataProvider;
 
@@ -76,10 +75,7 @@ final class HostKindsTest extends RegisterTestCase
         $host = $registry->getManager('default');
         self::assertInstanceOf(EntityManagerInterface::class, $host);
         self::assertNotSame($host, $this->em(), 'the standard host: the bundle has its private manager');
-        $tool = new SchemaTool($host);
-        $meta = [$host->getClassMetadata(HostNote::class), $host->getClassMetadata(HostEvent::class)];
-        $tool->dropSchema($meta);
-        $tool->createSchema($meta);
+        HostSchema::reset($host);
         $note = new HostNote('n1', 'kept');
         $host->persist($note);
         $host->flush();
@@ -98,7 +94,6 @@ final class HostKindsTest extends RegisterTestCase
         self::assertSame(2, $attempts, 'the deadlock was replayed');
         self::assertTrue($host->isOpen());
         self::assertTrue($host->contains($note), 'the host\'s entity stays managed across the replay');
-        $tool->dropSchema($meta);
     }
 
     /**
@@ -118,10 +113,7 @@ final class HostKindsTest extends RegisterTestCase
     {
         $this->hostKind = Host::singleEntityManager();
         $this->boot($config);
-        $tool = new SchemaTool($this->em());
-        $meta = [$this->em()->getClassMetadata(HostNote::class), $this->em()->getClassMetadata(HostEvent::class)];
-        $tool->dropSchema($meta);
-        $tool->createSchema($meta);
+        HostSchema::reset($this->em());
         $this->enable();
         $this->actAs('ana', 'clock');
         $note = new HostNote('n1', 'draft');

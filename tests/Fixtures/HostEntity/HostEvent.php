@@ -22,8 +22,8 @@ class HostEvent
     #[ORM\Column(length: 80)]
     public string $text;
 
-    /** Cascade-persisted (audit UZ3-3). */
-    #[ORM\ManyToOne(cascade: ['persist'])]
+    /** Cascade-persisted (audit UZ3-3) and cascade-detached (audit UZ4-5). */
+    #[ORM\ManyToOne(cascade: ['persist', 'detach'], inversedBy: 'events')]
     #[ORM\JoinColumn(nullable: true)]
     public ?HostNote $note = null;
 
