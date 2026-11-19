@@ -19,8 +19,7 @@ use Nowo\WorkingTimeBundle\Application\Shared\StaleRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
 use Throwable;
 
-use function count;
-use function spl_object_id;
+use function sprintf;
 use function str_starts_with;
 
 /**
@@ -34,13 +33,13 @@ use function str_starts_with;
  * - Both clear the entity manager when the outermost unit ends, and a closed entity manager is reset through the
  *   registry before the next unit (worker mode: no managed entity and no broken manager survive a call).
  * - On the private entity manager the write unit is scoped to it (transaction-doctrine >= 1.7 `forManagers()`): a
- *   replay clears or resets only the bundle's manager, never the host's open default one. Every write of a unit goes
- *   through that manager (the stores take it from manager()). Host ports called inside a unit (the audit sink, the
- *   worker directory) must not write through the host's manager (audit UZ-1). If one does and the attempt meets a
- *   transient failure after the host's identity map grew (a persist, with or without a flush), the unit is not
- *   replayed: what the attempt added to the host's manager is detached (nothing else of it) and the failure ends as a
- *   ConcurrencyConflict (409; CONFLICT_002 when the host's manager is on another connection, where its flush
- *   committed). A host update of an entity it already managed does not grow the map and is replayed like before.
+ *   replay clears or resets only the bundle's manager, never an open host one. Every write of a unit goes through
+ *   that manager (the stores take it from manager()). Host ports called inside a unit (the audit sink, the worker
+ *   directory) must not write through a host manager (audits UZ-1, UZ2). Each attempt runs with a HostWriteProbe on
+ *   every host manager: after a transient failure, an attempt whose host flush wrote, whose host manager closed, or
+ *   that left new unflushed host work is not replayed (ConcurrencyConflict, 409; CONFLICT_002 only when a host flush
+ *   committed). Reads through a host manager never stop a replay. A unit does not start while a host manager has
+ *   unflushed changes (audit UZ2-3).
  *
  * Never flushes the host's entity manager (rule 6): with `entity_manager: null` it is the default one, used only in
  * explicit transactions; there the runner forgets only the bundle's entities and refuses to write while the host has
@@ -78,11 +77,12 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
             return $result;
         }
         $this->refuseForeignChanges($manager);
+        $this->refuseHostChanges($manager);
 
         return $this->unit($manager)->run(function (int $attempt = 1) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $manager = $this->manager();
             $this->release($manager);
-            $host = $this->hostSnapshot($manager);
+            $probe = $this->shared($manager) ? null : HostWriteProbe::open($this->registry, $manager);
             try {
                 return $manager->wrapInTransaction(static function (EntityManagerInterface $manager) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
                     $result = $work();
@@ -95,81 +95,20 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
             } catch (OptimisticLockException $e) {
                 throw new StaleRowException($e);
             } catch (Throwable $e) {
-                $this->refuseReplayAfterHostWrites($manager, $host, $e, $attempt);
+                $kind = (new TransientFailureClassifier())->classify($e);
+                if ($probe instanceof HostWriteProbe && $kind instanceof TransientFailureKind) {
+                    $conflict = $probe->refusal($e, $kind, $attempt);
+                    if ($conflict instanceof ConcurrencyConflict) {
+                        throw $conflict;
+                    }
+                }
 
                 throw $e;
             } finally {
+                $probe?->close();
                 $this->release($this->manager());
             }
         });
-    }
-
-    /**
-     * The host's open default manager and the entities its identity map holds before an attempt, on the private
-     * manager only (null on a shared one, which the unit writes through, or when the host's manager is closed).
-     *
-     * @return array{EntityManagerInterface, array<int, true>}|null
-     */
-    private function hostSnapshot(EntityManagerInterface $manager): ?array
-    {
-        if ($this->shared($manager)) {
-            return null;
-        }
-        $host = $this->registry->getManager();
-        if (!$host instanceof EntityManagerInterface || !$host->isOpen()) {
-            return null;
-        }
-
-        return [$host, $this->identities($host)];
-    }
-
-    /**
-     * Audit UZ-1: an attempt that met a transient failure after the host's identity map grew (a host port persisted,
-     * maybe flushed, through the host's manager inside the unit) is not replayed. The entities the attempt added to
-     * the host's manager are detached (a rolled-back insert must not stay managed in a worker), and the failure ends as
-     * a ConcurrencyConflict, which a write unit never replays: 409, CONFLICT_002 when the host's manager is on another
-     * connection (its flush committed there).
-     *
-     * @param array{EntityManagerInterface, array<int, true>}|null $host
-     *
-     * @throws ConcurrencyConflict
-     */
-    private function refuseReplayAfterHostWrites(EntityManagerInterface $manager, ?array $host, Throwable $failure, int $attempt): void
-    {
-        if ($host === null) {
-            return;
-        }
-        $kind                   = (new TransientFailureClassifier())->classify($failure);
-        [$hostManager, $before] = $host;
-        if (!$kind instanceof TransientFailureKind || !$hostManager->isOpen() || $hostManager->getUnitOfWork()->size() <= count($before)) {
-            return;
-        }
-        foreach ($hostManager->getUnitOfWork()->getIdentityMap() as $entities) {
-            foreach ($entities as $entity) {
-                if (!isset($before[spl_object_id($entity)])) {
-                    $hostManager->detach($entity); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
-                }
-            }
-        }
-
-        throw new ConcurrencyConflict($attempt, $kind, null, $failure, $hostManager->getConnection() !== $manager->getConnection());
-    }
-
-    /**
-     * The object ids of the entities a manager's identity map holds.
-     *
-     * @return array<int, true>
-     */
-    private function identities(EntityManagerInterface $manager): array
-    {
-        $ids = [];
-        foreach ($manager->getUnitOfWork()->getIdentityMap() as $entities) {
-            foreach ($entities as $entity) {
-                $ids[spl_object_id($entity)] = true;
-            }
-        }
-
-        return $ids;
     }
 
     /**
@@ -242,6 +181,24 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
                 if (!str_starts_with($entity::class, self::ENTITY_NAMESPACE)) {
                     throw new LogicException('nowo_working_time shares the default entity manager (doctrine.entity_manager: null or the default manager\'s name) and will not flush the host\'s pending changes: flush them before calling the register, or give the bundle its private entity manager.');
                 }
+            }
+        }
+    }
+
+    /**
+     * On the private entity manager a unit never starts while a host manager holds unflushed work (audit UZ2-3): a
+     * host port flushing it inside the unit would put it into a transaction that may roll back, losing it silently.
+     *
+     * @throws LogicException
+     */
+    private function refuseHostChanges(EntityManagerInterface $manager): void
+    {
+        if ($this->shared($manager)) {
+            return;
+        }
+        foreach ($this->registry->getManagers() as $name => $host) {
+            if ($host instanceof EntityManagerInterface && $host !== $manager && $host->isOpen() && HostWriteProbe::hasScheduledChanges($host)) {
+                throw new LogicException(sprintf('nowo_working_time will not start a write while the entity manager "%s" has unflushed changes: a flush inside the unit could lose them on a rollback. Flush (or clear) them before calling the register.', $name));
             }
         }
     }

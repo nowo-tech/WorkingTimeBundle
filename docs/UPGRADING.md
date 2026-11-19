@@ -26,15 +26,20 @@ composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
   works).
 - **A replay no longer clears the host's entity manager** on the private manager (the default): a deadlock replay of
   the bundle's unit clears only `nowo_working_time`. Host ports called inside a unit (audit sink, worker directory)
-  must not write through the host's manager (audit UZ-1):
-  - a `persist()` without `flush()` ends as a 409;
-  - a `persist()` + `flush()` on the bundle's connection, then a deadlock: the unit is not replayed, the inserted
-    entities are detached from the host's manager, and the answer is a 409;
-  - the same on another connection: that flush committed, so the answer is a 409 `CONFLICT_002`. With a commit ledger
-    (`commit_detection`), any committed attempt is refused the same way; without one, an update there is repeated by
-    the replay.
+  must not write through a host manager (audits UZ-1, UZ2). After a deadlock in an attempt:
+  - reads through a host manager are still replayed;
+  - a host flush that wrote, unflushed host inserts or changes, or a host manager that closed: the attempt is not
+    replayed and the answer is a 409. It is `CONFLICT_002` only when a host flush committed on its own connection,
+    otherwise `CONFLICT_001` with `Retry-After`. Inserts the rollback removed, and unflushed inserts, are detached
+    from the host manager; nothing else of it is touched.
+  - A host update flushed on the bundle's connection is lost with the rollback, and the host's copy keeps the
+    rolled-back values. `refresh()` it.
 
   See CONCURRENCY.md, "Replays and the host's entity manager". Nothing changes with `doctrine.entity_manager: null`.
+- **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes**
+  (audit UZ2-3; `LogicException` naming the manager). Before, a host port flushing that work inside the unit could
+  lose it silently on a rollback. Flush (or clear) the host's work before calling the register; the shared-manager
+  mode has always refused this.
 - **`CONFLICT_002` for an earlier commit needs NowoTransactionDoctrineBundle with `commit_detection`** (on by
   default). Without it, those cases answer `CONFLICT_001`.
 - **`ConflictFallbackListener` is registered even with NowoTransactionDoctrineBundle** (priority 63, after its

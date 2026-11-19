@@ -225,10 +225,10 @@ final class DoctrineInfrastructureTest extends TestCase
     }
 
     /**
-     * Audit UZ-1 guard: with the host's manager closed there is nothing to watch, so a transient failure goes back to
-     * the write unit unchanged (its own repair resets the closed manager).
+     * Audit UZ2 probe: with no open host manager to watch (the default one closed), a transient failure goes back to
+     * the write unit unchanged, for transaction-doctrine to replay (its own repair resets the closed manager).
      */
-    public function testAClosedHostManagerLeavesTheFailureToTheWriteUnit(): void
+    public function testWithoutAnOpenHostManagerTheFailureGoesBackToTheWriteUnit(): void
     {
         $connection = $this->createStub(Connection::class);
         $connection->method('isTransactionActive')->willReturn(false);
@@ -242,6 +242,7 @@ final class DoctrineInfrastructureTest extends TestCase
         $host->method('isOpen')->willReturn(false);
         $registry = $this->createStub(ManagerRegistry::class);
         $registry->method('getManager')->willReturnCallback(static fn (?string $name = null): EntityManagerInterface => $name === 'wt' ? $private : $host);
+        $registry->method('getManagers')->willReturn(['default' => $host, 'wt' => $private]);
 
         try {
             (new DoctrineTransactionRunner($registry, $this->writeUnit(), 'wt'))->write(static fn (): int => 1);

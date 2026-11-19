@@ -29,10 +29,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **transaction-doctrine `^1.7.1`** (was `^1.3`), in the bundle and both demos.
 - **Write units scoped to the private entity manager** (transaction-doctrine `forManagers()`, audit UI2-1): a deadlock
   replay clears or resets only the bundle's manager; the host's open default manager keeps its entities. Unchanged on
-  a shared manager (`doctrine.entity_manager: null` or the default manager's name). A unit whose attempt grew the
-  host's identity map (a host port persisted, maybe flushed, through the host's manager) is not replayed after a
-  deadlock. What the attempt added to the host's manager is detached, so no rolled-back entity stays managed in a
-  worker, and the answer is a 409: `CONFLICT_002` when the host's manager is on another connection (audit UZ-1).
+  a shared manager (`doctrine.entity_manager: null` or the default manager's name).
+- **Host writes inside a unit are never replayed** (audits UZ-1, UZ2). Each attempt on the private manager watches
+  every host entity manager for flushes:
+  - A host flush that wrote, unflushed host inserts or changes, or a host manager that closed: the attempt is not
+    replayed after a deadlock. The answer is a 409: `CONFLICT_002` only when a host flush committed on its own
+    connection, otherwise `CONFLICT_001`.
+  - Inserts the rollback removed, and unflushed host inserts, are detached; nothing else of the host is touched.
+  - Reads through a host manager still replay and detach nothing.
+- **BC: on the private manager a write refuses to start while a host entity manager has unflushed changes**
+  (`LogicException`, audit UZ2-3), as the shared-manager mode already did.
 - **`ConflictFallbackListener` answers through transaction-doctrine's responder when it exists** (`respond()`: the
   branded HTML page and the bundle's JSON formatter), and logs one constant warning (route, method, code).
 - **`ConflictFallbackListener` is always registered**, at `kernel.exception` priority 63 (after transaction-doctrine's

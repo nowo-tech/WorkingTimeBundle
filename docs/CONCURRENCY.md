@@ -74,16 +74,26 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   it with transaction-doctrine's `forManagers()` (>= 1.7). A replay clears or resets only the bundle's manager; the
   host's open default manager keeps its entities. Every write of a unit goes through the bundle's manager (the stores
   take it from the runner). Leftover transaction levels are rolled back on every connection, as before.
-- **Host ports must not write through the host's entity manager inside a unit** (the audit sink, the worker directory;
-  audit UZ-1). What happens if one does, on the private manager:
+- **Host ports must not write through a host entity manager inside a unit** (the audit sink, the worker directory;
+  audits UZ-1, UZ2). Each attempt runs with a probe on every host manager (every manager of the registry except the
+  bundle's): it records the host flushes that wrote, the entities they inserted, and whether each one began outside a
+  transaction and so committed. The probe keeps nothing after the attempt. After a deadlock or lock-wait timeout, on
+  the private manager:
 
-  | The port, inside the unit | Then a deadlock or lock-wait timeout |
+  | The port, inside the attempt | Outcome |
   | --- | --- |
-  | `persist()` without `flush()` | Not replayed: a 409 (`CONFLICT_001`). The runner detaches what the attempt added to the host's manager (an entity with an assigned id); an entity still waiting for a generated id makes transaction-doctrine abandon the replay and clear every manager. |
-  | `persist()` + `flush()` on the same connection as the bundle (a savepoint inside the unit) | The deadlock rolls the insert back. The runner does not replay: it detaches the inserted entities from the host's manager, so no rolled-back entity stays managed in the worker, and answers 409 (`CONFLICT_001`). A host `flush()` that only **updates** an entity the host already managed does not grow the identity map: the unit is replayed and the host's copy keeps the rolled-back values (stale). |
-  | `persist()` + `flush()` on another connection (the host's own) | That flush committed. The runner does not replay and answers 409 `CONFLICT_002`, without `Retry-After`. If the write unit has a commit ledger (NowoTransactionDoctrineBundle with `commit_detection`), it refuses the replay of any committed attempt with `CONFLICT_002` as well. Without a ledger, a host update on another connection is repeated by the replay. |
+  | Reads only (`find()`, queries, an empty `flush()`) | Replayed. Nothing of the host is detached; what it read stays managed. |
+  | `persist()` / changes without `flush()` | Not replayed: 409 `CONFLICT_001`. The new scheduled insertions are detached (cancelled), so transaction-doctrine never clears an open host manager. Unflushed changes to entities the host already had stay with the host. |
+  | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it. The entities that flush inserted are detached. Entities the host already had are not touched: an **update** of one is a **lost write**, and the host's copy keeps the values that were rolled back. `refresh()` it, or do not write it inside the unit. |
+  | `flush()` on another connection (the host's own) | It committed. Not replayed, so it is never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it inserted stays managed. |
+  | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush committed before the manager closed, else `CONFLICT_001`. |
 
-  Ports should log, or write after the commit (an outbox, an after-commit event).
+  The codes are those of the unit itself. A commit earlier in the same request turns any of them into `CONFLICT_002`
+  (`ConflictCode::forRequest()`, with NowoTransactionDoctrineBundle's `commit_detection`).
+
+  **A unit does not start while a host manager has unflushed changes** (audit UZ2-3): the runner throws a
+  `LogicException` naming the manager. Flush or clear the host's work before calling the register. Ports should log,
+  or write after the commit (an outbox, an after-commit event).
 - **Shared manager** (`doctrine.entity_manager: null`, or the default manager's name): the unit writes through the
   host's manager, so it is not scoped. The runner refuses to start while the host has unflushed changes, and only the
   bundle's entities are detached after a unit, but a deadlock replay clears the shared manager (transaction-doctrine's
@@ -91,8 +101,13 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
 
 ## Residual risks
 
-- A host port that writes through the host's entity manager inside a unit: see the table above. An update of an
-  entity the host already managed is replayed. On the same connection, the host's copy then keeps rolled-back values.
-  On another connection without a commit ledger, the update is repeated.
+- A host port that writes through a host entity manager inside a unit is never replayed (the table above). Two cases
+  are still not repaired:
+  - A host update flushed on the bundle's connection is lost with the rollback. The host's copy keeps the
+    rolled-back values until it is refreshed: a later host flush sees nothing to change.
+  - An entity the port inserted and flushed there, then linked into a collection of an entity the host already had,
+    is detached while that collection still holds it.
+- A host flush on its own connection that commits and then is followed by a conflict is not undone. The answer is
+  `CONFLICT_002`, so the client reads again.
 - A failure carrying more than 256 throwables, or a broken Messenger wrapper, answers `CONFLICT_002` (the safe
   over-approximation of transaction-doctrine's walk).
