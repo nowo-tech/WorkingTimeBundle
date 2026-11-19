@@ -44,13 +44,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Each entity is restored on its own: a readonly generated id that cannot be reset still answers 409 (UZ4-4). An
     entity the host had before that a cascade detach reached is managed again and reloaded (UZ4-5).
   - Unflushed host work of the failed attempt is reverted: `remove()` cancelled, changed entities and owners of
-    changed collections reloaded, `persist()` cancelled (UZ3-3, UZ5-2, UZ5-3). The host's next flush writes none
-    of it.
+    changed collections reloaded, `persist()` cancelled (UZ3-3, UZ5-2, UZ5-3). Orphan removals scheduled by
+    `removeElement()` are cancelled first (UZ6-1). Read-only entities are skipped (UZ6-3). The host's next flush
+    writes none of it.
   - A flush inside the host's own transaction on another connection counts as committed (`CONFLICT_002`, UZ3-2).
     Nested host flushes are followed (UZ3-4).
   - Reads through a host manager still replay and detach nothing.
 - **BC: on the private manager a write refuses to start while a host entity manager has unflushed changes**
-  (`LogicException`, audit UZ2-3), as the shared-manager mode already did.
+  (`LogicException`, audit UZ2-3), as the shared-manager mode already did. Changes pending only in collections, and
+  pending orphan removals, count too (UZ6-2).
 - **`ConflictFallbackListener` answers through transaction-doctrine's responder when it exists** (`respond()`: the
   branded HTML page and the bundle's JSON formatter), and logs one constant warning (route, method, code).
 - **`ConflictFallbackListener` is always registered**, at `kernel.exception` priority 63 (after transaction-doctrine's

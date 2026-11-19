@@ -40,7 +40,8 @@ composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
     change-tracking policy this includes changes never passed to `persist()`. See CONCURRENCY.md, residual risks.
 
   See CONCURRENCY.md, "Replays and the host's entity manager". Nothing changes with `doctrine.entity_manager: null`.
-- **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes**
+- **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes,
+  including changes pending only in collections and pending orphan removals**
   (audit UZ2-3; `LogicException` naming the manager). Before, a host port flushing that work inside the unit could
   lose it silently on a rollback. Flush (or clear) the host's work before calling the register; the shared-manager
   mode has always refused this.

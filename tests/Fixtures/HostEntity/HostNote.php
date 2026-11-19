@@ -36,6 +36,10 @@ class HostNote
     #[ORM\OneToMany(targetEntity: HostTask::class, mappedBy: 'note', cascade: ['all'])]
     public Collection $tasks;
 
+    /** @var Collection<int, HostKid> A one-to-many with cascade persist and remove and orphan removal (audit UZ6-1) */
+    #[ORM\OneToMany(targetEntity: HostKid::class, mappedBy: 'note', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    public Collection $kids;
+
     public function __construct(string $id, string $text)
     {
         $this->id     = $id;
@@ -43,5 +47,6 @@ class HostNote
         $this->labels = new ArrayCollection();
         $this->events = new ArrayCollection();
         $this->tasks  = new ArrayCollection();
+        $this->kids   = new ArrayCollection();
     }
 }

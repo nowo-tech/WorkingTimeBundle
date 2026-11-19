@@ -17,6 +17,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\HostWriteProbe;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\AttemptCounter;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostKid;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostLabel;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostReadonly;
@@ -309,6 +310,85 @@ final class HostWritesInUnitTest extends RegisterTestCase
         $host->flush();
         self::assertSame('a', $this->text("SELECT text FROM host_note WHERE id = 'n0'"), 'never written later');
         self::assertSame('ok', $this->runner()->write(static fn (): string => 'ok'));
+    }
+
+    /**
+     * Audit UZ6-1: an unflushed removeElement() on an orphan-removal collection is taken off Doctrine's orphan-removal
+     * list before the owner is reloaded: the host's next flush keeps both kids.
+     */
+    public function testAnUnflushedOrphanRemovalIsCancelled(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        foreach (['k1', 'k2'] as $id) {
+            $kid       = new HostKid($id);
+            $kid->note = $note;
+            $note->kids->add($kid);
+        }
+        $host->persist($note);
+        $host->flush();
+        $first = $note->kids->first();
+        self::assertInstanceOf(HostKid::class, $first);
+
+        $this->conflict($host, static function () use ($note, $first): void {
+            $note->kids->removeElement($first);
+        });
+
+        $host->flush();
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM host_kid'), 'the host\'s flush keeps both kids');
+        self::assertCount(2, $note->kids);
+    }
+
+    /**
+     * Audit UZ6-2: host work pending only in a collection (a link, an orphan removal) refuses the start like any other
+     * unflushed work.
+     */
+    public function testHostWorkPendingOnlyInACollectionIsRefused(): void
+    {
+        $host  = $this->hostManager();
+        $note  = new HostNote('n0', 'a');
+        $label = new HostLabel('l1');
+        $host->persist($note);
+        $host->persist($label);
+        $host->flush();
+        $note->labels->add($label);
+
+        try {
+            $this->runner()->write(static fn (): string => 'not run');
+            self::fail('A write while a host collection has unflushed work is refused.');
+        } catch (LogicException $e) {
+            self::assertStringContainsString('has unflushed changes', $e->getMessage());
+        }
+
+        $host->flush();
+        self::assertSame(1, $this->int('SELECT COUNT(*) FROM host_note_label'), 'nothing of the host was lost');
+    }
+
+    /**
+     * Audit UZ6-3: a change in memory to a read-only host entity (display only) is never written, so a reads-only
+     * attempt keeps its replay.
+     */
+    public function testAReadOnlyHostEntityChangedInMemoryKeepsTheReplay(): void
+    {
+        $host = $this->hostManager();
+        $note = new HostNote('n0', 'a');
+        $host->persist($note);
+        $host->flush();
+        $host->getUnitOfWork()->markReadOnly($note);
+        $attempts = new AttemptCounter();
+
+        $result = $this->runner()->write(static function () use ($attempts, $note): string {
+            ++$attempts->count;
+            $note->text = 'shown, never saved';
+            if ($attempts->count === 1) {
+                throw self::deadlock();
+            }
+
+            return 'ok';
+        });
+
+        self::assertSame('ok', $result);
+        self::assertSame(2, $attempts->count, 'replayed');
     }
 
     /**

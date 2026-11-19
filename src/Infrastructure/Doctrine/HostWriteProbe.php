@@ -216,14 +216,16 @@ final class HostWriteProbe
     }
 
     /**
-     * Whether an open manager holds unflushed work (change sets computed).
+     * Whether an open manager holds unflushed work, in entities or only in collections (change sets computed).
      */
     public static function hasScheduledChanges(EntityManagerInterface $manager): bool
     {
         $unitOfWork = $manager->getUnitOfWork();
         $unitOfWork->computeChangeSets();
 
-        return $unitOfWork->getScheduledEntityInsertions() !== [] || $unitOfWork->getScheduledEntityUpdates() !== [] || $unitOfWork->getScheduledEntityDeletions() !== [];
+        return $unitOfWork->getScheduledEntityInsertions() !== [] || $unitOfWork->getScheduledEntityUpdates() !== [] || $unitOfWork->getScheduledEntityDeletions() !== []
+            // Work pending only in collections, pending orphan removals included (audit UZ6-2).
+            || $unitOfWork->getScheduledCollectionUpdates() !== [] || $unitOfWork->getScheduledCollectionDeletions() !== [];
     }
 
     /**
@@ -334,13 +336,16 @@ final class HostWriteProbe
         $changed = [];
         foreach ($unitOfWork->getIdentityMap() as $managed) {
             foreach ($managed as $entity) {
-                if (!$unitOfWork->isScheduledForInsert($entity) && !$unitOfWork->isUninitializedObject($entity) && $this->changed($manager, $entity)) {
+                // A read-only entity is never written (audit UZ6-3): a display-only change keeps the replay.
+                if (!$unitOfWork->isScheduledForInsert($entity) && !$unitOfWork->isUninitializedObject($entity) && !$unitOfWork->isReadOnly($entity)
+                    && !$manager->getClassMetadata($entity::class)->isReadOnly && $this->changed($manager, $entity)) {
                     $changed[] = $entity;
                 }
             }
         }
         foreach ($changed as $entity) {
             $found = true;
+            $this->cancelOrphanRemovals($manager, $entity);
             $this->reload($manager, $entity);
         }
         $inserts = array_values($unitOfWork->getScheduledEntityInsertions());
@@ -373,6 +378,30 @@ final class HostWriteProbe
         }
 
         return false;
+    }
+
+    /**
+     * Audit UZ6-1: PersistentCollection::removeElement() schedules an orphan removal at once, and a reload of the owner
+     * does not take it back. The elements removed from the entity's collections (or the whole old collection, when it
+     * was replaced) are taken off the orphan-removal list before the reload.
+     */
+    private function cancelOrphanRemovals(EntityManagerInterface $manager, object $entity): void
+    {
+        $unitOfWork = $manager->getUnitOfWork();
+        $class      = $manager->getClassMetadata($entity::class);
+        $original   = $unitOfWork->getOriginalEntityData($entity);
+        foreach ($class->getAssociationMappings() as $field => $association) {
+            if (!$association->isToMany()) {
+                continue;
+            }
+            $value = $class->getFieldValue($entity, $field);
+            $old   = $original[$field] ?? null;
+            /** @var array<object> $removed entities of a to-many association */
+            $removed = $value instanceof PersistentCollection ? $value->getDeleteDiff() : ($old instanceof PersistentCollection ? $old->getSnapshot() : []);
+            foreach ($removed as $element) {
+                $unitOfWork->cancelOrphanRemoval($element);
+            }
+        }
     }
 
     /**

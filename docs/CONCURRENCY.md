@@ -83,7 +83,7 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   | The port, inside the attempt | Outcome |
   | --- | --- |
   | Reads only (`find()`, queries, an empty `flush()`) | Replayed. Nothing of the host is detached; what it read stays managed. |
-  | `persist()`, `remove()` or changes without `flush()` | Not replayed: 409 `CONFLICT_001`. They can only be the failed attempt's (a unit never starts over unflushed host work), so they are reverted: a `remove()` is cancelled; an entity whose fields, owning to-one associations or to-many collections changed is reloaded from the database (an owner whose collection gained an unflushed, cascade-persisted child included, so nothing reaches that child any more); a `persist()` is cancelled (detached). Nothing is left for the host's next flush, the next bundle write starts, and transaction-doctrine never clears an open host manager. |
+  | `persist()`, `remove()` or changes without `flush()` | Not replayed: 409 `CONFLICT_001`. They can only be the failed attempt's (a unit never starts over unflushed host work), so they are reverted: a `remove()` is cancelled; an entity whose fields, owning to-one associations or to-many collections changed is reloaded from the database, after the elements removed from its collections are taken off Doctrine's orphan-removal list (an owner whose collection gained an unflushed, cascade-persisted child included, so nothing reaches that child any more); a `persist()` is cancelled (detached). Read-only entities are skipped (a display-only change keeps the replay). Nothing is left for the host's next flush, the next bundle write starts, and transaction-doctrine never clears an open host manager. |
   | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it, and the host's manager is put back to what the database holds. Inserted entities are detached (a generated id is reset unless it is readonly); an entity the host had before is managed again, and reloaded, if a cascade detach reached it. Updated entities get their old values back, in the entity and in Doctrine's original data. Deleted entities are managed again. The owners of changed collections (many-to-many links, inverse one-to-many children, cascade-all collections included) and versioned entities are reloaded from the database through their persister, which does not cascade. A retry then writes the change for real. Each entity is restored on its own: one that cannot be never stops the others, and the answer stays a 409. |
   | `flush()` on another connection: committed, or inside the host's own transaction there | Not undone by the unit's rollback, so not replayed and never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it wrote stays managed. |
   | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush on another connection finished before the manager closed, else `CONFLICT_001`. |
@@ -91,7 +91,8 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   The codes are those of the unit itself. A commit earlier in the same request turns any of them into `CONFLICT_002`
   (`ConflictCode::forRequest()`, with NowoTransactionDoctrineBundle's `commit_detection`).
 
-  **A unit does not start while a host manager has unflushed changes** (audit UZ2-3): the runner throws a
+  **A unit does not start while a host manager has unflushed changes** (audits UZ2-3, UZ6-2; changes pending only in
+  collections and pending orphan removals count): the runner throws a
   `LogicException` naming the manager. Flush or clear the host's work before calling the register. Ports should log,
   or write after the commit (an outbox, an after-commit event).
 - **Shared manager** (`doctrine.entity_manager: null`, or the default manager's name): the unit writes through the
@@ -111,6 +112,8 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
 - A host flush on another connection (committed, or inside the host's own transaction) is not undone by the unit. The
   answer is `CONFLICT_002`, so the client reads again.
 - Every write on the private manager reads every host manager of the registry (the pending-changes check and the
-  probe), so lazy managers are built.
+  probe), so lazy managers are built. The start guard runs `computeChangeSets()` on each of them: with about 10,000
+  managed host entities that costs about 240 to 280 ms per bundle write (audit UZ6-4). Batch commands that call the
+  register in a loop should keep the host manager small (clear it between batches).
 - A failure carrying more than 256 throwables, or a broken Messenger wrapper, answers `CONFLICT_002` (the safe
   over-approximation of transaction-doctrine's walk).
