@@ -15,6 +15,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **`X-Conflict-Code` and the conflict code on every conflict answer** of the bundle's routes (REQ-RUNTIME-003 rule
+  6): `CONFLICT_001` with `Retry-After` when nothing was committed, `CONFLICT_002` without `Retry-After` when part of
+  the request was (`ConflictCode::forRequest()`, with the request's commit watermark). JSON answers gain a `code` key
+  next to the existing `error`; a committed generic conflict's `error` is `concurrency_conflict_partial`. The stale
+  version pages (settings, leave settings, correction decisions) send the header too.
+
+### Changed
+
+- **transaction-doctrine `^1.7.1`** (was `^1.3`), in the bundle and both demos.
+- **Write units scoped to the private entity manager** (transaction-doctrine `forManagers()`, audit UI2-1): a deadlock
+  replay clears or resets only the bundle's manager; the host's open default manager keeps its entities. Unchanged on
+  a shared manager (`doctrine.entity_manager: null` or the default manager's name).
+- **`ConflictFallbackListener` is always registered**, at `kernel.exception` priority 63 (after transaction-doctrine's
+  responder): on the bundle's routes only, it answers every conflict when NowoTransactionDoctrineBundle is not
+  registered, and the raw transient failures the responder leaves when it is.
+
+### Fixed
+
+- **Conflicts inside Messenger wrappers** are found (transaction-doctrine's bounded walk instead of a hand-written
+  `getPrevious()` loop): a deadlock as the second wrapped exception of a synchronous `HandlerFailedException` answers
+  409 instead of 500, and the bundle's own code (`settings_stale`, ...) is kept when its exception is wrapped. Unique
+  violations and lost connections, wrapped or not, are still not conflicts.
+
 ## [0.2.0] - 2026-11-18
 
 ### Added

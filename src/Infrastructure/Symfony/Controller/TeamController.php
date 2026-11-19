@@ -112,9 +112,9 @@ final readonly class TeamController
             }
             try {
                 $this->corrections->decide($id, $decision === 'approve', is_string($data['comment']) ? $data['comment'] : null, (int) $data['version']);
-            } catch (StaleCorrectionDecisionException) {
+            } catch (StaleCorrectionDecisionException $e) {
                 $this->ui->flash($request, 'error', 'correction.stale');
-                [$status, $headers] = $this->ui->conflict();
+                [$status, $headers] = $this->ui->conflict($request, $e);
 
                 return $this->teamPage($request, $status, $headers);
             } catch (CorrectionRefusedException $e) {

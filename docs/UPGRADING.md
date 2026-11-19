@@ -10,6 +10,31 @@
 
 ## Unreleased
 
+From **0.2.0**:
+
+```bash
+composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
+```
+
+- **transaction-doctrine `^1.7.1`** is required (was `^1.3`). Read its UPGRADING from your locked version; nothing in
+  the bundle's configuration changes.
+- **Conflict answers carry `X-Conflict-Code`** (`CONFLICT_001` or `CONFLICT_002`) and, in JSON, a `code` key next to
+  `error` (additive). After a commit earlier in the same request (or a Messenger handler that already succeeded) the
+  answer is `CONFLICT_002` without `Retry-After`; a generic conflict's `error` is then `concurrency_conflict_partial`.
+  Clients should key on `code` or the header. Cross-origin clients need `X-Conflict-Code` in
+  `Access-Control-Expose-Headers`. The status follows the policy as before (`conflict_response.status: 503` still
+  works).
+- **A replay no longer clears the host's entity manager** on the private manager (the default): a deadlock replay of
+  the bundle's unit clears only `nowo_working_time`. A host port called inside a unit (audit sink, worker directory)
+  must not persist through the host's manager: such a replay now gives up with a 409 instead of replaying. Nothing
+  changes with `doctrine.entity_manager: null`.
+- **`ConflictFallbackListener` is registered even with NowoTransactionDoctrineBundle** (priority 63, after its
+  responder). It answers only the bundle's routes, so host routes are untouched; on them a raw deadlock that reached
+  the kernel answers 409 instead of 500. A host that removed the listener's definition by id should keep doing so only
+  if it answers these failures itself.
+- **`UiSupport::conflict()`** now takes the request and the failure (`conflict(Request, Throwable)`); it is an internal
+  controller helper.
+
 ## To 0.2.0
 
 From **0.1.2**:

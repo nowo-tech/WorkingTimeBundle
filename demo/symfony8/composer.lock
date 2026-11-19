@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f63531da7380762d15390abb407ee340",
+    "content-hash": "22bec395b320426ba94fa74fd2291dcb",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -1532,16 +1532,16 @@
         },
         {
             "name": "nowo-tech/transaction-doctrine",
-            "version": "v1.3.1",
+            "version": "v1.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/transaction-doctrine.git",
-                "reference": "2aa5d56af9ab5ac221acf0e4c3f05652b43082ad"
+                "reference": "2f14da7ce82b0399d463c2e1faf999f945104629"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/transaction-doctrine/zipball/2aa5d56af9ab5ac221acf0e4c3f05652b43082ad",
-                "reference": "2aa5d56af9ab5ac221acf0e4c3f05652b43082ad",
+                "url": "https://api.github.com/repos/nowo-tech/transaction-doctrine/zipball/2f14da7ce82b0399d463c2e1faf999f945104629",
+                "reference": "2f14da7ce82b0399d463c2e1faf999f945104629",
                 "shasum": ""
             },
             "require": {
@@ -1585,6 +1585,7 @@
                 "doctrine/orm": "For DoctrineTransactionRunner::forEntityManager() and write units on entity managers",
                 "doctrine/persistence": "To reset a closed entity manager through a ManagerRegistry (required by WriteUnit)",
                 "nowo-tech/ui-kit-bundle": "The conflict page extends UiKit's error page when UiKit is installed",
+                "psr/event-dispatcher": "To dispatch WriteUnitRetryEvent before each write-unit replay (Symfony's event_dispatcher)",
                 "symfony/clock": "To pause between write-unit attempts through the Symfony clock (testable)",
                 "symfony/http-kernel": "For the optional NowoTransactionDoctrineBundle (#[AsWriteUnit], 409 conflict responder, worker hygiene)",
                 "symfony/messenger": "For WriteUnitMiddleware (replays a consumed message after a lock conflict)",
@@ -1598,7 +1599,8 @@
             },
             "autoload": {
                 "psr-4": {
-                    "Nowo\\TransactionDoctrine\\": "src/"
+                    "Nowo\\TransactionDoctrine\\": "src/",
+                    "Nowo\\TransactionDoctrine\\WriteUnit\\Dbal\\Dbal3\\": "compat/dbal3/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -1636,8 +1638,8 @@
                 "issues": "https://github.com/nowo-tech/transaction-doctrine/issues",
                 "source": "https://github.com/nowo-tech/transaction-doctrine"
             },
-            "time": "2026-11-17T16:37:42+00:00",
-            "published-time": "2026-11-17T16:41:28+00:00"
+            "time": "2026-11-19T10:12:34+00:00",
+            "published-time": "2026-11-19T10:15:50+00:00"
         },
         {
             "name": "nowo-tech/ui-kit-bundle",
@@ -1744,11 +1746,11 @@
         },
         {
             "name": "nowo-tech/working-time-bundle",
-            "version": "dev-feat/s1-register",
+            "version": "dev-main",
             "dist": {
                 "type": "path",
                 "url": "/var/working-time-bundle",
-                "reference": "d4b94e907135f45fb935dce5b72920502d4241fc"
+                "reference": "ecc6d8c76298eaaf2892b76ac22a61a4d3457ac4"
             },
             "require": {
                 "doctrine/dbal": "^3.8.2 || ^4.0",
@@ -1759,7 +1761,7 @@
                 "nowo-tech/form-kit-bundle": "^2.22",
                 "nowo-tech/outbound-url-guard-bundle": "^1.5",
                 "nowo-tech/transaction-contract": "^1.0",
-                "nowo-tech/transaction-doctrine": "^1.3",
+                "nowo-tech/transaction-doctrine": "^1.7.1",
                 "nowo-tech/ui-kit-bundle": "^2.55",
                 "php": ">=8.2 <8.6",
                 "psr/cache": "^2.0 || ^3.0",
@@ -1778,6 +1780,7 @@
                 "symfony/mime": "^7.4 || ^8.0",
                 "symfony/routing": "^7.4 || ^8.0",
                 "symfony/security-csrf": "^7.4 || ^8.0",
+                "symfony/string": "^7.4 || ^8.0",
                 "symfony/translation": "^7.4 || ^8.0",
                 "symfony/twig-bundle": "^7.4 || ^8.0",
                 "symfony/uid": "^7.4 || ^8.0",

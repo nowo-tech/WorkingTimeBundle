@@ -70,9 +70,9 @@ final readonly class SettingsController
                     return $this->ui->redirect('nowo_working_time_settings');
                 } catch (SettingsRefusedException $e) {
                     $form->addError(new FormError($this->ui->trans($e->key))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
-                } catch (StaleSettingsException) {
+                } catch (StaleSettingsException $e) {
                     $this->ui->flash($request, 'error', 'settings.stale');
-                    [$status, $headers]   = $this->ui->conflict();
+                    [$status, $headers]   = $this->ui->conflict($request, $e);
                     [$settings, $version] = $this->editor->get();
 
                     return $this->page($this->ui->form(SettingsType::class, $this->data($settings, $version, $request->getLocale()), ['ip_evidence_offered' => $this->ipEvidenceOffered]), $status, $headers);

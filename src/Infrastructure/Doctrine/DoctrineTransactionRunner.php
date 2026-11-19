@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
+use Nowo\TransactionDoctrine\WriteUnit\WriteUnit;
 use Nowo\TransactionDoctrine\WriteUnit\WriteUnitInterface;
 use Nowo\WorkingTimeBundle\Application\Shared\DuplicateRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\StaleRowException;
@@ -26,6 +27,10 @@ use function str_starts_with;
  * - `read()`: runs and clears.
  * - Both clear the entity manager when the outermost unit ends, and a closed entity manager is reset through the
  *   registry before the next unit (worker mode: no managed entity and no broken manager survive a call).
+ * - On the private entity manager the write unit is scoped to it (transaction-doctrine >= 1.7 `forManagers()`): a
+ *   replay clears or resets only the bundle's manager, never the host's open default one. Every write of a unit goes
+ *   through that manager (the stores take it from manager()); a host port called inside a unit (the audit sink, the
+ *   worker directory) must not persist through the host's manager, or a replay gives up with a conflict instead.
  *
  * Never flushes the host's entity manager (rule 6): with `entity_manager: null` it is the default one, used only in
  * explicit transactions; there the runner forgets only the bundle's entities and refuses to write while the host has
@@ -64,7 +69,7 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
         }
         $this->refuseForeignChanges($manager);
 
-        return $this->writeUnit->run(function () use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
+        return $this->unit($manager)->run(function () use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $manager = $this->manager();
             $this->release($manager);
             try {
@@ -82,6 +87,20 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
                 $this->release($this->manager());
             }
         });
+    }
+
+    /**
+     * The write unit of $manager: scoped to the private entity manager (only it is cleared or reset between two
+     * attempts); unscoped on a shared manager, which is the one the unit writes through, and when the write unit is
+     * not transaction-doctrine's (a host decoration). A new scoped instance per write: nothing is kept.
+     */
+    private function unit(EntityManagerInterface $manager): WriteUnitInterface
+    {
+        if ($this->managerName === null || $this->shared($manager) || !$this->writeUnit instanceof WriteUnit) {
+            return $this->writeUnit;
+        }
+
+        return $this->writeUnit->forManagers($this->managerName);
     }
 
     /**

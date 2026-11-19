@@ -92,7 +92,8 @@ final class AuditTdTest extends UiTestCase
         self::assertSame(409, $this->client->getResponse()->getStatusCode());
         $this->client->request('GET', '/holidays/' . $calendar->getId(), [], [], ['HTTP_ACCEPT' => 'application/json']);
         $this->client->submit($stale, ['wt_holiday_calendar[name]' => 'Madrid v6'], ['HTTP_ACCEPT' => 'application/json']);
-        self::assertSame('{"error":"holiday_calendar_stale"}', $this->client->getResponse()->getContent());
+        self::assertSame('{"error":"holiday_calendar_stale","code":"CONFLICT_001"}', $this->client->getResponse()->getContent());
+        self::assertSame('CONFLICT_001', $this->client->getResponse()->headers->get('X-Conflict-Code'));
     }
 
     public function testTheLeaveHalfOfTheGdprExportAndErasure(): void

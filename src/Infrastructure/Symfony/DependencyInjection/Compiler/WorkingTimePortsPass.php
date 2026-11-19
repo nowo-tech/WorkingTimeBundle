@@ -183,11 +183,11 @@ final class WorkingTimePortsPass implements CompilerPassInterface
         } else {
             $container->setDefinition($p . 'conflict_policy', new Definition(ConflictResponsePolicy::class));
         }
-        if (!$container->has('nowo_transaction_doctrine.conflict_responder')) {
-            $container->setDefinition(ConflictFallbackListener::class, (new Definition(ConflictFallbackListener::class))
-                ->setArguments([new Reference($p . 'conflict_policy')])
-                ->addTag('kernel.event_listener', ['event' => 'kernel.exception', 'method' => 'onKernelException', 'priority' => 64]));
-        }
+        // Always registered, just after the responder (64): it answers on the bundle's routes only, and only what the
+        // responder left (every lock conflict when the responder is absent, raw transient failures otherwise).
+        $container->setDefinition(ConflictFallbackListener::class, (new Definition(ConflictFallbackListener::class))
+            ->setArguments([new Reference($p . 'conflict_policy')])
+            ->addTag('kernel.event_listener', ['event' => 'kernel.exception', 'method' => 'onKernelException', 'priority' => 63]));
     }
 
     private function pdf(ContainerBuilder $container): void

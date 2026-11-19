@@ -82,7 +82,13 @@ final readonly class Host
             if ($kind === self::STANDARD) {
                 $container->extension('doctrine', [
                     'dbal' => ['url' => $url],
-                    'orm'  => ['default_entity_manager' => 'default', 'entity_managers' => ['default' => ['connection' => 'default'], 'nowo_working_time' => ['connection' => 'default']]],
+                    // The host maps its own entity on the default manager: a replay of the bundle's unit leaves it managed.
+                    'orm' => ['default_entity_manager' => 'default', 'entity_managers' => ['default' => ['connection' => 'default', 'mappings' => ['Host' => [
+                        'type'      => 'attribute',
+                        'dir'       => dirname(__DIR__, 2) . '/Fixtures/HostEntity',
+                        'prefix'    => 'Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity',
+                        'is_bundle' => false,
+                    ]]], 'nowo_working_time' => ['connection' => 'default']]],
                 ]);
 
                 return;

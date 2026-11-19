@@ -3,7 +3,9 @@
 Every write runs in a transaction-doctrine write unit on the bundle's entity manager (contract section 15;
 REQ-RUNTIME-003): one transaction, flushed before the commit, replayed after a deadlock or a lock-wait timeout (up to
 three attempts), the entity manager cleared afterwards. A conflict that a replay cannot settle answers
-**409 + `Retry-After`** (transaction-doctrine's responder; JSON `{"error": "<code>"}` on the bundle's routes). Audit
+**409 + `Retry-After` + `X-Conflict-Code: CONFLICT_001`** (transaction-doctrine's responder; JSON
+`{"error": "<code>", "code": "CONFLICT_001"}` on the bundle's routes), or **409 + `X-Conflict-Code: CONFLICT_002`**
+without `Retry-After` when part of the request was already committed (see [Conflict answer](#conflict-answer)). Audit
 rows, events and notices go out after the commit, so a replayed or refused attempt records nothing twice.
 
 ## Write paths
@@ -36,3 +38,46 @@ The bundle assumes READ COMMITTED (REQ-DB-003) and short lock waits. Locks are t
 (the type or calendar row first, then its children), so the S2 paths cannot deadlock against themselves; a deadlock with
 another path is replayed by the write unit. No lock or entity survives the call (FrankenPHP worker mode, kernel reset
 false).
+
+## Conflict answer
+
+REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answered by the bundle):
+
+| Failure | Status | Headers | JSON |
+| --- | --- | --- | --- |
+| Lock conflict, deadlock, lock-wait timeout or serialization failure; nothing committed | 409 (the policy's status: 503 when the host sets `conflict_response.status: 503`) | `Retry-After`, `X-Conflict-Code: CONFLICT_001`, `Cache-Control: no-store` | `{"error": "<code>", "code": "CONFLICT_001"}` |
+| The same after part of the request committed (an earlier unit of the request, a unit that committed before its conflict, a Messenger `HandlerFailedException` with a `HandledStamp`, any `DelayedMessageHandlingException`) | 409 | `X-Conflict-Code: CONFLICT_002`, no `Retry-After` | `{"error": "<code>" or "concurrency_conflict_partial", "code": "CONFLICT_002"}` |
+| Unique violation, lost connection | not a conflict: the bundle's domain answer where it expects the race (see the table above), otherwise the host's error handling | | |
+
+- The code is `ConflictCode::forRequest()` (transaction-doctrine >= 1.6), with the request's commit watermark when
+  NowoTransactionDoctrineBundle takes one. `X-Conflict-Code` carries only `CONFLICT_001` or `CONFLICT_002`; the
+  bundle's own codes (`settings_stale`, `chain_busy`, ...) stay in the JSON `error`.
+- Detection is transaction-doctrine's bounded walk (`TransientFailureClassifier::findLockConflict()` /
+  `findConflict()`, >= 1.7): the `getPrevious()` chain **and** Messenger's wrapped exceptions, so a deadlock in the
+  second handler of a synchronous `HandlerFailedException` is found. Each throwable is read once, at most 256.
+- NowoTransactionDoctrineBundle's responder (`kernel.exception`, priority 64) answers the lock conflicts, with
+  `WorkingTimeConflictFormatter` shaping the JSON of the bundle's routes. The bundle's `ConflictFallbackListener`
+  (priority 63, bundle routes only) answers what the responder leaves: every conflict when the responder's bundle is
+  not registered, and otherwise the raw transient failures no write unit wrapped (the responder maps those only with
+  `map_transient_failures: true`).
+- A stale version re-rendered as a form (settings, leave settings, a correction decision) answers 409 with the same
+  headers.
+
+## Replays and the host's entity manager
+
+- **Private entity manager** (`doctrine.entity_manager: nowo_working_time`, the default): the write unit is scoped to
+  it with transaction-doctrine's `forManagers()` (>= 1.7). A replay clears or resets only the bundle's manager; the
+  host's open default manager keeps its entities. Every write of a unit goes through the bundle's manager (the stores
+  take it from the runner). Leftover transaction levels are rolled back on every connection, as before.
+- **Shared manager** (`doctrine.entity_manager: null`, or the default manager's name): the unit writes through the
+  host's manager, so it is not scoped. The runner refuses to start while the host has unflushed changes, and only the
+  bundle's entities are detached after a unit, but a deadlock replay clears the shared manager (transaction-doctrine's
+  repair). Hosts that keep entities managed across a call to the register should use the private manager.
+
+## Residual risks
+
+- A host port called inside a unit (the audit sink, the worker directory) that persists through the host's entity
+  manager is outside the unit's scope: a deadlock replay is then abandoned with a 409 (`CONFLICT_001`) and every
+  manager is cleared, instead of replayed. Ports should log, or write through their own connection after the commit.
+- A failure carrying more than 256 throwables, or a broken Messenger wrapper, answers `CONFLICT_002` (the safe
+  over-approximation of transaction-doctrine's walk).

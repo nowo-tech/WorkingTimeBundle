@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Tests\Integration\Database;
 
+use Doctrine\DBAL\Driver\AbstractException;
+use Doctrine\DBAL\Exception\DeadlockException;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\ClockAction;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\ChainVerifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Integration\Kernel\Host;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -56,6 +60,44 @@ final class HostKindsTest extends RegisterTestCase
 
         self::assertTrue($this->service(ChainVerifierInterface::class)->verify()->isIntact());
         self::assertSame(0, $this->em()->getUnitOfWork()->size(), 'nothing of the bundle left managed in the host unit of work');
+    }
+
+    /**
+     * transaction-doctrine 1.7 `forManagers()` (audit UI2-1): on the private entity manager a replayed unit clears
+     * only the bundle's manager; the host's open default manager keeps its entities. The replay is a deadlock on the
+     * first attempt (on every database of the suite).
+     */
+    public function testAReplayOnThePrivateManagerKeepsTheHostsEntities(): void
+    {
+        $this->boot();
+        $registry = $this->kernel->getContainer()->get('doctrine');
+        self::assertInstanceOf(ManagerRegistry::class, $registry);
+        $host = $registry->getManager('default');
+        self::assertInstanceOf(EntityManagerInterface::class, $host);
+        self::assertNotSame($host, $this->em(), 'the standard host: the bundle has its private manager');
+        $tool = new SchemaTool($host);
+        $meta = [$host->getClassMetadata(HostNote::class)];
+        $tool->dropSchema($meta);
+        $tool->createSchema($meta);
+        $note = new HostNote('n1', 'kept');
+        $host->persist($note);
+        $host->flush();
+        $this->enable();
+
+        $attempts = 0;
+        $result   = $this->service(DoctrineTransactionRunner::class)->write(static function () use (&$attempts): string {
+            if (++$attempts === 1) {
+                throw new DeadlockException(new class('Deadlock found when trying to get lock', '40001', 1213) extends AbstractException { }, null);
+            }
+
+            return 'written';
+        });
+
+        self::assertSame('written', $result);
+        self::assertSame(2, $attempts, 'the deadlock was replayed');
+        self::assertTrue($host->isOpen());
+        self::assertTrue($host->contains($note), 'the host\'s entity stays managed across the replay');
+        $tool->dropSchema($meta);
     }
 
     /**
