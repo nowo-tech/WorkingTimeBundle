@@ -26,9 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- **transaction-doctrine `^1.8`** (was `^1.3`), in the bundle and both demos. 1.8.0 fixes two security advisories
+- **transaction-doctrine `^1.8.1`** (was `^1.3`), in the bundle and both demos. 1.8.0 fixes two security advisories
   (GHSA-9wh3-m3m5-jffx, GHSA-65w2-9r4h-848g) and keeps the host's entities managed across a write-unit replay (on the
-  shared manager too).
+  shared manager too); 1.8.1 fixes 1.8.0's replay of new entities that reference a host-managed entity.
 - **Write units scoped to the private entity manager** (transaction-doctrine `forManagers()`, audit UI2-1): a deadlock
   replay clears or resets only the bundle's manager; the host's open default manager keeps its entities. Unchanged on
   a shared manager (`doctrine.entity_manager: null` or the default manager's name).

@@ -97,7 +97,7 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   or write after the commit (an outbox, an after-commit event).
 - **Shared manager** (`doctrine.entity_manager: null`, or the default manager's name): the unit writes through the
   host's manager, so it is not scoped. The runner refuses to start while the host has unflushed changes, and only the
-  bundle's entities are detached after a unit. Since transaction-doctrine 1.8 a deadlock replay no longer clears the
+  bundle's entities are detached after a unit. Since transaction-doctrine 1.8 (1.8.1 required) a deadlock replay no longer clears the
   shared manager: the host's entities stay managed and are reloaded from the database when the failed attempt touched
   them (a replay that cannot restore one ends as a 409 `CONFLICT_001`). Host ports writing inside the unit are still
   only watched on the private manager, so hosts that write through their manager inside a call to the register should
@@ -105,6 +105,9 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
 
 ## Residual risks
 
+- An orphan removal the host made through `removeElement()` on a collection whose owner it had already detached is
+  invisible to the start guard (audit UZ10-2): if a bundle unit then refuses, that host removal is dropped. Do not
+  remove orphans through a detached owner's collection; flush them before calling the register.
 - A host port that writes through a host entity manager inside a unit is never replayed (the table above). Some host
   state is still not put back:
   - An entity whose restore fails (a readonly generated id, a reload of a row the database no longer has) keeps its
@@ -121,7 +124,7 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   | Managed host entities | Cost per bundle write |
   | --- | --- |
   | about 12,000 (2,000 owners with initialised collections) | about 125 to 160 ms |
-  | about 10,000 | about 240 to 400 ms |
+  | about 10,000 | about 240 to 500 ms (PostgreSQL measured up to 480 ms) |
 
   - **Batch commands** that call the register in a loop: flush and `clear()` the host manager between batches (or
     every N items), so each bundle write scans a small identity map. Do not load the whole data set into the host

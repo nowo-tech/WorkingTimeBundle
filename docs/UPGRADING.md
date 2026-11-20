@@ -16,7 +16,8 @@ From **0.2.0**:
 composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
 ```
 
-- **transaction-doctrine `^1.8`** is required (was `^1.3`; 1.8.0 fixes GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g).
+- **transaction-doctrine `^1.8.1`** is required (was `^1.3`; 1.8.0 fixes GHSA-9wh3-m3m5-jffx and
+  GHSA-65w2-9r4h-848g, 1.8.1 fixes a replay regression of 1.8.0).
   On the shared manager (`doctrine.entity_manager: null`) a deadlock replay no longer clears the host's manager: its
   entities stay managed and are reloaded when the failed attempt touched them. Read its UPGRADING from your locked
   version; nothing in the bundle's configuration changes.
