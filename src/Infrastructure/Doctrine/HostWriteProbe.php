@@ -23,6 +23,7 @@ use function array_keys;
 use function array_pop;
 use function array_reverse;
 use function array_values;
+use function count;
 use function is_array;
 use function is_object;
 use function property_exists;
@@ -414,9 +415,16 @@ final class HostWriteProbe
                 }
             }
         }
-        // Fails closed (audit UZ8-2): if the unit of work cannot be reached, the deletion stays scheduled, the answer is
-        // still a 409 and the start guard keeps refusing until the host flushes or clears its manager.
-        self::unscheduleCollectionDeletions($unitOfWork, array_keys($deletion));
+        // Audit UZ9-1: clear() of an owning orphan-removal collection queues every element for orphan removal and
+        // leaves no delete diff to cancel them by. Under the start guard every queued orphan removal is the attempt's.
+        // Fails closed (audits UZ8-2, UZ9-1): if the unit of work cannot be reached, nothing is taken off it, so the
+        // scheduled deletions stay, the answer is still a 409 and the start guard keeps refusing until the host clears
+        // its manager.
+        $orphans = self::cancelAllOrphanRemovals($unitOfWork);
+        if ($orphans !== null) {
+            $found = $found || $orphans > 0;
+            self::unscheduleCollectionDeletions($unitOfWork, array_keys($deletion));
+        }
         foreach ($changed as $entity) {
             $found = true;
             $this->cancelOrphanRemovals($manager, $entity);
@@ -498,9 +506,8 @@ final class HostWriteProbe
 
     /**
      * Takes collections off a unit of work's scheduled collection deletions (audit UZ8-2). Doctrine has no public API
-     * for it, so they are removed from its private `collectionDeletions` through reflection.
-     * When that property is missing or not an array (a Doctrine change), nothing is touched and false is returned: the
-     * caller fails closed.
+     * for it, so they are removed from its private `collectionDeletions` through ReflectionProperty. When that property
+     * is missing or not an array (a Doctrine change), nothing is touched and false is returned: the caller fails closed.
      *
      * @param list<int> $collections spl_object_id() of each collection
      *
@@ -508,20 +515,44 @@ final class HostWriteProbe
      */
     public static function unscheduleCollectionDeletions(object $unitOfWork, array $collections): bool
     {
-        if (!property_exists($unitOfWork, 'collectionDeletions')) {
-            return false;
-        }
-        $property  = new ReflectionProperty($unitOfWork, 'collectionDeletions');
-        $deletions = $property->getValue($unitOfWork);
-        if (!is_array($deletions)) {
-            return false;
-        }
-        foreach ($collections as $id) {
-            unset($deletions[$id]);
-        }
-        $property->setValue($unitOfWork, $deletions); // @igor-ignore - the unit of work's own list, emptied of the failed attempt's deletions
+        return self::removeFromPrivateList($unitOfWork, 'collectionDeletions', $collections) !== null;
+    }
 
-        return true;
+    /**
+     * Empties a unit of work's queued orphan removals (audit UZ9-1), through ReflectionProperty on its private
+     * `orphanRemovals` (there is no public API to cancel them all). The number of removals taken off, or null when the
+     * property is missing or not an array: nothing is touched and the caller fails closed.
+     *
+     * @internal public for its test only
+     */
+    public static function cancelAllOrphanRemovals(object $unitOfWork): ?int
+    {
+        return self::removeFromPrivateList($unitOfWork, 'orphanRemovals', null);
+    }
+
+    /**
+     * Removes $ids (all entries when null) from a private array property of the unit of work. The number of entries
+     * removed, or null when the property is missing or not an array (nothing touched).
+     *
+     * @param list<int>|null $ids
+     */
+    private static function removeFromPrivateList(object $unitOfWork, string $name, ?array $ids): ?int
+    {
+        if (!property_exists($unitOfWork, $name)) {
+            return null;
+        }
+        $property = new ReflectionProperty($unitOfWork, $name);
+        $list     = $property->getValue($unitOfWork);
+        if (!is_array($list)) {
+            return null;
+        }
+        $before = count($list);
+        foreach ($ids ?? array_keys($list) as $id) {
+            unset($list[$id]);
+        }
+        $property->setValue($unitOfWork, $list); // @igor-ignore - the unit of work's own list, emptied of the failed attempt's entries
+
+        return $before - count($list);
     }
 
     /**

@@ -39,4 +39,27 @@ final class HostWriteProbeTest extends TestCase
         self::assertFalse(HostWriteProbe::unscheduleCollectionDeletions($unitOfWork, [1]));
         self::assertSame('not a list', $unitOfWork->collectionDeletions, 'nothing touched');
     }
+
+    public function testItEmptiesTheOrphanRemovalsAndCountsThem(): void
+    {
+        $unitOfWork = new class {
+            /** @var array<int, string> */
+            public array $orphanRemovals = [7 => 'a', 9 => 'b'];
+        };
+
+        self::assertSame(2, HostWriteProbe::cancelAllOrphanRemovals($unitOfWork));
+        self::assertSame([], $unitOfWork->orphanRemovals);
+    }
+
+    public function testOrphanRemovalsFailClosedWhenMissingOrOfAnotherShape(): void
+    {
+        $unitOfWork = new class {
+            public string $orphanRemovals = 'not a list';
+        };
+
+        self::assertNull(HostWriteProbe::cancelAllOrphanRemovals(new class {
+        }));
+        self::assertNull(HostWriteProbe::cancelAllOrphanRemovals($unitOfWork));
+        self::assertSame('not a list', $unitOfWork->orphanRemovals, 'nothing touched');
+    }
 }

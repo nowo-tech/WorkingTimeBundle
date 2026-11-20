@@ -16,11 +16,13 @@ use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\HostWriteProbe;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\AttemptCounter;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostBoard;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostEvent;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostKid;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostLabel;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostNote;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostReadonly;
+use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostTag;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostTask;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostEntity\HostVersioned;
 use Nowo\WorkingTimeBundle\Tests\Fixtures\HostSchema;
@@ -432,6 +434,40 @@ final class HostWritesInUnitTest extends RegisterTestCase
     }
 
     /**
+     * Audit UZ9-1: an unflushed clear() of an owning many-to-many with orphan removal queues every tag for orphan
+     * removal with no delete diff. The queued removals are taken off the unit of work, so the host's flush keeps the
+     * tags and links, and the retry's clear() removes them for real.
+     */
+    public function testAnUnflushedClearOfAnOwningOrphanRemovalCollectionKeepsTheTags(): void
+    {
+        $host  = $this->hostManager();
+        $board = new HostBoard('b0');
+        foreach (['t1', 't2'] as $id) {
+            $board->tags->add(new HostTag($id));
+        }
+        $host->persist($board);
+        $host->flush();
+
+        $this->conflict($host, static function () use ($board): void {
+            $board->tags->clear();
+        });
+
+        self::assertSame(0, HostWriteProbe::cancelAllOrphanRemovals($host->getUnitOfWork()), 'no orphan removal left');
+        $host->flush();
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM host_tag'), 'the host\'s flush keeps the tags');
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM host_board_tag'), 'and the links');
+        self::assertSame('ok', $this->runner()->write(static fn (): string => 'ok'), 'the next bundle write starts');
+
+        $this->runner()->write(static function () use ($host, $board): void {
+            $board->tags->clear();
+            $host->flush();
+        });
+
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_board_tag'), 'the retry removes the links');
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_tag'), 'and the orphaned tags');
+    }
+
+    /**
      * Audit UZ8: clear() and re-add of the same links without a flush: the host's flush keeps both links and the next
      * bundle write starts.
      */
@@ -462,6 +498,7 @@ final class HostWritesInUnitTest extends RegisterTestCase
         $host = $this->hostManager();
 
         self::assertTrue(HostWriteProbe::unscheduleCollectionDeletions($host->getUnitOfWork(), []));
+        self::assertSame(0, HostWriteProbe::cancelAllOrphanRemovals($host->getUnitOfWork()), 'orphanRemovals too (audit UZ9-1)');
     }
 
     /**

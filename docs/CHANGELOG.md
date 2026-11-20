@@ -48,8 +48,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
     `removeElement()` or `clear()` are cancelled first (UZ6-1, UZ7-1). Read-only entities are skipped (UZ6-3). After a
     rolled-back flush of a cleared inverse collection the owner is reloaded too (UZ7-2). An unflushed owning-side
     `clear()` is taken off Doctrine's scheduled collection deletions and the owner's collections go back to lazy, so
-    the host's flush deletes no link and the retry's `clear()` deletes them for real (UZ8-1, UZ8-2; fails closed with
-    a 409 and a refusing start guard if Doctrine's internals change). The host's next flush
+    the host's flush deletes no link and the retry's `clear()` deletes them for real (UZ8-1, UZ8-2). The orphan
+    removals such a `clear()` queues on a many-to-many with `orphanRemoval` are taken off too (UZ9-1). Both fail
+    closed with a 409 and a refusing start guard if Doctrine's internals change. The host's next flush
     writes none of it.
   - A flush inside the host's own transaction on another connection counts as committed (`CONFLICT_002`, UZ3-2).
     Nested host flushes are followed (UZ3-4).
