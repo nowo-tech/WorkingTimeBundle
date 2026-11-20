@@ -13,15 +13,19 @@ use Doctrine\ORM\PersistentCollection;
 use Doctrine\Persistence\ManagerRegistry;
 use Nowo\TransactionDoctrine\TransientFailureKind;
 use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
+use ReflectionProperty;
 use Throwable;
 
 use function array_combine;
 use function array_fill_keys;
 use function array_key_exists;
+use function array_keys;
 use function array_pop;
 use function array_reverse;
 use function array_values;
+use function is_array;
 use function is_object;
+use function property_exists;
 use function spl_object_id;
 
 /**
@@ -389,19 +393,34 @@ final class HostWriteProbe
             $found = true;
             $this->safely(static fn () => $manager->persist($entity)); // @igor-ignore - cancels the attempt's remove(); nothing is kept on a service
         }
-        $changed = [];
+        // Audit UZ8: clear() on the owning side of a collection schedules its deletion at once and leaves it clean
+        // (snapshot retaken). Its owner is reverted, and the deletion is taken off the unit of work.
+        $changed  = [];
+        $deletion = [];
+        foreach ($unitOfWork->getScheduledCollectionDeletions() as $collection) {
+            $found                                = true;
+            $deletion[spl_object_id($collection)] = true;
+            $owner                                = $collection->getOwner();
+            if ($owner !== null && $unitOfWork->isInIdentityMap($owner)) {
+                $changed[spl_object_id($owner)] = $owner;
+            }
+        }
         foreach ($unitOfWork->getIdentityMap() as $managed) {
             foreach ($managed as $entity) {
                 // A read-only entity is never written (audit UZ6-3): a display-only change keeps the replay.
                 if (!$unitOfWork->isScheduledForInsert($entity) && !$unitOfWork->isUninitializedObject($entity) && !$unitOfWork->isReadOnly($entity)
                     && !$manager->getClassMetadata($entity::class)->isReadOnly && $this->changed($manager, $entity)) {
-                    $changed[] = $entity;
+                    $changed[spl_object_id($entity)] = $entity;
                 }
             }
         }
+        // Fails closed (audit UZ8-2): if the unit of work cannot be reached, the deletion stays scheduled, the answer is
+        // still a 409 and the start guard keeps refusing until the host flushes or clears its manager.
+        self::unscheduleCollectionDeletions($unitOfWork, array_keys($deletion));
         foreach ($changed as $entity) {
             $found = true;
             $this->cancelOrphanRemovals($manager, $entity);
+            $this->resetCollections($manager, $entity);
             $this->reload($manager, $entity);
         }
         $inserts = array_values($unitOfWork->getScheduledEntityInsertions());
@@ -458,6 +477,51 @@ final class HostWriteProbe
                 $unitOfWork->cancelOrphanRemoval($element);
             }
         }
+    }
+
+    /**
+     * Audit UZ8-1: the entity's initialised collections go back to lazy (clean, emptied, not initialised), so whoever
+     * still holds one reads the database again on its next access; never left initialised and empty.
+     */
+    private function resetCollections(EntityManagerInterface $manager, object $entity): void
+    {
+        $class = $manager->getClassMetadata($entity::class);
+        foreach ($class->getAssociationMappings() as $field => $association) {
+            $value = $association->isToMany() ? $class->getFieldValue($entity, $field) : null;
+            if ($value instanceof PersistentCollection && $value->isInitialized()) {
+                $value->setDirty(false);
+                $value->unwrap()->clear();
+                $value->setInitialized(false);
+            }
+        }
+    }
+
+    /**
+     * Takes collections off a unit of work's scheduled collection deletions (audit UZ8-2). Doctrine has no public API
+     * for it, so they are removed from its private `collectionDeletions` through reflection.
+     * When that property is missing or not an array (a Doctrine change), nothing is touched and false is returned: the
+     * caller fails closed.
+     *
+     * @param list<int> $collections spl_object_id() of each collection
+     *
+     * @internal public for its test only
+     */
+    public static function unscheduleCollectionDeletions(object $unitOfWork, array $collections): bool
+    {
+        if (!property_exists($unitOfWork, 'collectionDeletions')) {
+            return false;
+        }
+        $property  = new ReflectionProperty($unitOfWork, 'collectionDeletions');
+        $deletions = $property->getValue($unitOfWork);
+        if (!is_array($deletions)) {
+            return false;
+        }
+        foreach ($collections as $id) {
+            unset($deletions[$id]);
+        }
+        $property->setValue($unitOfWork, $deletions); // @igor-ignore - the unit of work's own list, emptied of the failed attempt's deletions
+
+        return true;
     }
 
     /**

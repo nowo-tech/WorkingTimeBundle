@@ -404,6 +404,67 @@ final class HostWritesInUnitTest extends RegisterTestCase
     }
 
     /**
+     * Audit UZ8-1/UZ8-2: an unflushed clear() on the owning side of a many-to-many (deletion scheduled at once, the
+     * collection left clean and empty) is reverted: the deletion is taken off the unit of work, the owner shows the
+     * database's links, the next write starts, and the retry's clear() deletes the links for real.
+     */
+    public function testAnUnflushedOwningSideClearIsRevertedAndTheRetryDeletesTheLinks(): void
+    {
+        $host = $this->hostManager();
+        $note = $this->noteWithLabels($host);
+        $held = $note->labels;
+
+        $this->conflict($host, static function () use ($note): void {
+            $note->labels->clear();
+        });
+
+        self::assertSame([], $host->getUnitOfWork()->getScheduledCollectionDeletions(), 'taken off the unit of work');
+        self::assertCount(2, $note->labels, 'the owner shows the database\'s links');
+        self::assertCount(2, $held, 'a collection held from before reads the database again');
+        self::assertFalse(HostWriteProbe::hasScheduledChanges($host));
+
+        $this->runner()->write(static function () use ($host, $note): void {
+            $note->labels->clear();
+            $host->flush();
+        });
+
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_note_label'), 'the retry deletes the links');
+    }
+
+    /**
+     * Audit UZ8: clear() and re-add of the same links without a flush: the host's flush keeps both links and the next
+     * bundle write starts.
+     */
+    public function testAnUnflushedOwningSideClearAndReAddKeepsTheLinks(): void
+    {
+        $host   = $this->hostManager();
+        $note   = $this->noteWithLabels($host);
+        $labels = $note->labels->toArray();
+
+        $this->conflict($host, static function () use ($note, $labels): void {
+            $note->labels->clear();
+            foreach ($labels as $label) {
+                $note->labels->add($label);
+            }
+        });
+
+        $host->flush();
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM host_note_label'), 'the host\'s flush keeps both links');
+        self::assertSame('ok', $this->runner()->write(static fn (): string => 'ok'), 'the next bundle write starts');
+    }
+
+    /**
+     * Audit UZ8-2: on the pinned Doctrine ORM the unit of work's private collectionDeletions has the shape the probe
+     * expects (an array), so the revert does not fail closed.
+     */
+    public function testThePinnedOrmKeepsTheCollectionDeletionsShape(): void
+    {
+        $host = $this->hostManager();
+
+        self::assertTrue(HostWriteProbe::unscheduleCollectionDeletions($host->getUnitOfWork(), []));
+    }
+
+    /**
      * Audit UZ6-2: host work pending only in a collection (a link, an orphan removal) refuses the start like any other
      * unflushed work.
      */
@@ -793,6 +854,23 @@ final class HostWritesInUnitTest extends RegisterTestCase
         self::assertNotSame($host, $this->em());
 
         return $failure;
+    }
+
+    /**
+     * A host note linked to two labels through its owning many-to-many, flushed.
+     */
+    private function noteWithLabels(EntityManagerInterface $host): HostNote
+    {
+        $note = new HostNote('n0', 'a');
+        foreach (['l1', 'l2'] as $id) {
+            $label = new HostLabel($id);
+            $host->persist($label);
+            $note->labels->add($label);
+        }
+        $host->persist($note);
+        $host->flush();
+
+        return $note;
     }
 
     /**

@@ -83,7 +83,7 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   | The port, inside the attempt | Outcome |
   | --- | --- |
   | Reads only (`find()`, queries, an empty `flush()`) | Replayed. Nothing of the host is detached; what it read stays managed. |
-  | `persist()`, `remove()` or changes without `flush()` | Not replayed: 409 `CONFLICT_001`. They can only be the failed attempt's (a unit never starts over unflushed host work), so they are reverted: a `remove()` is cancelled; an entity whose fields, owning to-one associations or to-many collections changed is reloaded from the database, after the elements removed from its collections are taken off Doctrine's orphan-removal list (a collection counts as changed when it is dirty or differs from its snapshot, as an inverse collection does after `clear()`) (an owner whose collection gained an unflushed, cascade-persisted child included, so nothing reaches that child any more); a `persist()` is cancelled (detached). Read-only entities are skipped (a display-only change keeps the replay). Nothing is left for the host's next flush, the next bundle write starts, and transaction-doctrine never clears an open host manager. |
+  | `persist()`, `remove()` or changes without `flush()` | Not replayed: 409 `CONFLICT_001`. They can only be the failed attempt's (a unit never starts over unflushed host work), so they are reverted: a `remove()` is cancelled; an entity whose fields, owning to-one associations or to-many collections changed is reloaded from the database, after the elements removed from its collections are taken off Doctrine's orphan-removal list (a collection counts as changed when it is dirty or differs from its snapshot, as an inverse collection does after `clear()`; an owning-side `clear()`, whose deletion Doctrine schedules at once, is taken off the unit of work, and the owner's collections go back to lazy before the reload) (an owner whose collection gained an unflushed, cascade-persisted child included, so nothing reaches that child any more); a `persist()` is cancelled (detached). Read-only entities are skipped (a display-only change keeps the replay). Nothing is left for the host's next flush, the next bundle write starts, and transaction-doctrine never clears an open host manager. |
   | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it, and the host's manager is put back to what the database holds. Inserted entities are detached (a generated id is reset unless it is readonly); an entity the host had before is managed again, and reloaded, if a cascade detach reached it. Updated entities get their old values back, in the entity and in Doctrine's original data. Deleted entities are managed again. The owners of changed collections (many-to-many links, inverse one-to-many children, cascade-all collections included), the owners reached through the owning to-one association of each rolled-back delete (an inverse orphan-removal collection that was cleared), and versioned entities are reloaded from the database through their persister, which does not cascade. A retry then writes the change for real. Each entity is restored on its own: one that cannot be never stops the others, and the answer stays a 409. |
   | `flush()` on another connection: committed, or inside the host's own transaction there | Not undone by the unit's rollback, so not replayed and never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it wrote stays managed. |
   | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush on another connection finished before the manager closed, else `CONFLICT_001`. |
@@ -113,8 +113,23 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   answer is `CONFLICT_002`, so the client reads again.
 - Every write on the private manager reads every host manager of the registry (the pending-changes check and the
   probe), so lazy managers are built. The start guard runs `computeChangeSets()` on each of them and scans their
-  collections: with about 10,000
-  managed host entities that costs about 240 to 280 ms per bundle write (audit UZ6-4). Batch commands that call the
-  register in a loop should keep the host manager small (clear it between batches).
+  collections, so its cost grows with the host's identity map (audits UZ6-4, UZ8-3, measured):
+
+  | Managed host entities | Cost per bundle write |
+  | --- | --- |
+  | about 12,000 (2,000 owners with initialised collections) | about 125 to 160 ms |
+  | about 10,000 | about 240 to 358 ms (measured in two audits: 240–280 and 290–358) |
+
+  - **Batch commands** that call the register in a loop: flush and `clear()` the host manager between batches (or
+    every N items), so each bundle write scans a small identity map. Do not load the whole data set into the host
+    manager before the loop.
+  - **Messenger handlers** in a worker: clear the host manager after each message (Doctrine's
+    `doctrine_clear_entity_manager` middleware, or `$em->clear()` at the end of the handler), so entities do not pile
+    up across messages.
+- Reverting an owning-side `clear()` takes the collection off Doctrine's scheduled collection deletions through a
+  closure bound to the unit of work's private `collectionDeletions` (no public API exists; audit UZ8-2). If a future
+  Doctrine version renames that property or changes its shape, the revert fails closed: the answer is still a 409, the
+  deletion stays scheduled, and the start guard refuses the next bundle write ("has unflushed changes") until the host
+  flushes or clears its manager. The Database suite checks the property's shape on the pinned Doctrine ORM.
 - A failure carrying more than 256 throwables, or a broken Messenger wrapper, answers `CONFLICT_002` (the safe
   over-approximation of transaction-doctrine's walk).
