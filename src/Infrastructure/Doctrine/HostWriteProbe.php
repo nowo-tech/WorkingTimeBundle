@@ -21,6 +21,7 @@ use function array_key_exists;
 use function array_pop;
 use function array_reverse;
 use function array_values;
+use function is_object;
 use function spl_object_id;
 
 /**
@@ -146,6 +147,15 @@ final class HostWriteProbe
         }
         $gone = [];
         foreach ($deletions as $entity) {
+            // Audit UZ7-2: a clear() of an inverse orphan-removal collection is never a scheduled collection update;
+            // its deleted children lead to the owner through their owning to-one association.
+            $class = $manager->getClassMetadata($entity::class);
+            foreach ($class->getAssociationMappings() as $field => $association) {
+                $target = $association->isToOne() && $association->isOwningSide() ? $class->getFieldValue($entity, $field) : null;
+                if (is_object($target) && $unitOfWork->isInIdentityMap($target)) {
+                    $refresh[] = $target;
+                }
+            }
             /** @var array<string, mixed> $identifier field => value */
             $identifier = $unitOfWork->getEntityIdentifier($entity);
             $gone[]     = [$entity, $identifier, $unitOfWork->getOriginalEntityData($entity)];
@@ -225,7 +235,53 @@ final class HostWriteProbe
 
         return $unitOfWork->getScheduledEntityInsertions() !== [] || $unitOfWork->getScheduledEntityUpdates() !== [] || $unitOfWork->getScheduledEntityDeletions() !== []
             // Work pending only in collections, pending orphan removals included (audit UZ6-2).
-            || $unitOfWork->getScheduledCollectionUpdates() !== [] || $unitOfWork->getScheduledCollectionDeletions() !== [];
+            || $unitOfWork->getScheduledCollectionUpdates() !== [] || $unitOfWork->getScheduledCollectionDeletions() !== []
+            // An inverse collection cleared or edited without being marked dirty (audit UZ7-3).
+            || self::hasChangedCollection($manager);
+    }
+
+    /**
+     * Whether a managed entity of $manager holds a to-many collection that differs from its snapshot (audit UZ7).
+     */
+    private static function hasChangedCollection(EntityManagerInterface $manager): bool
+    {
+        $unitOfWork = $manager->getUnitOfWork();
+        foreach ($unitOfWork->getIdentityMap() as $managed) {
+            foreach ($managed as $entity) {
+                if (!$unitOfWork->isUninitializedObject($entity) && self::entityHasChangedCollection($manager, $entity)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether one of the entity's to-many collections changed.
+     */
+    private static function entityHasChangedCollection(EntityManagerInterface $manager, object $entity): bool
+    {
+        $class = $manager->getClassMetadata($entity::class);
+        foreach ($class->getAssociationMappings() as $field => $association) {
+            $value = $association->isToMany() ? $class->getFieldValue($entity, $field) : null;
+            if ($value instanceof PersistentCollection && self::collectionChanged($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a collection changed: dirty, or (an inverse collection after clear(), audit UZ7) initialised with a
+     * non-empty insert or delete diff against its snapshot.
+     *
+     * @param PersistentCollection<array-key, object> $collection
+     */
+    private static function collectionChanged(PersistentCollection $collection): bool
+    {
+        return $collection->isDirty() || ($collection->isInitialized() && ($collection->getDeleteDiff() !== [] || $collection->getInsertDiff() !== []));
     }
 
     /**
@@ -372,7 +428,7 @@ final class HostWriteProbe
         }
         foreach ($class->getAssociationMappings() as $field => $association) {
             $value = $class->getFieldValue($entity, $field);
-            if ($association->isToMany() ? !$value instanceof PersistentCollection || $value->isDirty() : $association->isOwningSide() && $value !== ($original[$field] ?? null)) {
+            if ($association->isToMany() ? !$value instanceof PersistentCollection || self::collectionChanged($value) : $association->isOwningSide() && $value !== ($original[$field] ?? null)) {
                 return true;
             }
         }

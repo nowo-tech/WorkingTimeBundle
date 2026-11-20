@@ -340,6 +340,70 @@ final class HostWritesInUnitTest extends RegisterTestCase
     }
 
     /**
+     * Audit UZ7-1: an unflushed clear() of an inverse orphan-removal collection (clean, but every kid on the orphan
+     * list) is reverted: the host's next flush keeps both kids.
+     */
+    public function testAnUnflushedClearOfAnOrphanRemovalCollectionIsReverted(): void
+    {
+        $host = $this->hostManager();
+        $note = $this->noteWithKids($host);
+
+        $this->conflict($host, static function () use ($note): void {
+            $note->kids->clear();
+        });
+
+        $host->flush();
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM host_kid'), 'the host\'s flush keeps both kids');
+        self::assertCount(2, $note->kids);
+    }
+
+    /**
+     * Audit UZ7-2: a flushed clear() of an inverse orphan-removal collection is rolled back; the owner is reloaded
+     * (reached through the deleted kids), so the retry's clear() deletes the kids for real.
+     */
+    public function testAFlushedClearOfAnOrphanRemovalCollectionIsDoneByTheRetry(): void
+    {
+        $host = $this->hostManager();
+        $note = $this->noteWithKids($host);
+
+        $this->conflict($host, static function () use ($host, $note): void {
+            $note->kids->clear();
+            $host->flush();
+        });
+
+        self::assertSame(2, $this->int('SELECT COUNT(*) FROM host_kid'), 'rolled back');
+        self::assertCount(2, $note->kids, 'the owner shows the database\'s kids again');
+
+        $this->runner()->write(static function () use ($host, $note): void {
+            $note->kids->clear();
+            $host->flush();
+        });
+
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_kid'), 'the retry deletes the kids');
+    }
+
+    /**
+     * Audit UZ7-3: the host's own clear() of an inverse orphan-removal collection before the unit refuses the start, so
+     * it is never reverted.
+     */
+    public function testAHostClearBeforeTheUnitIsRefused(): void
+    {
+        $host = $this->hostManager();
+        $note = $this->noteWithKids($host);
+        $note->kids->clear();
+
+        try {
+            $this->runner()->write(static fn (): string => 'not run');
+            self::fail('A write while a host collection was cleared is refused.');
+        } catch (LogicException $e) {
+            self::assertStringContainsString('has unflushed changes', $e->getMessage());
+        }
+
+        $host->flush();
+        self::assertSame(0, $this->int('SELECT COUNT(*) FROM host_kid'), 'the host\'s own clear() is kept');
+    }
+
+    /**
      * Audit UZ6-2: host work pending only in a collection (a link, an orphan removal) refuses the start like any other
      * unflushed work.
      */
@@ -729,6 +793,23 @@ final class HostWritesInUnitTest extends RegisterTestCase
         self::assertNotSame($host, $this->em());
 
         return $failure;
+    }
+
+    /**
+     * A host note with two kids in its orphan-removal collection, flushed.
+     */
+    private function noteWithKids(EntityManagerInterface $host): HostNote
+    {
+        $note = new HostNote('n0', 'a');
+        foreach (['k1', 'k2'] as $id) {
+            $kid       = new HostKid($id);
+            $kid->note = $note;
+            $note->kids->add($kid);
+        }
+        $host->persist($note);
+        $host->flush();
+
+        return $note;
     }
 
     private function hostManager(): EntityManagerInterface
