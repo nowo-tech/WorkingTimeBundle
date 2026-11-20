@@ -3,7 +3,9 @@
 Every write runs in a transaction-doctrine write unit on the bundle's entity manager (contract section 15;
 REQ-RUNTIME-003): one transaction, flushed before the commit, replayed after a deadlock or a lock-wait timeout (up to
 three attempts), the entity manager cleared afterwards. A conflict that a replay cannot settle answers
-**409 + `Retry-After`** (transaction-doctrine's responder; JSON `{"error": "<code>"}` on the bundle's routes). Audit
+**409 + `Retry-After` + `X-Conflict-Code: CONFLICT_001`** (transaction-doctrine's responder; JSON
+`{"error": "<code>", "code": "CONFLICT_001"}` on the bundle's routes), or **409 + `X-Conflict-Code: CONFLICT_002`**
+without `Retry-After` when part of the request was already committed (see [Conflict answer](#conflict-answer)). Audit
 rows, events and notices go out after the commit, so a replayed or refused attempt records nothing twice.
 
 ## Write paths
@@ -36,3 +38,106 @@ The bundle assumes READ COMMITTED (REQ-DB-003) and short lock waits. Locks are t
 (the type or calendar row first, then its children), so the S2 paths cannot deadlock against themselves; a deadlock with
 another path is replayed by the write unit. No lock or entity survives the call (FrankenPHP worker mode, kernel reset
 false).
+
+## Conflict answer
+
+REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answered by the bundle):
+
+| Failure | Status | Headers | JSON |
+| --- | --- | --- | --- |
+| Lock conflict, deadlock, lock-wait timeout or serialization failure; nothing committed | 409 (the policy's status: 503 when the host sets `conflict_response.status: 503`) | `Retry-After`, `X-Conflict-Code: CONFLICT_001`, `Cache-Control: no-store` | `{"error": "<code>", "code": "CONFLICT_001"}` |
+| The same after part of the request committed (an earlier unit of the request, or a unit that committed before its conflict: both need NowoTransactionDoctrineBundle with `commit_detection`, on by default; a Messenger `HandlerFailedException` with a `HandledStamp`; any `DelayedMessageHandlingException`) | 409 | `X-Conflict-Code: CONFLICT_002`, no `Retry-After` | `{"error": "<code>" or "concurrency_conflict_partial", "code": "CONFLICT_002"}` |
+| Unique violation, lost connection | not a conflict: the bundle's domain answer where it expects the race (see the table above), otherwise the host's error handling | | |
+
+- The code is `ConflictCode::forRequest()` (transaction-doctrine >= 1.6), with the request's commit watermark when
+  NowoTransactionDoctrineBundle takes one. **Detecting an earlier commit needs NowoTransactionDoctrineBundle with
+  `conflict_response.commit_detection`** (on by default): it takes the request's watermark and tracks commits. Without
+  the bundle, or with `commit_detection: false`, an earlier commit in the request (or a unit that committed before
+  its conflict) answers `CONFLICT_001`; only the Messenger cases above still answer `CONFLICT_002`.
+  `X-Conflict-Code` carries only `CONFLICT_001` or `CONFLICT_002`; the bundle's own codes (`settings_stale`,
+  `chain_busy`, ...) stay in the JSON `error`.
+- Detection is transaction-doctrine's bounded walk (`TransientFailureClassifier::findLockConflict()` /
+  `findConflict()`, >= 1.7): the `getPrevious()` chain **and** Messenger's wrapped exceptions, so a deadlock in the
+  second handler of a synchronous `HandlerFailedException` is found. Each throwable is read once, at most 256.
+- NowoTransactionDoctrineBundle's responder (`kernel.exception`, priority 64) answers the lock conflicts, with
+  `WorkingTimeConflictFormatter` shaping the JSON of the bundle's routes. The bundle's `ConflictFallbackListener`
+  (priority 63, bundle routes only) answers what the responder leaves: every conflict when the responder's bundle is
+  not registered, and otherwise the raw transient failures no write unit wrapped (the responder maps those only with
+  `map_transient_failures: true`). When the responder exists the listener answers through its `respond()` (the
+  branded HTML page, the bundle's JSON formatter); either way it logs one constant warning.
+- A stale version re-rendered as a form (settings, leave settings, a correction decision) answers 409 with the same
+  headers.
+
+## Replays and the host's entity manager
+
+- **Private entity manager** (`doctrine.entity_manager: nowo_working_time`, the default): the write unit is scoped to
+  it with transaction-doctrine's `forManagers()` (>= 1.7). A replay clears or resets only the bundle's manager; the
+  host's open default manager keeps its entities. Every write of a unit goes through the bundle's manager (the stores
+  take it from the runner). Leftover transaction levels are rolled back on every connection, as before.
+- **Host ports must not write through a host entity manager inside a unit** (the audit sink, the worker directory;
+  audits UZ-1, UZ2, UZ3). Each attempt runs with a probe on every host manager (every manager of the registry except
+  the bundle's). The probe records each host flush that wrote: its inserts, its updates with their old values, its
+  deletes, and whether it ran on the bundle's connection. Nested flushes are followed. The probe keeps nothing after
+  the attempt. After a deadlock or lock-wait timeout, on the private manager:
+
+  | The port, inside the attempt | Outcome |
+  | --- | --- |
+  | Reads only (`find()`, queries, an empty `flush()`) | Replayed. Nothing of the host is detached; what it read stays managed. |
+  | `persist()`, `remove()` or changes without `flush()` | Not replayed: 409 `CONFLICT_001`. They can only be the failed attempt's (a unit never starts over unflushed host work), so they are reverted: a `remove()` is cancelled; an entity whose fields, owning to-one associations or to-many collections changed is reloaded from the database, after the elements removed from its collections are taken off Doctrine's orphan-removal list (a collection counts as changed when it is dirty or differs from its snapshot, as an inverse collection does after `clear()`; an owning-side `clear()`, whose deletion Doctrine schedules at once, is taken off the unit of work together with the orphan removals it queued, and the owner's collections go back to lazy before the reload) (an owner whose collection gained an unflushed, cascade-persisted child included, so nothing reaches that child any more); a `persist()` is cancelled (detached). Read-only entities are skipped (a display-only change keeps the replay). Nothing is left for the host's next flush, the next bundle write starts, and transaction-doctrine never clears an open host manager. |
+  | `flush()` on the bundle's connection (a savepoint inside the unit) | Not replayed: 409 `CONFLICT_001`. The rollback took the host's rows with it, and the host's manager is put back to what the database holds. Inserted entities are detached (a generated id is reset unless it is readonly); an entity the host had before is managed again, and reloaded, if a cascade detach reached it. Updated entities get their old values back, in the entity and in Doctrine's original data. Deleted entities are managed again. The owners of changed collections (many-to-many links, inverse one-to-many children, cascade-all collections included), the owners reached through the owning to-one association of each rolled-back delete (an inverse orphan-removal collection that was cleared), and versioned entities are reloaded from the database through their persister, which does not cascade. A retry then writes the change for real. Each entity is restored on its own: one that cannot be never stops the others, and the answer stays a 409. |
+  | `flush()` on another connection: committed, or inside the host's own transaction there | Not undone by the unit's rollback, so not replayed and never repeated: 409 `CONFLICT_002`, without `Retry-After`. What it wrote stays managed. |
+  | A host manager closed during the attempt | Not replayed: 409. `CONFLICT_002` if a host flush on another connection finished before the manager closed, else `CONFLICT_001`. |
+
+  The codes are those of the unit itself. A commit earlier in the same request turns any of them into `CONFLICT_002`
+  (`ConflictCode::forRequest()`, with NowoTransactionDoctrineBundle's `commit_detection`).
+
+  **A unit does not start while a host manager has unflushed changes** (audits UZ2-3, UZ6-2, UZ7-3; changes pending
+  only in collections, pending orphan removals and a `clear()` of an inverse collection count): the runner throws a
+  `LogicException` naming the manager. Flush or clear the host's work before calling the register. Ports should log,
+  or write after the commit (an outbox, an after-commit event).
+- **Shared manager** (`doctrine.entity_manager: null`, or the default manager's name): the unit writes through the
+  host's manager, so it is not scoped. The runner refuses to start while the host has unflushed changes, and only the
+  bundle's entities are detached after a unit. Since transaction-doctrine 1.8 (1.8.1 required) a deadlock replay no longer clears the
+  shared manager: the host's entities stay managed and are reloaded from the database when the failed attempt touched
+  them (a replay that cannot restore one ends as a 409 `CONFLICT_001`). Host ports writing inside the unit are still
+  only watched on the private manager, so hosts that write through their manager inside a call to the register should
+  use the private manager.
+
+## Residual risks
+
+- An orphan removal the host made through `removeElement()` on a collection whose owner it had already detached is
+  invisible to the start guard (audit UZ10-2): if a bundle unit then refuses, that host removal is dropped. Do not
+  remove orphans through a detached owner's collection; flush them before calling the register.
+- A host port that writes through a host entity manager inside a unit is never replayed (the table above). Some host
+  state is still not put back:
+  - An entity whose restore fails (a readonly generated id, a reload of a row the database no longer has) keeps its
+    in-memory state; the answer is still a 409.
+  - Entities with the `DEFERRED_EXPLICIT` change-tracking policy are reverted when they differ from their original
+    data, so a change the host made to one inside the unit and never passed to `persist()` is lost too.
+  - Reloading runs `postLoad` listeners again.
+- A host flush on another connection (committed, or inside the host's own transaction) is not undone by the unit. The
+  answer is `CONFLICT_002`, so the client reads again.
+- Every write on the private manager reads every host manager of the registry (the pending-changes check and the
+  probe), so lazy managers are built. The start guard runs `computeChangeSets()` on each of them and scans their
+  collections, so its cost grows with the host's identity map (audits UZ6-4, UZ8-3, measured):
+
+  | Managed host entities | Cost per bundle write |
+  | --- | --- |
+  | about 12,000 (2,000 owners with initialised collections) | about 125 to 160 ms |
+  | about 10,000 | about 240 to 500 ms (PostgreSQL measured up to 480 ms) |
+
+  - **Batch commands** that call the register in a loop: flush and `clear()` the host manager between batches (or
+    every N items), so each bundle write scans a small identity map. Do not load the whole data set into the host
+    manager before the loop.
+  - **Messenger handlers** in a worker: clear the host manager after each message (Doctrine's
+    `doctrine_clear_entity_manager` middleware, or `$em->clear()` at the end of the handler), so entities do not pile
+    up across messages.
+- Reverting an owning-side `clear()` takes the collection off Doctrine's scheduled collection deletions, and the
+  attempt's queued orphan removals off its orphan-removal list (an owning many-to-many with `orphanRemoval` queues
+  every element on `clear()`), through `ReflectionProperty` on the unit of work's private `collectionDeletions` and
+  `orphanRemovals` (no public API exists; audits UZ8-2, UZ9-1). If a future Doctrine version renames those properties
+  or changes their shape, the revert fails closed: nothing is taken off, the answer is still a 409, and the start
+  guard refuses the next bundle write ("has unflushed changes"). The host must then `clear()` its manager: a flush
+  would run the queued deletes. The Database suite checks both properties' shape on the pinned Doctrine ORM.
+- A failure carrying more than 256 throwables, or a broken Messenger wrapper, answers `CONFLICT_002` (the safe
+  over-approximation of transaction-doctrine's walk).

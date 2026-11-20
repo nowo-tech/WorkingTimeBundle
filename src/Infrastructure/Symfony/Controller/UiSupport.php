@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Controller;
 
+use Nowo\TransactionDoctrine\ConflictCode;
 use Nowo\TransactionDoctrine\Symfony\Conflict\ConflictResponsePolicy;
 use Nowo\UiKitBundle\View\AreaNav;
 use Nowo\UiKitBundle\View\AreaNavItem;
@@ -24,6 +25,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Throwable;
 use Twig\Environment;
 
 use function bin2hex;
@@ -152,13 +154,15 @@ final readonly class UiSupport
     }
 
     /**
-     * The `Retry-After` headers and status of a stale version (409).
+     * The status and headers of a stale version (409, REQ-RUNTIME-003 rule 6): `X-Conflict-Code` from
+     * `ConflictCode::forRequest()` (CONFLICT_002 when the request committed something before), `Retry-After` only for
+     * CONFLICT_001.
      *
      * @return array{int, array<string, string>}
      */
-    public function conflict(): array
+    public function conflict(Request $request, Throwable $failure): array
     {
-        return [$this->conflicts->status, $this->conflicts->headers()];
+        return [$this->conflicts->status, $this->conflicts->headersFor(ConflictCode::forRequest($request, $failure))];
     }
 
     /**

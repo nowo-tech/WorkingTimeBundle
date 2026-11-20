@@ -306,9 +306,9 @@ final readonly class LeaveController
                     return $this->ui->redirect('nowo_working_time_leave_settings');
                 } catch (LeaveRefusedException $e) {
                     $form->addError(new FormError($this->ui->trans($e->key))); // @igor-ignore - persistence or I/O call on a stateless collaborator; nothing is kept on the service
-                } catch (StaleLeaveSettingsException) {
+                } catch (StaleLeaveSettingsException $e) {
                     $this->ui->flash($request, 'error', 'settings.stale');
-                    [$status, $headers]   = $this->ui->conflict();
+                    [$status, $headers]   = $this->ui->conflict($request, $e);
                     [$settings, $version] = $this->administration->settings();
 
                     return $this->settingsPage($this->ui->form(LeaveSettingsType::class, $this->settingsData($settings, $version), [], 'wt_leave_settings'), $status, $headers);

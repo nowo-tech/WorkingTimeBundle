@@ -72,7 +72,7 @@ final class PortsPassTest extends TestCase
         self::assertSame('app.pdf', (string) $container->getAlias('nowo_working_time.pdf_renderer'));
         self::assertSame('nowo_transaction_doctrine.write_unit', (string) $container->getAlias('nowo_working_time.write_unit'));
         self::assertSame('nowo_transaction_doctrine.conflict_response_policy', (string) $container->getAlias('nowo_working_time.conflict_policy'));
-        self::assertFalse($container->hasDefinition(ConflictFallbackListener::class));
+        self::assertSame([['event' => 'kernel.exception', 'method' => 'onKernelException', 'priority' => 63]], $container->getDefinition(ConflictFallbackListener::class)->getTag('kernel.event_listener'), 'after the responder: what it leaves, on the bundle\'s routes');
         self::assertSame('nowo_working_time.export_dispatcher.messenger', (string) $container->getAlias(ExportDispatcherInterface::class));
         self::assertTrue($container->getDefinition(GenerateRegisterExportHandler::class)->hasTag('messenger.message_handler'));
         self::assertSame(TimeTrackTaskTimerLink::class, $container->getDefinition(TaskTimerLinkInterface::class)->getClass());

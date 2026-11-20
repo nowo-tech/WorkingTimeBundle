@@ -34,6 +34,7 @@ final class LeaveUiTest extends UiTestCase
         $this->client->submit($stale, ['wt_leave_settings[enabled]' => '1']);
         self::assertSame(409, $this->client->getResponse()->getStatusCode(), 'a stale save');
         self::assertTrue($this->client->getResponse()->headers->has('Retry-After'));
+        self::assertSame('CONFLICT_001', $this->client->getResponse()->headers->get('X-Conflict-Code'));
         self::assertSame(13, $this->int('SELECT COUNT(*) FROM nowo_working_time_leave_type'));
 
         // Types.

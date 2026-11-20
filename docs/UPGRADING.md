@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 0.3.0](#to-030)
 - [To 0.2.0](#to-020)
 - [To 0.1.2](#to-012)
 - [To 0.1.1](#to-011)
@@ -13,6 +14,63 @@
 - **Twig namespace**: use `@NowoWorkingTimeBundle/...` in `{% extends %}`, `{% include %}` and `render()`. The old automatic
   `@NowoWorkingTime/...` still resolves to the same files for now (BC alias, to be removed in a later major). Host overrides
   stay in `templates/bundles/NowoWorkingTimeBundle/`; run `cache:clear` once.
+
+## To 0.3.0
+
+From **0.2.0**:
+
+```bash
+composer update nowo-tech/working-time-bundle
+```
+
+From **0.2.0**:
+
+```bash
+composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
+```
+
+- **transaction-doctrine `^1.8.1`** is required (was `^1.3`; 1.8.0 fixes GHSA-9wh3-m3m5-jffx and
+  GHSA-65w2-9r4h-848g, 1.8.1 fixes a replay regression of 1.8.0).
+  On the shared manager (`doctrine.entity_manager: null`) a deadlock replay no longer clears the host's manager: its
+  entities stay managed and are reloaded when the failed attempt touched them. Read its UPGRADING from your locked
+  version; nothing in the bundle's configuration changes.
+- **Conflict answers carry `X-Conflict-Code`** (`CONFLICT_001` or `CONFLICT_002`) and, in JSON, a `code` key next to
+  `error` (additive). After a commit earlier in the same request (or a Messenger handler that already succeeded) the
+  answer is `CONFLICT_002` without `Retry-After`; a generic conflict's `error` is then `concurrency_conflict_partial`.
+  Clients should key on `code` or the header. Cross-origin clients need `X-Conflict-Code` in
+  `Access-Control-Expose-Headers`. The status follows the policy as before (`conflict_response.status: 503` still
+  works).
+- **A replay no longer clears the host's entity manager** on the private manager (the default): a deadlock replay of
+  the bundle's unit clears only `nowo_working_time`. Host ports called inside a unit (audit sink, worker directory)
+  must not write through a host manager (audits UZ-1, UZ2). After a deadlock in an attempt:
+  - reads through a host manager are still replayed;
+  - a host flush that wrote, unflushed host inserts or changes, or a host manager that closed: the attempt is not
+    replayed and the answer is a 409. It is `CONFLICT_002` when a host flush ran on another connection (committed,
+    or inside the host's own transaction there), otherwise `CONFLICT_001` with `Retry-After`.
+  - After a rollback on the bundle's connection the host manager is put back to the database: rolled-back inserts
+    are detached (generated ids reset), rolled-back updates get their old values back, and rolled-back deletes are
+    managed again. Owners of rolled-back collection changes and rolled-back versioned entities are reloaded through
+    their persister.
+  - Host changes the failed attempt made and never flushed are reverted, not kept for the host's next flush:
+    `remove()` and `persist()` are cancelled, changed entities are reloaded. With the `DEFERRED_EXPLICIT`
+    change-tracking policy this includes changes never passed to `persist()`. See CONCURRENCY.md, residual risks.
+
+  See CONCURRENCY.md, "Replays and the host's entity manager". The host-write probe does not run with
+  `doctrine.entity_manager: null`.
+- **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes,
+  including changes pending only in collections, pending orphan removals and a `clear()` of an inverse
+  collection**
+  (audit UZ2-3; `LogicException` naming the manager). Before, a host port flushing that work inside the unit could
+  lose it silently on a rollback. Flush (or clear) the host's work before calling the register; the shared-manager
+  mode has always refused this.
+- **`CONFLICT_002` for an earlier commit needs NowoTransactionDoctrineBundle with `commit_detection`** (on by
+  default). Without it, those cases answer `CONFLICT_001`.
+- **`ConflictFallbackListener` is registered even with NowoTransactionDoctrineBundle** (priority 63, after its
+  responder). It answers only the bundle's routes, so host routes are untouched; on them a raw deadlock that reached
+  the kernel answers 409 instead of 500. A host that removed the listener's definition by id should keep doing so only
+  if it answers these failures itself.
+- **`UiSupport::conflict()`** now takes the request and the failure (`conflict(Request, Throwable)`); it is an internal
+  controller helper.
 
 ## To 0.2.0
 
