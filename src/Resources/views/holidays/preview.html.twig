@@ -13,6 +13,6 @@
     {% if provisional %}<div class="{{ nowo_ui_class('flash_warning', _b) }}" role="status" data-testid="wt-holiday-provisional">{{ 'holiday.calendar.provisional'|trans({}, _d) }}</div>{% endif %}
     {% if attribution %}<p data-testid="wt-holiday-attribution"><small>{{ attribution }}</small></p>{% endif %}
     {% if confirm %}
-        {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: confirm, title: null, submit: 'holiday.import.confirm', action: action, testid: 'wt-holiday-import-confirm'}) }}
+        {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: confirm, title: null, submit: 'holiday.import.confirm', action: action, testid: 'wt-holiday-import-confirm'}) }}
     {% endif %}
 {% endblock %}

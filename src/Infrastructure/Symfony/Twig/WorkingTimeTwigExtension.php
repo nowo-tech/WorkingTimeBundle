@@ -60,7 +60,7 @@ final class WorkingTimeTwigExtension extends AbstractExtension
             return '';
         }
 
-        return $twig->render('@NowoWorkingTime/register/_header_clock.html.twig', ['state' => $state, 'href' => $this->router->generate('nowo_working_time_today')]);
+        return $twig->render('@NowoWorkingTimeBundle/register/_header_clock.html.twig', ['state' => $state, 'href' => $this->router->generate('nowo_working_time_today')]);
     }
 
     /**

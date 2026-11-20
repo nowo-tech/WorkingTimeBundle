@@ -11,6 +11,10 @@
 
 ## Unreleased
 
+- **Twig namespace**: use `@NowoWorkingTimeBundle/...` in `{% extends %}`, `{% include %}` and `render()`. The old automatic
+  `@NowoWorkingTime/...` still resolves to the same files for now (BC alias, to be removed in a later major). Host overrides
+  stay in `templates/bundles/NowoWorkingTimeBundle/`; run `cache:clear` once.
+
 ## To 0.3.0
 
 From **0.2.0**:

@@ -16,6 +16,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- **Twig namespace is now `@NowoWorkingTimeBundle`** (REQ-TWIG-002), the same string as the translation domain, registered
+  by `TwigPathsPass`; controllers, the mailer, the PDF bridge and the templates render and include `@NowoWorkingTimeBundle/...`.
+  The host override directory `templates/bundles/NowoWorkingTimeBundle/` is registered under it. The automatic
+  `@NowoWorkingTime` namespace still resolves (BC alias).
+- Demo `LoginType` (symfony7 and symfony8) extends `FormKitAbstractType`.
+
+### Documentation
+
+- `docs/USAGE.md` section 7: template override procedure with the subpath list, and the translation override procedure.
+- `README.md`: Requirements before Configuration.
+- `specs/001-baseline/code-inventory.md`: full categorized inventory of `src/`.
+
 ## [0.3.0] - 2026-11-20
 
 ### Added

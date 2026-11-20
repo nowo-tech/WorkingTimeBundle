@@ -42,6 +42,13 @@ composer require nowo-tech/working-time-bundle
 
 See [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
+## Requirements
+
+- PHP >= 8.2, < 8.6 (Symfony 8.x needs PHP 8.4+)
+- Symfony 7.4, 8.0 or 8.1
+- Doctrine DBAL 3.8+ / 4 and ORM 3.7+ with DoctrineBundle
+- `nowo-tech/ui-kit-bundle` ^2.55, `nowo-tech/transaction-doctrine` ^1.3, `nowo-tech/form-kit-bundle` ^2.22, `nowo-tech/outbound-url-guard-bundle` ^1.5
+
 ## Configuration
 
 ```yaml
@@ -55,13 +62,6 @@ nowo_working_time:
 ```
 
 Every key of the contract is already accepted (strict tree): [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
-
-## Requirements
-
-- PHP >= 8.2, < 8.6 (Symfony 8.x needs PHP 8.4+)
-- Symfony 7.4, 8.0 or 8.1
-- Doctrine DBAL 3.8+ / 4 and ORM 3.7+ with DoctrineBundle
-- `nowo-tech/ui-kit-bundle` ^2.55, `nowo-tech/transaction-doctrine` ^1.3, `nowo-tech/form-kit-bundle` ^2.22, `nowo-tech/outbound-url-guard-bundle` ^1.5
 
 ## Demo
 

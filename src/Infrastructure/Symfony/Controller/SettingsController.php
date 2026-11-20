@@ -101,7 +101,7 @@ final readonly class SettingsController
                 return $this->ui->redirect('nowo_working_time_preferences');
             }
 
-            return $this->ui->render('@NowoWorkingTime/register/preferences.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/register/preferences.html.twig', [
                 'page' => new FormPage(
                     new PageHeader(UiSupport::label('preferences.title'), UiSupport::label('preferences.intro'), [], tabs: $this->ui->tabs('preferences')),
                     $form->createView(),
@@ -119,7 +119,7 @@ final readonly class SettingsController
      */
     private function page(FormInterface $form, int $status, array $headers = []): Response
     {
-        return $this->ui->render('@NowoWorkingTime/register/settings.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/settings.html.twig', [
             'page' => new SettingsPage(
                 new PageHeader(UiSupport::label('settings.title'), UiSupport::label('settings.intro'), []),
                 [new SettingsSection('register', UiSupport::label('settings.section.register'), null, $form->createView(), UiSupport::label('settings.section.register_intro'), UiSupport::label('settings.save'))],

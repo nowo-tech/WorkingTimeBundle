@@ -22,8 +22,8 @@
             </div>
         </section>
     {% endif %}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: policy_form, title: 'leave.allowance.add', submit: 'leave.allowance.save', action: null, testid: 'wt-leave-policy-form'}) }}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: line_form, title: 'leave.line.add', submit: 'leave.line.save', action: null, testid: 'wt-leave-line-form'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: policy_form, title: 'leave.allowance.add', submit: 'leave.allowance.save', action: null, testid: 'wt-leave-policy-form'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: line_form, title: 'leave.line.add', submit: 'leave.line.save', action: null, testid: 'wt-leave-line-form'}) }}
     <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-leave-worker-balances">
         <div class="{{ nowo_ui_class('card_body', _b) }}">
             <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'leave.allowance.worker_balances'|trans({'%year%': year}, _d) }}</h2>

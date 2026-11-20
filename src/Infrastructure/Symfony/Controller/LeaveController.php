@@ -113,7 +113,7 @@ final readonly class LeaveController
                 ];
             }
 
-            return $this->ui->render('@NowoWorkingTime/leave/types.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/leave/types.html.twig', [
                 'page' => new ListPage(
                     new PageHeader(UiSupport::label('leave.type.title'), UiSupport::label('leave.type.intro'), [], tabs: $this->tabs('types')),
                     [
@@ -163,7 +163,7 @@ final readonly class LeaveController
                 return $this->ui->redirect('nowo_working_time_leave_manage');
             }
 
-            return $this->ui->render('@NowoWorkingTime/leave/type.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/leave/type.html.twig', [
                 'page'     => new ListPage(new PageHeader(UiSupport::label('leave.type.edit_title', ['%name%' => $type->nameIn($context->locale)]), null, [new Action('cancel', UiSupport::label('leave.back'), $this->ui->url('nowo_working_time_leave_manage'))], tabs: $this->tabs('types')), bundle: 'NowoWorkingTimeBundle', layout: $this->ui->layout()),
                 'form'     => $form->createView(),
                 'archive'  => $this->ui->form(ActionType::class, null, ['csrf_token_id' => 'nowo_working_time_leave_archive'], 'wt_leave_archive_' . $id)->createView(),
@@ -232,7 +232,7 @@ final readonly class LeaveController
             $worker   = $request->query->getString('worker');
             $balances = $worker !== '' && in_array($worker, $workers, true) ? $this->balanceRows($context->tenant, new WorkerRef($worker), $year, $context->locale) : null;
 
-            return $this->ui->render('@NowoWorkingTime/leave/allowances.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/leave/allowances.html.twig', [
                 'page' => new ListPage(
                     new PageHeader(UiSupport::label('leave.allowance.title', ['%year%' => $year]), UiSupport::label('leave.allowance.intro'), [
                         new Action('prev', UiSupport::label('leave.year_previous'), $this->ui->url('nowo_working_time_leave_allowances', ['year' => $year - 1])),
@@ -325,7 +325,7 @@ final readonly class LeaveController
      */
     private function settingsPage(FormInterface $form, int $status, array $headers = []): Response
     {
-        return $this->ui->render('@NowoWorkingTime/leave/settings.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/leave/settings.html.twig', [
             'page' => new SettingsPage(
                 new PageHeader(UiSupport::label('leave.settings.title'), UiSupport::label('leave.settings.intro'), [], tabs: $this->tabs('settings')),
                 [new SettingsSection('leave', UiSupport::label('leave.settings.section'), null, $form->createView(), null, UiSupport::label('settings.save'))],
@@ -358,7 +358,7 @@ final readonly class LeaveController
 
     private function balancePage(TenantRef $tenant, WorkerRef $worker, int $year, string $locale, string $tab, Label $title): Response
     {
-        return $this->ui->render('@NowoWorkingTime/leave/balances.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/leave/balances.html.twig', [
             'page' => new ListPage(
                 new PageHeader($title, UiSupport::label('leave.balance.intro'), [
                     new Action('prev', UiSupport::label('leave.year_previous'), $this->ui->url('nowo_working_time_leave', ['year' => $year - 1])),

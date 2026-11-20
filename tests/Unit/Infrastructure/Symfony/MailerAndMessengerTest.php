@@ -38,7 +38,7 @@ final class MailerAndMessengerTest extends TestCase
             $sent[] = $email;
         });
         $loader = new FilesystemLoader();
-        $loader->addPath(__DIR__ . '/../../../../src/Resources/views', 'NowoWorkingTime');
+        $loader->addPath(__DIR__ . '/../../../../src/Resources/views', 'NowoWorkingTimeBundle');
         $directory = $this->createStub(WorkerDirectoryInterface::class);
         $directory->method('worker')->willReturnCallback(static fn (TenantRef $tenant, WorkerRef $worker): ?WorkerProfile => match ($worker->value) {
             'ana'   => new WorkerProfile($worker, 'Ana', 'ana@example.test', 'es'),

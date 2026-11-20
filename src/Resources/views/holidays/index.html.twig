@@ -8,7 +8,7 @@
 {% block nowo_ui_list_after %}
     {%- set _b = page.bundle -%}
     {%- set _d = 'NowoWorkingTimeBundle' -%}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: calendar_form, title: 'holiday.calendar.add', submit: 'holiday.calendar.save', action: null, testid: 'wt-holiday-calendar-form'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: calendar_form, title: 'holiday.calendar.add', submit: 'holiday.calendar.save', action: null, testid: 'wt-holiday-calendar-form'}) }}
     <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-holiday-centres">
         <div class="{{ nowo_ui_class('card_body', _b) }}">
             <h2 class="{{ nowo_ui_class('card_title', _b) }}">{{ 'holiday.centre.title'|trans({}, _d) }}</h2>
@@ -24,7 +24,7 @@
             {% endif %}
         </div>
     </section>
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: centre_form, title: 'holiday.centre.add', submit: 'holiday.centre.save', action: null, testid: 'wt-holiday-centre-form'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: centre_form, title: 'holiday.centre.add', submit: 'holiday.centre.save', action: null, testid: 'wt-holiday-centre-form'}) }}
     {% if municipalities %}
         <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-municipalities">
             <div class="{{ nowo_ui_class('card_body', _b) }}">

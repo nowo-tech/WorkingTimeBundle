@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\ScheduleDefinition;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Type\UtcDateTimeImmutableType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\PrivateEntityManagerPass;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\TwigPathsPass;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\WorkingTimePortsPass;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ConfigurationTree;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ParameterFlattener;
@@ -61,7 +62,7 @@ final class NowoWorkingTimeBundle extends AbstractBundle
     protected string $extensionAlias = self::ALIAS;
 
     /**
-     * The bundle's resources live in `src/Resources` (`@NowoWorkingTime` templates, translations).
+     * The bundle's resources live in `src/Resources` (`@NowoWorkingTimeBundle` templates, translations).
      */
     public function getPath(): string
     {
@@ -76,6 +77,7 @@ final class NowoWorkingTimeBundle extends AbstractBundle
         parent::build($container);
         $container->addCompilerPass(new PrivateEntityManagerPass());
         $container->addCompilerPass(new WorkingTimePortsPass());
+        $container->addCompilerPass(new TwigPathsPass());
     }
 
     /**
