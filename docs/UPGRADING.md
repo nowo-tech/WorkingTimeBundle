@@ -3,12 +3,21 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 0.3.0](#to-030)
 - [To 0.2.0](#to-020)
 - [To 0.1.2](#to-012)
 - [To 0.1.1](#to-011)
 - [To 0.1.0](#to-010)
 
 ## Unreleased
+
+## To 0.3.0
+
+From **0.2.0**:
+
+```bash
+composer update nowo-tech/working-time-bundle
+```
 
 From **0.2.0**:
 
