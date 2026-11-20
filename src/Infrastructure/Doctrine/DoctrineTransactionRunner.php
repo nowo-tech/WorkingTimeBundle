@@ -9,11 +9,17 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
 use Doctrine\Persistence\ManagerRegistry;
 use LogicException;
+use Nowo\TransactionDoctrine\TransientFailureClassifier;
+use Nowo\TransactionDoctrine\TransientFailureKind;
+use Nowo\TransactionDoctrine\WriteUnit\ConcurrencyConflict;
+use Nowo\TransactionDoctrine\WriteUnit\WriteUnit;
 use Nowo\TransactionDoctrine\WriteUnit\WriteUnitInterface;
 use Nowo\WorkingTimeBundle\Application\Shared\DuplicateRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\StaleRowException;
 use Nowo\WorkingTimeBundle\Application\Shared\TransactionRunnerInterface;
+use Throwable;
 
+use function sprintf;
 use function str_starts_with;
 
 /**
@@ -26,6 +32,14 @@ use function str_starts_with;
  * - `read()`: runs and clears.
  * - Both clear the entity manager when the outermost unit ends, and a closed entity manager is reset through the
  *   registry before the next unit (worker mode: no managed entity and no broken manager survive a call).
+ * - On the private entity manager the write unit is scoped to it (transaction-doctrine >= 1.7 `forManagers()`): a
+ *   replay clears or resets only the bundle's manager, never an open host one. Every write of a unit goes through
+ *   that manager (the stores take it from manager()). Host ports called inside a unit (the audit sink, the worker
+ *   directory) must not write through a host manager (audits UZ-1, UZ2, UZ3). Each attempt runs with a HostWriteProbe
+ *   on every host manager: after a transient failure, an attempt whose host flush wrote, whose host manager closed,
+ *   or that left new unflushed host work is not replayed (ConcurrencyConflict, 409; CONFLICT_002 only when a host
+ *   flush ran on another connection). What the rollback undid is put back in the host's manager. Reads through a
+ *   host manager never stop a replay. A unit does not start while a host manager has unflushed changes (UZ2-3).
  *
  * Never flushes the host's entity manager (rule 6): with `entity_manager: null` it is the default one, used only in
  * explicit transactions; there the runner forgets only the bundle's entities and refuses to write while the host has
@@ -63,10 +77,12 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
             return $result;
         }
         $this->refuseForeignChanges($manager);
+        $this->refuseHostChanges($manager);
 
-        return $this->writeUnit->run(function () use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
+        return $this->unit($manager)->run(function (int $attempt = 1) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
             $manager = $this->manager();
             $this->release($manager);
+            $probe = $this->shared($manager) ? null : HostWriteProbe::open($this->registry, $manager);
             try {
                 return $manager->wrapInTransaction(static function (EntityManagerInterface $manager) use ($work): mixed { // @igor-ignore - the runner calls this closure at once and keeps nothing
                     $result = $work();
@@ -78,10 +94,35 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
                 throw new DuplicateRowException($e);
             } catch (OptimisticLockException $e) {
                 throw new StaleRowException($e);
+            } catch (Throwable $e) {
+                $kind = (new TransientFailureClassifier())->classify($e);
+                if ($probe instanceof HostWriteProbe && $kind instanceof TransientFailureKind) {
+                    $conflict = $probe->refusal($e, $kind, $attempt);
+                    if ($conflict instanceof ConcurrencyConflict) {
+                        throw $conflict;
+                    }
+                }
+
+                throw $e;
             } finally {
+                $probe?->close();
                 $this->release($this->manager());
             }
         });
+    }
+
+    /**
+     * The write unit of $manager: scoped to the private entity manager (only it is cleared or reset between two
+     * attempts); unscoped on a shared manager, which is the one the unit writes through, and when the write unit is
+     * not transaction-doctrine's (a host decoration). A new scoped instance per write: nothing is kept.
+     */
+    private function unit(EntityManagerInterface $manager): WriteUnitInterface
+    {
+        if ($this->managerName === null || $this->shared($manager) || !$this->writeUnit instanceof WriteUnit) {
+            return $this->writeUnit;
+        }
+
+        return $this->writeUnit->forManagers($this->managerName);
     }
 
     /**
@@ -140,6 +181,24 @@ final readonly class DoctrineTransactionRunner implements TransactionRunnerInter
                 if (!str_starts_with($entity::class, self::ENTITY_NAMESPACE)) {
                     throw new LogicException('nowo_working_time shares the default entity manager (doctrine.entity_manager: null or the default manager\'s name) and will not flush the host\'s pending changes: flush them before calling the register, or give the bundle its private entity manager.');
                 }
+            }
+        }
+    }
+
+    /**
+     * On the private entity manager a unit never starts while a host manager holds unflushed work (audit UZ2-3): a
+     * host port flushing it inside the unit would put it into a transaction that may roll back, losing it silently.
+     *
+     * @throws LogicException
+     */
+    private function refuseHostChanges(EntityManagerInterface $manager): void
+    {
+        if ($this->shared($manager)) {
+            return;
+        }
+        foreach ($this->registry->getManagers() as $name => $host) {
+            if ($host instanceof EntityManagerInterface && $host !== $manager && $host->isOpen() && HostWriteProbe::hasScheduledChanges($host)) {
+                throw new LogicException(sprintf('nowo_working_time will not start a write while the entity manager "%s" has unflushed changes: a flush inside the unit could lose them on a rollback. Flush (or clear) them before calling the register.', $name));
             }
         }
     }

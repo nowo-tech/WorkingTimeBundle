@@ -35,6 +35,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\NullTaskTimerLink;
 use Symfony\Component\Clock\NativeClock;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -183,11 +184,15 @@ final class WorkingTimePortsPass implements CompilerPassInterface
         } else {
             $container->setDefinition($p . 'conflict_policy', new Definition(ConflictResponsePolicy::class));
         }
-        if (!$container->has('nowo_transaction_doctrine.conflict_responder')) {
-            $container->setDefinition(ConflictFallbackListener::class, (new Definition(ConflictFallbackListener::class))
-                ->setArguments([new Reference($p . 'conflict_policy')])
-                ->addTag('kernel.event_listener', ['event' => 'kernel.exception', 'method' => 'onKernelException', 'priority' => 64]));
-        }
+        // Always registered, just after the responder (64): it answers on the bundle's routes only, and only what the
+        // responder left (every lock conflict when the responder is absent, raw transient failures otherwise).
+        $container->setDefinition(ConflictFallbackListener::class, (new Definition(ConflictFallbackListener::class))
+            ->setArguments([
+                new Reference($p . 'conflict_policy'),
+                $container->has('nowo_transaction_doctrine.conflict_responder') ? new Reference('nowo_transaction_doctrine.conflict_responder') : null,
+                new Reference('logger', ContainerInterface::IGNORE_ON_INVALID_REFERENCE),
+            ])
+            ->addTag('kernel.event_listener', ['event' => 'kernel.exception', 'method' => 'onKernelException', 'priority' => 63]));
     }
 
     private function pdf(ContainerBuilder $container): void

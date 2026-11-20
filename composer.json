@@ -48,7 +48,7 @@
         "nowo-tech/form-kit-bundle": "^2.22",
         "nowo-tech/outbound-url-guard-bundle": "^1.5",
         "nowo-tech/transaction-contract": "^1.0",
-        "nowo-tech/transaction-doctrine": "^1.3",
+        "nowo-tech/transaction-doctrine": "^1.8.1",
         "nowo-tech/ui-kit-bundle": "^2.55",
         "psr/cache": "^2.0 || ^3.0",
         "psr/clock": "^1.0",
@@ -169,8 +169,8 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "scripts": {
-        "test": "@php -d memory_limit=512M vendor/bin/phpunit --color=always",
-        "test-coverage": "@php -d memory_limit=512M vendor/bin/phpunit --color=always --coverage-html coverage --coverage-clover coverage.xml --coverage-text",
+        "test": "@php -d memory_limit=1G vendor/bin/phpunit --color=always",
+        "test-coverage": "@php -d memory_limit=1G vendor/bin/phpunit --color=always --coverage-html coverage --coverage-clover coverage.xml --coverage-text",
         "test-coverage-100": [
             "@test-coverage",
             "php .scripts/check-coverage.php coverage.xml --min-percent=100"

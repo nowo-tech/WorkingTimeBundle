@@ -15,6 +15,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **`X-Conflict-Code` and the conflict code on every conflict answer** of the bundle's routes (REQ-RUNTIME-003 rule
+  6): `CONFLICT_001` with `Retry-After` when nothing was committed, `CONFLICT_002` without `Retry-After` when part of
+  the request was (`ConflictCode::forRequest()`, with the request's commit watermark). JSON answers gain a `code` key
+  next to the existing `error`; a committed generic conflict's `error` is `concurrency_conflict_partial`. The stale
+  version pages (settings, leave settings, correction decisions) send the header too. The CONFLICT_002 for an earlier commit in
+  the request needs NowoTransactionDoctrineBundle with `commit_detection` (on by default).
+
+### Changed
+
+- **transaction-doctrine `^1.8.1`** (was `^1.3`), in the bundle and both demos. 1.8.0 fixes two security advisories
+  (GHSA-9wh3-m3m5-jffx, GHSA-65w2-9r4h-848g) and keeps the host's entities managed across a write-unit replay (on the
+  shared manager too); 1.8.1 fixes 1.8.0's replay of new entities that reference a host-managed entity.
+- **Write units scoped to the private entity manager** (transaction-doctrine `forManagers()`, audit UI2-1): a deadlock
+  replay clears or resets only the bundle's manager; the host's open default manager keeps its entities. Unchanged on
+  a shared manager (`doctrine.entity_manager: null` or the default manager's name).
+- **Host writes inside a unit are never replayed** (audits UZ-1, UZ2). Each attempt on the private manager watches
+  every host entity manager for flushes:
+  - A host flush that wrote, unflushed host inserts or changes, or a host manager that closed: the attempt is not
+    replayed after a deadlock. The answer is a 409: `CONFLICT_002` only when a host flush committed on its own
+    connection, otherwise `CONFLICT_001`.
+  - The host manager is put back to what the database holds (audit UZ3-1): inserts the rollback removed are
+    detached, rolled-back updates get their old values back in the entity and in Doctrine's original data, and
+    rolled-back deletes are managed again. A retry writes the change for real.
+  - The owners of rolled-back collection changes (many-to-many links, inverse one-to-many children, cascade-all
+    ones included) and rolled-back versioned entities are reloaded from the database through their persister, which
+    does not cascade. A retry writes again and no phantom child is inserted (UZ4-1 to UZ4-3, UZ5-1).
+  - Each entity is restored on its own: a readonly generated id that cannot be reset still answers 409 (UZ4-4). An
+    entity the host had before that a cascade detach reached is managed again and reloaded (UZ4-5).
+  - Unflushed host work of the failed attempt is reverted: `remove()` cancelled, changed entities and owners of
+    changed collections reloaded, `persist()` cancelled (UZ3-3, UZ5-2, UZ5-3). Orphan removals scheduled by
+    `removeElement()` or `clear()` are cancelled first (UZ6-1, UZ7-1). Read-only entities are skipped (UZ6-3). After a
+    rolled-back flush of a cleared inverse collection the owner is reloaded too (UZ7-2). An unflushed owning-side
+    `clear()` is taken off Doctrine's scheduled collection deletions and the owner's collections go back to lazy, so
+    the host's flush deletes no link and the retry's `clear()` deletes them for real (UZ8-1, UZ8-2). The orphan
+    removals such a `clear()` queues on a many-to-many with `orphanRemoval` are taken off too (UZ9-1). Both fail
+    closed with a 409 and a refusing start guard if Doctrine's internals change. The host's next flush
+    writes none of it.
+  - A flush inside the host's own transaction on another connection counts as committed (`CONFLICT_002`, UZ3-2).
+    Nested host flushes are followed (UZ3-4).
+  - Reads through a host manager still replay and detach nothing.
+- **BC: on the private manager a write refuses to start while a host entity manager has unflushed changes**
+  (`LogicException`, audit UZ2-3), as the shared-manager mode already did. Changes pending only in collections, and
+  pending orphan removals, and a `clear()` of an inverse collection count too (UZ6-2, UZ7-3).
+- **`ConflictFallbackListener` answers through transaction-doctrine's responder when it exists** (`respond()`: the
+  branded HTML page and the bundle's JSON formatter), and logs one constant warning (route, method, code).
+- **`ConflictFallbackListener` is always registered**, at `kernel.exception` priority 63 (after transaction-doctrine's
+  responder): on the bundle's routes only, it answers every conflict when NowoTransactionDoctrineBundle is not
+  registered, and the raw transient failures the responder leaves when it is.
+
+### Fixed
+
+- **Conflicts inside Messenger wrappers** are found (transaction-doctrine's bounded walk instead of a hand-written
+  `getPrevious()` loop): a deadlock as the second wrapped exception of a synchronous `HandlerFailedException` answers
+  409 instead of 500, and the bundle's own code (`settings_stale`, ...) is kept when its exception is wrapped. Unique
+  violations and lost connections, wrapped or not, are still not conflicts.
+
 ## [0.2.0] - 2026-11-18
 
 ### Added

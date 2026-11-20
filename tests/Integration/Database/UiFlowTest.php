@@ -103,6 +103,7 @@ final class UiFlowTest extends UiTestCase
         $this->client->submit($decide);
         self::assertSame(409, $this->client->getResponse()->getStatusCode());
         self::assertSame('1', $this->client->getResponse()->headers->get('Retry-After'));
+        self::assertSame('CONFLICT_001', $this->client->getResponse()->headers->get('X-Conflict-Code'));
         self::assertSame(1, $this->int("SELECT COUNT(*) FROM nowo_working_time_revision WHERE kind = 'correction'"));
         $this->client->request('POST', '/working-time/requests/01900000-0000-7000-8000-000000000000/approve', []);
         self::assertSame(400, $this->client->getResponse()->getStatusCode());
@@ -203,6 +204,7 @@ final class UiFlowTest extends UiTestCase
         $this->client->submit($form, ['wt_settings[retentionYears]' => '6']);
         self::assertSame(409, $this->client->getResponse()->getStatusCode(), 'stale version');
         self::assertSame('1', $this->client->getResponse()->headers->get('Retry-After'));
+        self::assertSame('CONFLICT_001', $this->client->getResponse()->headers->get('X-Conflict-Code'));
         $this->client->submit($form, ['wt_settings[flexMinutes]' => '999']);
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
 
