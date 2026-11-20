@@ -132,7 +132,7 @@ final readonly class ScheduleController
             }
         }
 
-        return $this->ui->render('@NowoWorkingTime/register/schedules.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/schedules.html.twig', [
             'page' => new ListPage(
                 new PageHeader(UiSupport::label('schedule.title'), UiSupport::label('schedule.intro'), [], tabs: $this->ui->tabs('schedules')),
                 [

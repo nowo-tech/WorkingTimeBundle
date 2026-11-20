@@ -207,7 +207,7 @@ final readonly class TeamController
             ];
         }
 
-        return $this->ui->render('@NowoWorkingTime/register/team.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/team.html.twig', [
             'page' => new ListPage(
                 new PageHeader(UiSupport::label('team.title'), UiSupport::label('team.intro', ['%date%' => $date->value]), [], tabs: $this->ui->tabs('team')),
                 [
@@ -235,7 +235,7 @@ final readonly class TeamController
         $own             = $context->isOwn();
         $correction ??= $own ? null : $this->ui->form(CorrectionType::class, null, ['segments' => DayView::segmentChoices($record, $zone)]);
 
-        return $this->ui->render('@NowoWorkingTime/register/team_day.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/team_day.html.twig', [
             'page' => new ShowPage(
                 new PageHeader(UiSupport::label('team.day_title', ['%worker%' => $context->subject->displayName, '%date%' => $date->value]), null, [new Action('prev', UiSupport::label('team.back'), $this->ui->url('nowo_working_time_team', ['date' => $date->value]))], tabs: $this->ui->tabs('team')),
                 DayView::sections($date, $record, $zone, $context->settings->ipEvidence()),

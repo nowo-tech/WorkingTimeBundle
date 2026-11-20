@@ -17,5 +17,5 @@
         </div>
     </section>
     <p data-testid="wt-leave-no-health">{{ 'leave.type.no_health'|trans({}, _d) }}</p>
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: form, title: 'leave.type.add', submit: 'leave.type.save', action: null, testid: 'wt-leave-type-form'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: form, title: 'leave.type.add', submit: 'leave.type.save', action: null, testid: 'wt-leave-type-form'}) }}
 {% endblock %}

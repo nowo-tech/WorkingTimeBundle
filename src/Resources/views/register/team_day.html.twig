@@ -7,6 +7,6 @@
 
 {% block nowo_ui_show_after %}
     {% if correction %}
-        {{ include('@NowoWorkingTime/register/_correction_form.html.twig', {form: correction, action: correction_action, title: 'correction.form.record_title', bundle: page.bundle}) }}
+        {{ include('@NowoWorkingTimeBundle/register/_correction_form.html.twig', {form: correction, action: correction_action, title: 'correction.form.record_title', bundle: page.bundle}) }}
     {% endif %}
 {% endblock %}

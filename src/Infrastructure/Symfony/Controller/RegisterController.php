@@ -163,7 +163,7 @@ final readonly class RegisterController
                 $actions[] = new Action('next', UiSupport::label('month.next'), $this->ui->url('nowo_working_time_month', ['month' => $next]));
             }
 
-            return $this->ui->render('@NowoWorkingTime/register/month.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/register/month.html.twig', [
                 'page' => new ListPage(
                     new PageHeader(UiSupport::label('month.title', ['%month%' => $month]), UiSupport::label('month.intro', ['%worked%' => MonthSummary::hours($summary->workedSeconds), '%expected%' => MonthSummary::hours($summary->expectedSeconds), '%days%' => $summary->daysWorked]), $actions, tabs: $this->ui->tabs('month')),
                     [
@@ -284,7 +284,7 @@ final readonly class RegisterController
             $answers[] = ['form' => $this->ui->form(AnswerType::class, null, [], 'wt_answer_' . $revisionId)->createView(), 'action' => $this->ui->url('nowo_working_time_correction_answer', ['id' => $revisionId])];
         }
 
-        return $this->ui->render('@NowoWorkingTime/register/day.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/day.html.twig', [
             'page' => new ShowPage(
                 new PageHeader(UiSupport::label('day.title', ['%date%' => $date->value]), null, [new Action('prev', UiSupport::label('day.back_to_month'), $this->ui->url('nowo_working_time_month', ['month' => $date->month()]))], tabs: $this->ui->tabs('month')),
                 DayView::sections($date, $record, $zone, $context->settings->ipEvidence()),
@@ -325,7 +325,7 @@ final readonly class RegisterController
             'end'   => RegisterCsv::local($segment->end, $zone),
         ], $state->record->segments ?? []);
 
-        return $this->ui->render('@NowoWorkingTime/register/today.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/today.html.twig', [
             'page' => new DashboardPage(
                 new PageHeader(UiSupport::label('today.title'), UiSupport::label('today.intro', ['%date%' => $state->date->value]), [new Action('view', UiSupport::label('today.view_day'), $this->ui->url('nowo_working_time_date', ['date' => $state->date->value]))], tabs: $this->ui->tabs('today')),
                 [

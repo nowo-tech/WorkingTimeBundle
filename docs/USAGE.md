@@ -132,3 +132,63 @@ session variable cleared in `finally` and on every connect, PostgreSQL `SET LOCA
   (GDPR art. 17.3.b), preferences and export files are deleted. Implement `Bridge\UserKit\WorkerOfUserInterface` when
   your worker refs are not user identifiers.
 - **Dompdf** (`dompdf/dompdf`): closed PDF rendering (no remote resources, no JavaScript, no PHP).
+
+## 7. Overriding templates and translations
+
+### Templates
+
+The templates live under the Twig namespace `@NowoWorkingTimeBundle` (the same string as the translation domain). To
+change one, copy it from `vendor/nowo-tech/working-time-bundle/src/Resources/views/<subpath>` to
+`templates/bundles/NowoWorkingTimeBundle/<subpath>` in the application; the host copy wins and the rest of the bundle
+keeps upgrading. The subpaths:
+
+- `email/notice.html.twig`
+- `export/register_pdf.html.twig`
+- `holidays/_form.html.twig`
+- `holidays/calendar.html.twig`
+- `holidays/centre.html.twig`
+- `holidays/day.html.twig`
+- `holidays/index.html.twig`
+- `holidays/preview.html.twig`
+- `leave/allowances.html.twig`
+- `leave/balances.html.twig`
+- `leave/settings.html.twig`
+- `leave/type.html.twig`
+- `leave/types.html.twig`
+- `register/_correction_form.html.twig`
+- `register/_header_clock.html.twig`
+- `register/day.html.twig`
+- `register/exports.html.twig`
+- `register/month.html.twig`
+- `register/preferences.html.twig`
+- `register/schedules.html.twig`
+- `register/settings.html.twig`
+- `register/team.html.twig`
+- `register/team_day.html.twig`
+- `register/today.html.twig`
+
+Procedure:
+
+1. Copy only the file you need (a partial such as `register/_correction_form.html.twig`, or one page); keep the Twig
+   blocks and the `{ form_start() }` / `{ form_row() }` loop so the forms keep working.
+2. Clear the cache (`php bin/console cache:clear`) when the directory did not exist before: the override directory is
+   registered at container build time.
+3. Check `php bin/console debug:twig` lists the `@NowoWorkingTimeBundle` namespace with the `templates/bundles/...`
+   path first.
+4. Trade-off: a copied file is frozen. After each bundle upgrade compare it with the vendor version (the CHANGELOG
+   names changed templates). Prefer the `web_ui` configuration and CSS on the `nowo-ui-*` classes when they are enough.
+
+The automatic Symfony namespace `@NowoWorkingTime` still resolves to the same files (BC alias); new code and
+overrides use `@NowoWorkingTimeBundle`. See [UPGRADING.md](UPGRADING.md).
+
+### Translations
+
+Every string is in the domain `NowoWorkingTimeBundle` (locales en, es, ca, eu, gl, fr, pt, de, it, nl). To change a
+text, create `translations/NowoWorkingTimeBundle.<locale>.yaml` in the application with only the keys you change (the
+application file wins over the bundle's `src/Resources/translations/NowoWorkingTimeBundle.<locale>.yaml`); to add a
+locale, add a file with every key of the English one. Clear the cache after adding a new file.
+
+```yaml
+# translations/NowoWorkingTimeBundle.en.yaml
+# copy the key from vendor/nowo-tech/working-time-bundle/src/Resources/translations/NowoWorkingTimeBundle.en.yaml
+```

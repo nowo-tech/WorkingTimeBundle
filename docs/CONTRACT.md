@@ -72,7 +72,7 @@ native apps. The bundle is **not legal advice**: the employer decides to use it 
 | Item | Proposal |
 |---|---|
 | Name | `WorkingTimeBundle` (approved), Composer `nowo-tech/working-time-bundle`, GitHub `nowo-tech/WorkingTimeBundle` (public, MIT; owner registers Packagist once S0 is on `main`) |
-| Namespace / class | `Nowo\WorkingTimeBundle` / `NowoWorkingTimeBundle`; config root `nowo_working_time`; Twig namespace `@NowoWorkingTime`; translation domain `NowoWorkingTimeBundle` (7 locales: en, es, ca, eu, gl, fr, pt as Beacon) |
+| Namespace / class | `Nowo\WorkingTimeBundle` / `NowoWorkingTimeBundle`; config root `nowo_working_time`; Twig namespace `@NowoWorkingTimeBundle`; translation domain `NowoWorkingTimeBundle` (7 locales: en, es, ca, eu, gl, fr, pt as Beacon) |
 | First tag | 0.x per slice for Beacon integration, **1.0.0** after the REQ audit and SEC-004 audits (Q-O14) |
 | PHP / Symfony | `>=8.2 <8.6`; `^7.4 \|\| ^8.0`; demos Symfony 7.4 + 8.1 on FrankenPHP worker, MySQL |
 | Runtime deps | `doctrine/dbal ^3.8.2 \|\| ^4.0`, `doctrine/orm ^3.7`, `doctrine/doctrine-bundle ^2.8 \|\| ^3.0`, `symfony/{framework-bundle,http-kernel,routing,config,dependency-injection,event-dispatcher,clock,console,form,validator,translation,twig-bundle,uid,http-client,mime}`, `psr/clock`, `psr/log`, `psr/cache`, `nowo-tech/transaction-contract ^1.0`, **`nowo-tech/transaction-doctrine ^1.3`** (write units, `LockConflictExceptionInterface`, `ConcurrencyConflictResponder` 409 + `Retry-After`), `nowo-tech/brand-contracts ^1.0`, `nowo-tech/outbound-url-guard-bundle ^1.5` (holiday fetches, Q-O8), `nowo-tech/ui-kit-bundle ^2.49`, `nowo-tech/form-kit-bundle ^2.22` |

@@ -20,7 +20,7 @@ use function str_replace;
 
 /**
  * Default notifier when Symfony Mailer is installed (contract section 8.2): one branded e-mail in the recipient's
- * locale (`@NowoWorkingTime/email/notice.html.twig`). A recipient without an e-mail address gets nothing.
+ * locale (`@NowoWorkingTimeBundle/email/notice.html.twig`). A recipient without an e-mail address gets nothing.
  */
 final readonly class MailerNotifier implements WorkingTimeNotifierInterface
 {
@@ -56,7 +56,7 @@ final readonly class MailerNotifier implements WorkingTimeNotifierInterface
             ->from(new Address($this->from, $this->brand->getBrand()->name))
             ->to(new Address($profile->email, $profile->displayName))
             ->subject($subject)
-            ->html($this->twig->render('@NowoWorkingTime/email/notice.html.twig', [
+            ->html($this->twig->render('@NowoWorkingTimeBundle/email/notice.html.twig', [
                 'brand'   => $this->brand->getBrand(),
                 'subject' => $subject,
                 'body'    => $this->translator->trans($key . '.body', $params, NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $message->locale),

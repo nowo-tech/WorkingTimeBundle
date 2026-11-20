@@ -29,7 +29,7 @@ final readonly class DompdfRegisterPdfRenderer implements RegisterPdfRendererInt
      */
     public function __construct(
         private Environment $twig,
-        private string $template = '@NowoWorkingTime/export/register_pdf.html.twig',
+        private string $template = '@NowoWorkingTimeBundle/export/register_pdf.html.twig',
     ) {
     }
 

@@ -197,7 +197,7 @@ final readonly class HolidayController
                 }
             }
 
-            return $this->ui->render('@NowoWorkingTime/holidays/day.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/holidays/day.html.twig', [
                 'page'     => $this->listPage(new PageHeader(UiSupport::label('holiday.day.edit_title', ['%calendar%' => $calendar->getName()]), null, [$this->back($id)]), [], []),
                 'form'     => $form->createView(),
                 'calendar' => $calendar,
@@ -346,7 +346,7 @@ final readonly class HolidayController
                 return $this->ui->redirect('nowo_working_time_holidays');
             }
 
-            return $this->ui->render('@NowoWorkingTime/holidays/centre.html.twig', [
+            return $this->ui->render('@NowoWorkingTimeBundle/holidays/centre.html.twig', [
                 'page'   => $this->listPage(new PageHeader(UiSupport::label('holiday.centre.edit_title', ['%name%' => $centre->getName()]), null, [new Action('cancel', UiSupport::label('holiday.back'), $this->ui->url('nowo_working_time_holidays'))]), [], []),
                 'form'   => $form->createView(),
                 'remove' => $this->ui->form(ActionType::class, null, ['csrf_token_id' => 'nowo_working_time_centre_remove'], 'wt_centre_remove_' . $id)->createView(),
@@ -420,7 +420,7 @@ final readonly class HolidayController
             $centres[] = ['name' => $row->getName(), 'default' => $row->isDefault(), 'href' => $this->ui->url('nowo_working_time_holiday_centre', ['id' => $row->getId()]), 'calendars' => count($row->calendarIds())];
         }
 
-        return $this->ui->render('@NowoWorkingTime/holidays/index.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/holidays/index.html.twig', [
             'page' => $this->listPage(
                 new PageHeader(UiSupport::label('holiday.title'), UiSupport::label('holiday.intro')),
                 [
@@ -475,7 +475,7 @@ final readonly class HolidayController
         $calendarForm ??= $this->ui->form(HolidayCalendarType::class, ['name' => $calendar->getName(), 'scope' => $calendar->getScope()->value, 'year' => $calendar->getYear(), 'sourceNote' => $calendar->getSourceNote(), 'country' => $location?->country, 'subdivision' => $location?->subdivision, 'municipality' => $location?->municipality, 'version' => (string) $calendar->getVersion()], ['versioned' => true], 'wt_holiday_calendar');
         $dayForm ??= $this->ui->form(HolidayDayType::class, null, [], 'wt_holiday_day');
 
-        return $this->ui->render('@NowoWorkingTime/holidays/calendar.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/holidays/calendar.html.twig', [
             'page' => $this->listPage(
                 new PageHeader(UiSupport::label('holiday.calendar.title', ['%name%' => $calendar->getName(), '%year%' => $calendar->getYear()]), $calendar->getSourceNote(), [new Action('cancel', UiSupport::label('holiday.back'), $this->ui->url('nowo_working_time_holidays'))]),
                 [
@@ -512,7 +512,7 @@ final readonly class HolidayController
         }
         $changes = $preview->with(ImportStatus::New) !== [] || $preview->with(ImportStatus::Removed) !== [];
 
-        return $this->ui->render('@NowoWorkingTime/holidays/preview.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/holidays/preview.html.twig', [
             'page' => $this->listPage(
                 new PageHeader(UiSupport::label('holiday.import.preview_title', ['%name%' => $calendar->getName(), '%year%' => $calendar->getYear()]), $preview->fetched?->place, [$this->back($calendar->getId())]),
                 [

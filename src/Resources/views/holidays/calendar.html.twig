@@ -14,8 +14,8 @@
         <div class="{{ nowo_ui_class('flash_warning', _b) }}" role="status" data-testid="wt-holiday-provisional">{{ 'holiday.calendar.provisional'|trans({}, _d) }}</div>
     {% endif %}
     {% if calendar.attribution %}<p data-testid="wt-holiday-attribution"><small>{{ calendar.attribution }}</small></p>{% endif %}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: day_form, title: 'holiday.day.add', submit: 'holiday.day.save', action: day_action, testid: 'wt-holiday-day-form'}) }}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: import_form, title: 'holiday.import.title', submit: 'holiday.import.preview', action: import_action, testid: 'wt-holiday-import-form', multipart: true, variant: 'btn_secondary'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: day_form, title: 'holiday.day.add', submit: 'holiday.day.save', action: day_action, testid: 'wt-holiday-day-form'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: import_form, title: 'holiday.import.title', submit: 'holiday.import.preview', action: import_action, testid: 'wt-holiday-import-form', multipart: true, variant: 'btn_secondary'}) }}
     {% for provider in providers %}
         <section class="{{ nowo_ui_class('card', _b) }}" data-testid="wt-holiday-provider-{{ provider.key }}">
             <div class="{{ nowo_ui_class('card_body', _b) }}">
@@ -41,6 +41,6 @@
             </div>
         </section>
     {% endif %}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: calendar_form, title: 'holiday.calendar.edit', submit: 'holiday.calendar.save', action: null, testid: 'wt-holiday-calendar-form', variant: 'btn_secondary'}) }}
-    {{ include('@NowoWorkingTime/holidays/_form.html.twig', {form: remove_form, title: 'holiday.calendar.remove_title', submit: 'holiday.calendar.remove', action: remove_action, testid: 'wt-holiday-calendar-remove', variant: 'btn_danger'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: calendar_form, title: 'holiday.calendar.edit', submit: 'holiday.calendar.save', action: null, testid: 'wt-holiday-calendar-form', variant: 'btn_secondary'}) }}
+    {{ include('@NowoWorkingTimeBundle/holidays/_form.html.twig', {form: remove_form, title: 'holiday.calendar.remove_title', submit: 'holiday.calendar.remove', action: remove_action, testid: 'wt-holiday-calendar-remove', variant: 'btn_danger'}) }}
 {% endblock %}

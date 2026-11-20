@@ -135,7 +135,7 @@ final readonly class ExportController
             $rows[] = $this->row($export, $export->isDownloadable($now) ? $this->ui->url('nowo_working_time_export_download', ['id' => $export->getId()]) : null);
         }
 
-        return $this->ui->render('@NowoWorkingTime/register/exports.html.twig', [
+        return $this->ui->render('@NowoWorkingTimeBundle/register/exports.html.twig', [
             'page' => new ListPage(
                 new PageHeader(UiSupport::label('export.title'), UiSupport::label('export.intro'), [], tabs: $this->ui->tabs('exports')),
                 [
