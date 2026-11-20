@@ -9,7 +9,7 @@
         "doctrine/orm": "^3.7",
         "dompdf/dompdf": "^3.1",
         "nowo-tech/form-kit-bundle": "^2.22",
-        "nowo-tech/transaction-doctrine": "^1.7.1",
+        "nowo-tech/transaction-doctrine": "^1.8",
         "nowo-tech/ui-kit-bundle": "^2.55",
         "nowo-tech/working-time-bundle": "@dev",
         "php": ">=8.4,<8.6",

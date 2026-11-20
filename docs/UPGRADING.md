@@ -16,8 +16,10 @@ From **0.2.0**:
 composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
 ```
 
-- **transaction-doctrine `^1.7.1`** is required (was `^1.3`). Read its UPGRADING from your locked version; nothing in
-  the bundle's configuration changes.
+- **transaction-doctrine `^1.8`** is required (was `^1.3`; 1.8.0 fixes GHSA-9wh3-m3m5-jffx and GHSA-65w2-9r4h-848g).
+  On the shared manager (`doctrine.entity_manager: null`) a deadlock replay no longer clears the host's manager: its
+  entities stay managed and are reloaded when the failed attempt touched them. Read its UPGRADING from your locked
+  version; nothing in the bundle's configuration changes.
 - **Conflict answers carry `X-Conflict-Code`** (`CONFLICT_001` or `CONFLICT_002`) and, in JSON, a `code` key next to
   `error` (additive). After a commit earlier in the same request (or a Messenger handler that already succeeded) the
   answer is `CONFLICT_002` without `Retry-After`; a generic conflict's `error` is then `concurrency_conflict_partial`.
@@ -39,7 +41,8 @@ composer update nowo-tech/working-time-bundle nowo-tech/transaction-doctrine
     `remove()` and `persist()` are cancelled, changed entities are reloaded. With the `DEFERRED_EXPLICIT`
     change-tracking policy this includes changes never passed to `persist()`. See CONCURRENCY.md, residual risks.
 
-  See CONCURRENCY.md, "Replays and the host's entity manager". Nothing changes with `doctrine.entity_manager: null`.
+  See CONCURRENCY.md, "Replays and the host's entity manager". The host-write probe does not run with
+  `doctrine.entity_manager: null`.
 - **BC: a write on the private manager now refuses to start while a host entity manager has unflushed changes,
   including changes pending only in collections, pending orphan removals and a `clear()` of an inverse
   collection**

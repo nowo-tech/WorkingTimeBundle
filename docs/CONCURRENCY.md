@@ -97,8 +97,11 @@ REQ-RUNTIME-003 rule 6, on the bundle's routes only (host routes are never answe
   or write after the commit (an outbox, an after-commit event).
 - **Shared manager** (`doctrine.entity_manager: null`, or the default manager's name): the unit writes through the
   host's manager, so it is not scoped. The runner refuses to start while the host has unflushed changes, and only the
-  bundle's entities are detached after a unit, but a deadlock replay clears the shared manager (transaction-doctrine's
-  repair). Hosts that keep entities managed across a call to the register should use the private manager.
+  bundle's entities are detached after a unit. Since transaction-doctrine 1.8 a deadlock replay no longer clears the
+  shared manager: the host's entities stay managed and are reloaded from the database when the failed attempt touched
+  them (a replay that cannot restore one ends as a 409 `CONFLICT_001`). Host ports writing inside the unit are still
+  only watched on the private manager, so hosts that write through their manager inside a call to the register should
+  use the private manager.
 
 ## Residual risks
 

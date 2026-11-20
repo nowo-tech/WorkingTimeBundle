@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "22bec395b320426ba94fa74fd2291dcb",
+    "content-hash": "6e073c94505f6c03c3260e248d50155b",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -1532,16 +1532,16 @@
         },
         {
             "name": "nowo-tech/transaction-doctrine",
-            "version": "v1.7.1",
+            "version": "v1.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/transaction-doctrine.git",
-                "reference": "2f14da7ce82b0399d463c2e1faf999f945104629"
+                "reference": "887fc325ef20787bc108cbfea6a267dfd4e938fe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/transaction-doctrine/zipball/2f14da7ce82b0399d463c2e1faf999f945104629",
-                "reference": "2f14da7ce82b0399d463c2e1faf999f945104629",
+                "url": "https://api.github.com/repos/nowo-tech/transaction-doctrine/zipball/887fc325ef20787bc108cbfea6a267dfd4e938fe",
+                "reference": "887fc325ef20787bc108cbfea6a267dfd4e938fe",
                 "shasum": ""
             },
             "require": {
@@ -1638,8 +1638,8 @@
                 "issues": "https://github.com/nowo-tech/transaction-doctrine/issues",
                 "source": "https://github.com/nowo-tech/transaction-doctrine"
             },
-            "time": "2026-11-19T10:12:34+00:00",
-            "published-time": "2026-11-19T10:15:50+00:00"
+            "time": "2026-11-20T06:09:11+00:00",
+            "published-time": "2026-11-20T06:14:34+00:00"
         },
         {
             "name": "nowo-tech/ui-kit-bundle",
@@ -1750,7 +1750,7 @@
             "dist": {
                 "type": "path",
                 "url": "/var/working-time-bundle",
-                "reference": "ecc6d8c76298eaaf2892b76ac22a61a4d3457ac4"
+                "reference": "a8719e5bb259e2a742bcbcc9408c228c49c40a1f"
             },
             "require": {
                 "doctrine/dbal": "^3.8.2 || ^4.0",
@@ -1761,7 +1761,7 @@
                 "nowo-tech/form-kit-bundle": "^2.22",
                 "nowo-tech/outbound-url-guard-bundle": "^1.5",
                 "nowo-tech/transaction-contract": "^1.0",
-                "nowo-tech/transaction-doctrine": "^1.7.1",
+                "nowo-tech/transaction-doctrine": "^1.8",
                 "nowo-tech/ui-kit-bundle": "^2.55",
                 "php": ">=8.2 <8.6",
                 "psr/cache": "^2.0 || ^3.0",
@@ -1874,10 +1874,10 @@
             },
             "scripts": {
                 "test": [
-                    "@php -d memory_limit=512M vendor/bin/phpunit --color=always"
+                    "@php -d memory_limit=1G vendor/bin/phpunit --color=always"
                 ],
                 "test-coverage": [
-                    "@php -d memory_limit=512M vendor/bin/phpunit --color=always --coverage-html coverage --coverage-clover coverage.xml --coverage-text"
+                    "@php -d memory_limit=1G vendor/bin/phpunit --color=always --coverage-html coverage --coverage-clover coverage.xml --coverage-text"
                 ],
                 "test-coverage-100": [
                     "@test-coverage",
