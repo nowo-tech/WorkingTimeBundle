@@ -26,6 +26,7 @@ help:
 	@echo "  make test         Lint the container and the Twig templates"
 	@echo "  make test-coverage Same as test (the demo has no PHPUnit suite)"
 	@echo "  make verify       HTTP 200 on / (demo must be up)"
+	@echo "  make test-e2e     Playwright rules + axe against the running demo (official Playwright image)"
 	@echo ""
 
 up:
@@ -111,3 +112,19 @@ verify:
 
 # REQ-MAKE-008: update-deps (soft include; the shared script exists in the bundles workspace, not on a CI checkout).
 -include $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../../../.scripts/Makefile.demo-update-deps.mk)
+
+# REQ-DEMO-013: Playwright in the official image (no Node on the host); the demo must be up (make up).
+# The image tag follows the exact @playwright/test version pinned in e2e/package.json (browsers ship with the image).
+PLAYWRIGHT_VERSION := $(shell sed -n 's/.*"@playwright\/test": "\([0-9.]*\)".*/\1/p' e2e/package.json)
+PLAYWRIGHT_IMAGE ?= mcr.microsoft.com/playwright:v$(PLAYWRIGHT_VERSION)-jammy
+
+.PHONY: test-e2e
+test-e2e: verify
+	@mkdir -p e2e/node_modules
+	@PORT=$$(grep -E '^PORT=' .env 2>/dev/null | cut -d= -f2 | tr -d '\r'); PORT=$${PORT:-8240}; \
+	docker run --rm --network host \
+		-v "$(CURDIR)/e2e:/e2e" -w /e2e \
+		-e CI="$${CI:-}" \
+		-e DEMO_BASE_URL=http://127.0.0.1:$$PORT \
+		$(PLAYWRIGHT_IMAGE) \
+		bash -lc 'npm ci --no-fund --no-audit && npx playwright test --project=chromium'

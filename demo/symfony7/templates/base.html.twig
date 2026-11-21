@@ -1,31 +1,50 @@
-{#- REQ-DEMO-014: the demo shell is UiKit's admin layout with UiKit's default theme (nowo-ui.css from the bundle's own
-    asset package, no CSS framework, no CDN). -#}
-{% extends '@NowoUiKit/layout/admin.html.twig' %}
-
+{#- REQ-DEMO-014: the demo runs inside UiKit's shared demo platform shell. This file only declares the demo. The Working
+    Time pages render in it too (nowo_ui_kit.layouts.admin). The header clock is the bundle's own widget. -#}
+{% extends '@NowoUiKit/demo_platform/layout.html.twig' %}
+{% set _nav = [{label: 'Overview', route: 'demo_home', section: 'Working Time'}] %}
+{% if is_granted('ROLE_USER') %}
+    {% set _nav = _nav|merge([
+        {label: 'Register', route: 'nowo_working_time_today', active: ['nowo_working_time_today', 'nowo_working_time_month*', 'nowo_working_time_day', 'nowo_working_time_date*'], section: 'Register', testid: 'demo-nav-register'},
+        {label: 'Preferences', route: 'nowo_working_time_preferences', section: 'Register'},
+    ]) %}
+    {% if is_granted('ROLE_MANAGER') %}
+        {% set _nav = _nav|merge([
+            {label: 'Team', route: 'nowo_working_time_team', active: ['nowo_working_time_team*', 'nowo_working_time_correction_*'], section: 'Team', testid: 'demo-nav-team'},
+            {label: 'Schedules', route: 'nowo_working_time_schedules', section: 'Team'},
+            {label: 'Exports', route: 'nowo_working_time_exports', section: 'Team', testid: 'demo-nav-exports'},
+        ]) %}
+    {% endif %}
+    {% if is_granted('ROLE_ADMIN') %}
+        {% set _nav = _nav|merge([
+            {label: 'Settings', route: 'nowo_working_time_settings', active: ['nowo_working_time_settings', 'nowo_working_time_leave_settings'], section: 'Admin', testid: 'demo-nav-settings'},
+            {label: 'Holidays', route: 'nowo_working_time_holidays', active: ['nowo_working_time_holiday*'], section: 'Admin'},
+        ]) %}
+    {% endif %}
+    {% set _nav = _nav|merge([
+        {label: 'Leave', route: 'nowo_working_time_leave', active: ['nowo_working_time_leave', 'nowo_working_time_leave_manage', 'nowo_working_time_leave_type*', 'nowo_working_time_leave_allowances', 'nowo_working_time_leave_seed', 'nowo_working_time_leave_policy_remove'], section: 'Leave and holidays'},
+        {label: 'Agenda', route: 'demo_agenda', section: 'Leave and holidays'},
+        {label: 'Sign out', route: 'demo_logout', active: [], section: 'Account', testid: 'demo-logout'},
+    ]) %}
+{% else %}
+    {% set _nav = _nav|merge([{label: 'Sign in', route: 'demo_login', section: 'Account', testid: 'demo-nav-login'}]) %}
+{% endif %}
+{% set nowo_ui_demo_platform = {
+    bundle: 'Working Time',
+    home_route: 'demo_home',
+    repository: 'https://github.com/nowo-tech/WorkingTimeBundle',
+    translation_domain: false,
+    nav: _nav,
+} %}
 {% block nowo_ui_document_title %}{% block title %}Working Time Bundle demo{% endblock %} — Symfony 7{% endblock %}
 
-{% block nowo_ui_navigation %}
-    <header class="nowo-ui-header" data-testid="demo-masthead">
-        <a class="nowo-ui-brand" href="{{ path('demo_home') }}">Working Time Bundle · Symfony 7</a>
-        <nav class="nowo-ui-menu" aria-label="Demo">
-            <a class="nowo-ui-link" href="{{ path('demo_home') }}" data-testid="demo-nav-demo_home">Overview</a>
-            {% if is_granted('ROLE_USER') %}
-                <a class="nowo-ui-link" href="/working-time" data-testid="demo-nav-register">Register</a>
-                {% if is_granted('ROLE_MANAGER') %}
-                    <a class="nowo-ui-link" href="/working-time/team" data-testid="demo-nav-team">Team</a>
-                    <a class="nowo-ui-link" href="/working-time/exports" data-testid="demo-nav-exports">Exports</a>
-                {% endif %}
-                {% if is_granted('ROLE_ADMIN') %}
-                    <a class="nowo-ui-link" href="/working-time/settings" data-testid="demo-nav-settings">Settings</a>
-                {% endif %}
-                {{ working_time_header_clock() }}
-                <span class="nowo-ui-muted" data-testid="demo-user">{{ app.user.userIdentifier }}</span>
-                <a class="nowo-ui-link" href="{{ path('demo_logout') }}" data-testid="demo-logout">Sign out</a>
-            {% else %}
-                <a class="nowo-ui-link" href="{{ path('demo_login') }}" data-testid="demo-nav-login">Sign in</a>
-            {% endif %}
-        </nav>
-    </header>
+{% block nowo_ui_demo_platform_header_end %}
+    {% if is_granted('ROLE_USER') %}{{ working_time_header_clock() }}{% endif %}
+{% endblock %}
+
+{% block nowo_ui_demo_platform_aside_end %}
+    {% if is_granted('ROLE_USER') %}
+        <p class="nowo-ui-muted">Signed in as <span data-testid="demo-user">{{ app.user.userIdentifier }}</span></p>
+    {% endif %}
 {% endblock %}
 
 {% block nowo_ui_content %}{% block body %}{% endblock %}{% endblock %}
