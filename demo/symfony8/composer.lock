@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b29da7e767273bc712f425c6c91ae5bb",
+    "content-hash": "cd8f6478ba32132d4f4c34b20a45328e",
     "packages": [
         {
             "name": "doctrine/collections",
@@ -1643,16 +1643,16 @@
         },
         {
             "name": "nowo-tech/ui-kit-bundle",
-            "version": "v2.55.0",
+            "version": "v2.63.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nowo-tech/UiKitBundle.git",
-                "reference": "6fcb5f1a7c83717b6286306662f6741940d93d14"
+                "reference": "9bf9e7f9d22405fc6981fc4c800e15ba3db42e9a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nowo-tech/UiKitBundle/zipball/6fcb5f1a7c83717b6286306662f6741940d93d14",
-                "reference": "6fcb5f1a7c83717b6286306662f6741940d93d14",
+                "url": "https://api.github.com/repos/nowo-tech/UiKitBundle/zipball/9bf9e7f9d22405fc6981fc4c800e15ba3db42e9a",
+                "reference": "9bf9e7f9d22405fc6981fc4c800e15ba3db42e9a",
                 "shasum": ""
             },
             "require": {
@@ -1699,7 +1699,8 @@
                 "symfony/validator": "Colour validation in the optional appearance forms"
             },
             "bin": [
-                "bin/nowo-ui-token-lint"
+                "bin/nowo-ui-token-lint",
+                "bin/nowo-ui-demo-style-lint"
             ],
             "type": "symfony-bundle",
             "autoload": {
@@ -1741,16 +1742,16 @@
                 "issues": "https://github.com/nowo-tech/UiKitBundle/issues",
                 "source": "https://github.com/nowo-tech/UiKitBundle"
             },
-            "time": "2026-11-17T14:59:51+00:00",
-            "published-time": "2026-11-17T15:05:14+00:00"
+            "time": "2026-11-21T09:07:10+00:00",
+            "published-time": "2026-11-21T09:09:29+00:00"
         },
         {
             "name": "nowo-tech/working-time-bundle",
-            "version": "dev-main",
+            "version": "dev-chore/demo-platform-shell",
             "dist": {
                 "type": "path",
                 "url": "/var/working-time-bundle",
-                "reference": "6f726b87d51d0e1b204815f536996008e0309ccf"
+                "reference": "322e6747edbfcbe27689807667398e7b914a6b99"
             },
             "require": {
                 "doctrine/dbal": "^3.8.2 || ^4.0",

@@ -22,7 +22,7 @@ test.describe('Working Time demo', () => {
     await enabled.check();
     await page.locator('form:has(input[name="wt_settings[enabled]"]) button[type="submit"]').click();
     // The flash is shown as the translation key today (see the report); accept the translated text too.
-    await expect(page.getByRole('alert').filter({ hasText: /The settings were saved\./ })).toBeVisible();
+    await expect(page.getByTestId('demo-platform-flashes').filter({ hasText: /The settings were saved\./ })).toBeVisible();
     await expect(page.locator('input[name="wt_settings[enabled]"]')).toBeChecked();
     await logout(page);
   });
@@ -70,7 +70,7 @@ test.describe('Working Time demo', () => {
     await form.locator('textarea[name="wt_correction[reason]"]').fill('Came in earlier than the clock shows');
     await form.locator('button[type="submit"]').click();
     await expect(page).toHaveURL(new RegExp(`/working-time/date/${today()}`));
-    await expect(page.getByRole('alert').or(page.getByRole('status')).first()).toBeVisible();
+    await expect(page.getByTestId('demo-platform-flashes')).toBeVisible();
     await logout(page);
   });
 
@@ -114,7 +114,7 @@ test.describe('Holidays demo (stand-alone component)', () => {
     await day.locator('input[name="wt_holiday_day[date]"]').fill(`${year}-12-25`);
     await day.locator('input[name="wt_holiday_day[name]"]').fill('Christmas Day');
     await day.locator('button[type="submit"]').click();
-    await expect(page.getByRole('alert').filter({ hasText: /Holiday added\./ })).toBeVisible();
+    await expect(page.getByTestId('demo-platform-flashes').filter({ hasText: /Holiday added\./ })).toBeVisible();
     await page.goto('/agenda');
     await expect(page.getByTestId('demo-agenda')).toContainText('Christmas Day');
     await logout(page);
