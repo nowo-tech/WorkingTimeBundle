@@ -23,9 +23,11 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\MailerNotifier;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\NullNotifier;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\NullTaskTimerLink;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use Symfony\Component\Clock\NativeClock;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * The ports pass (contract sections 8 and 10): service ids replace the defaults; transaction-doctrine, Mailer,
@@ -76,7 +78,7 @@ final class PortsPassTest extends TestCase
         self::assertSame('nowo_working_time.export_dispatcher.messenger', (string) $container->getAlias(ExportDispatcherInterface::class));
         self::assertTrue($container->getDefinition(GenerateRegisterExportHandler::class)->isAutoconfigured(), '#[AsMessageHandler] is picked up by autoconfiguration');
         self::assertFalse($container->getDefinition(GenerateRegisterExportHandler::class)->hasTag('messenger.message_handler'), 'no hand-written tag next to the attribute (a double registration would handle twice)');
-        self::assertCount(1, (new \ReflectionClass(GenerateRegisterExportHandler::class))->getAttributes(\Symfony\Component\Messenger\Attribute\AsMessageHandler::class));
+        self::assertCount(1, (new ReflectionClass(GenerateRegisterExportHandler::class))->getAttributes(AsMessageHandler::class));
         self::assertSame(TimeTrackTaskTimerLink::class, $container->getDefinition(TaskTimerLinkInterface::class)->getClass());
     }
 
