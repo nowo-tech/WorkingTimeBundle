@@ -74,7 +74,9 @@ final class PortsPassTest extends TestCase
         self::assertSame('nowo_transaction_doctrine.conflict_response_policy', (string) $container->getAlias('nowo_working_time.conflict_policy'));
         self::assertSame([['event' => 'kernel.exception', 'method' => 'onKernelException', 'priority' => 63]], $container->getDefinition(ConflictFallbackListener::class)->getTag('kernel.event_listener'), 'after the responder: what it leaves, on the bundle\'s routes');
         self::assertSame('nowo_working_time.export_dispatcher.messenger', (string) $container->getAlias(ExportDispatcherInterface::class));
-        self::assertTrue($container->getDefinition(GenerateRegisterExportHandler::class)->hasTag('messenger.message_handler'));
+        self::assertTrue($container->getDefinition(GenerateRegisterExportHandler::class)->isAutoconfigured(), '#[AsMessageHandler] is picked up by autoconfiguration');
+        self::assertFalse($container->getDefinition(GenerateRegisterExportHandler::class)->hasTag('messenger.message_handler'), 'no hand-written tag next to the attribute (a double registration would handle twice)');
+        self::assertCount(1, (new \ReflectionClass(GenerateRegisterExportHandler::class))->getAttributes(\Symfony\Component\Messenger\Attribute\AsMessageHandler::class));
         self::assertSame(TimeTrackTaskTimerLink::class, $container->getDefinition(TaskTimerLinkInterface::class)->getClass());
     }
 
