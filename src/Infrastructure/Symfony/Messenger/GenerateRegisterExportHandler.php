@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger;
 
 use Nowo\WorkingTimeBundle\Application\Register\Port\ExportGeneratorInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 /**
  * Handles {@see GenerateRegisterExportMessage} (inside transaction-doctrine's write-unit middleware when the host adds it
  * to the bus).
  */
+#[AsMessageHandler]
 final readonly class GenerateRegisterExportHandler
 {
     /**

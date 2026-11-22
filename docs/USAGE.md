@@ -113,6 +113,35 @@ provider implements `Domain\Port\HolidayProviderInterface` and is tagged `nowo_w
 | `nowo:working-time:purge [--dry-run]` | daily | 0 done, 1 error, 2 the triggers refused the deletes (guard misconfigured) |
 | `nowo:working-time:verify [--tenant] [--worker] [--heads=<file>] [--heads-out=<file>] [--publish-heads]` | weekly | 1 on a broken chain (audited, `ChainBroken` event), 2 for an unreadable or 0.1.0 (hash-only) heads file; `--heads-out` writes `{hash, seq, at}` per chain; publish or keep the heads outside the database (SECURITY.md) |
 
+### Register exports through Messenger (retry and failure transport)
+
+With `register.export.async: messenger` (or `auto` and Messenger enabled) `GenerateRegisterExportHandler` is registered
+through `#[AsMessageHandler]` (autoconfiguration; nothing to tag by hand) and handles `GenerateRegisterExportMessage`
+(the export id only, no personal data in the payload). Route the message to a transport in the host:
+
+```yaml
+# config/packages/messenger.yaml
+framework:
+    messenger:
+        failure_transport: failed
+        transports:
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                retry_strategy: { max_retries: 3, delay: 1000, multiplier: 2 }
+            failed: 'doctrine://default?queue_name=failed'
+        routing:
+            'Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportMessage': async
+```
+
+- A delivery claims the export in one write unit; a second delivery of the same message (at-least-once transports) finds
+  it claimed and does nothing, so retries and duplicates never build the file twice.
+- A failure while building (data, renderer, storage) is caught by the generator: the export is marked failed with the
+  exception class name, a log line is written and the handler returns normally, so Messenger does **not** retry it; the
+  user asks for a new export.
+- Infrastructure errors before the claim (database down, lock conflict) propagate: the transport's `retry_strategy`
+  applies and, once exhausted, the message lands in the `failure_transport` (`messenger:failed:retry` re-delivers it).
+- The handler keeps no state between messages, so it is safe in FrankenPHP worker mode with the kernel reset off.
+
 ## 5. Integrity
 
 Every clock action, approved or recorded correction and answer is a link of the worker's chain:

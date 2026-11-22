@@ -2,9 +2,9 @@
 
 **Baseline spec**: [`spec.md`](spec.md)  
 **Package**: `nowo-tech/working-time-bundle`  
-**Last audited**: 2026-11-20 (0.2.0 + Twig namespace)
+**Last audited**: 2026-11-22 (0.3.0, HostWriteProbe mapped)
 
-Scope: every file under `src/`. Audit command: `find src -type f | wc -l` → **332**.
+Scope: every file under `src/`. Audit command: `find src -type f | wc -l` → **333**.
 
 | Source file | Spec section | Requirement IDs |
 | --- | --- | --- |
@@ -214,6 +214,7 @@ Scope: every file under `src/`. Audit command: `find src -type f | wc -l` → **
 | `src/Infrastructure/Doctrine/DoctrineLeaveStore.php` | Storage and triggers | FR-DB-001, FR-LEAVE-001 |
 | `src/Infrastructure/Doctrine/DoctrineRegisterStore.php` | Storage and triggers | FR-DB-001, FR-REG-001 |
 | `src/Infrastructure/Doctrine/DoctrineTransactionRunner.php` | Write units and concurrency | FR-TXN-001, FR-WORKER-001 |
+| `src/Infrastructure/Doctrine/HostWriteProbe.php` | Write units and concurrency | FR-TXN-001, FR-WORKER-001 |
 | `src/Infrastructure/Doctrine/RegisterMetadataListener.php` | Storage and triggers | FR-DB-001 |
 | `src/Infrastructure/Doctrine/Trigger/DoctrineTriggerInspector.php` | Storage and triggers | FR-DB-002 |
 | `src/Infrastructure/Doctrine/Trigger/RegisterTriggerInstaller.php` | Storage and triggers | FR-DB-002 |

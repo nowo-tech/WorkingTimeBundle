@@ -69,6 +69,10 @@ Every key of the contract is already accepted (strict tree): [docs/CONFIGURATION
 FrankenPHP worker mode, MySQL, UiKit + FormKit, the register with in-memory users `ana` (worker), `mia` (manager) and
 `admin` (password `demo`); `make -C demo up-symfony8`, then `make test-e2e` for the Playwright run. See [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md).
 
+![Working-time register: today](docs/images/demo/working-time-today.webp)
+
+![Working-time register: team view](docs/images/demo/working-time-team.webp)
+
 ## Documentation
 
 - [Installation](docs/INSTALLATION.md)

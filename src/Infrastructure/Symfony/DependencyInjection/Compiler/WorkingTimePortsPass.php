@@ -27,7 +27,6 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ServiceDef
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Holiday\GuardedJsonClient;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Http\ConflictFallbackListener;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportHandler;
-use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\GenerateRegisterExportMessage;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\MessengerExportDispatcher;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\MailerNotifier;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\NullNotifier;
@@ -228,7 +227,8 @@ final class WorkingTimePortsPass implements CompilerPassInterface
         }
         $container->setDefinition($p . 'export_dispatcher.messenger', (new Definition(MessengerExportDispatcher::class))->setArguments([new Reference('messenger.default_bus')]));
         $container->setAlias(ExportDispatcherInterface::class, $p . 'export_dispatcher.messenger');
-        $container->getDefinition(GenerateRegisterExportHandler::class)->addTag('messenger.message_handler', ['handles' => GenerateRegisterExportMessage::class]);
+        // #[AsMessageHandler] on the class: FrameworkBundle's autoconfiguration adds the Messenger tag (REQ-MSG-001); only in messenger mode.
+        $container->getDefinition(GenerateRegisterExportHandler::class)->setAutoconfigured(true);
         $container->getDefinition(GenerateRegisterExportHandler::class)->setArgument(0, new Reference(ExportGeneratorInterface::class));
     }
 
