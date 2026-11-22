@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 0.3.1](#to-031)
 - [To 0.3.0](#to-030)
 - [To 0.2.0](#to-020)
 - [To 0.1.2](#to-012)
@@ -10,6 +11,14 @@
 - [To 0.1.0](#to-010)
 
 ## Unreleased
+
+## To 0.3.1
+
+From **0.3.0**:
+
+```bash
+composer update nowo-tech/working-time-bundle
+```
 
 - **Twig namespace**: use `@NowoWorkingTimeBundle/...` in `{% extends %}`, `{% include %}` and `render()`. The old automatic
   `@NowoWorkingTime/...` still resolves to the same files for now (BC alias, to be removed in a later major). Host overrides
