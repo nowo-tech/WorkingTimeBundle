@@ -43,9 +43,14 @@ make demo-smoke            # boot, HTTP 200, down
 make -C demo down-symfony8
 ```
 
-Playwright e2e and WebP screenshots (REQ-DEMO-013) arrive with the first UI slice; until then the demo only shows the
-bundle parameters. See
-[DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md).
+Playwright e2e of the register pages and WebP screenshots (REQ-DEMO-013), against the running `demo/symfony8`:
+
+```bash
+make test-e2e           # Playwright suite (demo/symfony8/e2e)
+make demo-screenshots   # refresh docs/images/demo/*.webp (PNG captured, converted to WebP, PNG removed)
+```
+
+See [DEMO-FRANKENPHP.md](DEMO-FRANKENPHP.md).
 
 ## Cursor Agent
 

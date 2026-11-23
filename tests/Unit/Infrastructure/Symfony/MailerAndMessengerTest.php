@@ -16,6 +16,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Messenger\MessengerExportDispa
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\MailerNotifier;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Port\NeutralBrandProvider;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -66,5 +67,24 @@ final class MailerAndMessengerTest extends TestCase
         $generator = $this->createMock(ExportGeneratorInterface::class);
         $generator->expects(self::once())->method('generate')->with('e2')->willReturn(true);
         (new GenerateRegisterExportHandler($generator))(new GenerateRegisterExportMessage('e2'));
+    }
+
+    public function testARedeliveredExportIsANoOp(): void
+    {
+        $generator = $this->createMock(ExportGeneratorInterface::class);
+        $generator->expects(self::exactly(2))->method('generate')->with('e3')->willReturnOnConsecutiveCalls(true, false);
+        $handler = new GenerateRegisterExportHandler($generator);
+        $handler(new GenerateRegisterExportMessage('e3'));
+        $handler(new GenerateRegisterExportMessage('e3')); // second delivery: already claimed, nothing built, no exception
+    }
+
+    public function testAnInfrastructureErrorPropagatesSoTheTransportRetries(): void
+    {
+        $generator = $this->createMock(ExportGeneratorInterface::class);
+        $generator->method('generate')->willThrowException(new RuntimeException('database down'));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('database down');
+        (new GenerateRegisterExportHandler($generator))(new GenerateRegisterExportMessage('e4'));
     }
 }

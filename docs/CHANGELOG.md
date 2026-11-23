@@ -17,6 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Documentation
+
+- README: the two demo screenshots sit near the top in a captioned table (REQ-DEMO-013); CONTRIBUTING documents `make test-e2e` and `make demo-screenshots`.
+
+### Tests
+
+- `GenerateRegisterExportHandler`: a redelivered export is a no-op and an infrastructure error propagates so the transport retries (REQ-MSG-001).
+- `UiRouteLoader`: the full generated route list (names, paths, methods) and no bundle controller carries `#[Route]`, so the host's `routing.controllers` import cannot load them (REQ-SF-004 rule 8).
+
 ## [0.3.1] - 2026-11-22
 
 Messenger handler registered with #[AsMessageHandler] (REQ-MSG-001); docs and demo updates
