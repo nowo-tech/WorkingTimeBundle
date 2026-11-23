@@ -25,7 +25,9 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 2,
+  // One worker: demo.spec.ts and demo-platform.spec.ts both save the register settings of the one demo tenant (the
+  // version-checked form answers 409 to the loser of a race) and demo.spec.ts is an ordered flow on shared data.
+  workers: 1,
   reporter: [['list']],
   use: {
     baseURL,

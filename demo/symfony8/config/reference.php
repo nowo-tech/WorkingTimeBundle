@@ -1686,13 +1686,13 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     controller_attribute?: bool|Param, // Run controllers marked #[AsWriteUnit] as write units. // Default: true
  *     controller_routes?: list<scalar|Param|null>,
  *     messenger_middleware?: bool|Param, // Register nowo_transaction_doctrine.write_unit_middleware (add it to your buses before doctrine_transaction). // Default: true
- *     commit_detection?: bool|Param, // Count commits through a DBAL middleware (doctrine.middleware tag): a failed attempt that already committed is never replayed. // Default: true
+ *     commit_detection?: bool|Param, // Count commits through a DBAL middleware (doctrine.middleware tag): a failed attempt that already committed is never replayed, and a conflict after a commit earlier in the same request answers CONFLICT_002 (request watermark taken at kernel.request). // Default: true
  *     worker_hygiene?: bool|Param, // Reset closed entity managers per request and repair connections after a DBAL / ORM failure. // Default: true
  *     conflict_response?: bool|array{ // The answer to a lock conflict the client may retry (409 + Retry-After by default; 503 keeps the 1.2 behaviour).
  *         enabled?: bool|Param, // Default: true
  *         status?: int|Param, // Default: 409
  *         retry_after?: int|Param, // Retry-After seconds. // Default: 1
- *         template?: scalar|Param|null, // Twig template of the HTML answer (variables: status_code, retry_url, retry_after, ui_kit, partial). // Default: "@NowoTransactionDoctrine/conflict.html.twig"
+ *         template?: scalar|Param|null, // Twig template of the HTML answer (variables: status_code, retry_url, retry_after, ui_kit, partial, conflict_code). // Default: "@NowoTransactionDoctrine/conflict.html.twig"
  *         json_error?: scalar|Param|null, // The "error" code of the JSON answer. // Default: "concurrency_conflict"
  *         json_path_prefixes?: list<scalar|Param|null>,
  *         map_transient_failures?: bool|Param, // Also answer any transient storage failure that reaches the kernel (not only write-unit conflicts). // Default: false
