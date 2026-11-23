@@ -112,3 +112,15 @@ others are product features. The bundle is still not legal advice.
 - Geolocation, photo or biometric clocking (contract §1; data the register does not need, LOPDGDD art. 90).
 - Any health detail in leave (owner rule; contract §14.3).
 - Payroll calculation (the bundle exports; payroll systems compute).
+
+## Requested for CrmKit (Beacon spec 254, 2026-11-23)
+
+Beacon spec 254 "CRM HubSpot parity" (owner decision D-20261123-11) and the owner's reuse rule of 2026-11-23 ("if a
+nowo bundle already does, or nearly does, a CRM capability, use it or extend it") send these pieces here instead of
+building CRM-only copies in CrmKitBundle. Each piece is opt-in, generic (no CRM dependency) and gets its own contract
+revision before it is built. Versions are planned next minors and move if this bundle releases something else first.
+Plan and reuse matrix: [CrmKitBundle docs/ROADMAP.md](https://github.com/nowo-tech/CrmKitBundle/blob/main/docs/ROADMAP.md#reuse-matrix).
+
+| Version | Piece | Used by |
+| --- | --- | --- |
+| 0.4.0 | **Business-time calculator** on the holiday component: weekly opening hours plus a holiday calendar; `addBusinessMinutes(start, minutes)` and `businessMinutesBetween(a, b)` in the calendar's time zone (DST-safe), checked against a reference table | CrmKit D-1 SLA clocks; TaskBoard due dates in business days later |
