@@ -66,13 +66,13 @@ final class RouteListTest extends TestCase
             'nowo_working_time_leave_allowances'               => 'GET|POST /leave/manage/allowances',
             'nowo_working_time_leave_policy_remove'            => 'POST /leave/manage/allowances/{id}/remove',
             'nowo_working_time_leave_settings'                 => 'GET|POST /working-time/settings/leave',
-        ], self::describe(self::all()));
+        ], $this->describe($this->all()));
     }
 
     public function testNoControllerCarriesARouteAttribute(): void
     {
         $classes = [];
-        foreach (self::all()->all() as $route) {
+        foreach ($this->all()->all() as $route) {
             $controller = $route->getDefault('_controller');
             self::assertTrue(is_string($controller));
             $classes[explode('::', $controller)[0]] = true;
@@ -88,7 +88,7 @@ final class RouteListTest extends TestCase
         }
     }
 
-    private static function all(): RouteCollection
+    private function all(): RouteCollection
     {
         return (new UiRouteLoader(true, '/working-time', '/working-time/settings', true, true, true, '/holidays', '/leave'))->load('.');
     }
@@ -96,7 +96,7 @@ final class RouteListTest extends TestCase
     /**
      * @return array<string, string> route name => "METHODS path"
      */
-    private static function describe(RouteCollection $routes): array
+    private function describe(RouteCollection $routes): array
     {
         $list = [];
         foreach ($routes->all() as $name => $route) {
