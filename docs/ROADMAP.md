@@ -8,15 +8,42 @@ tests, docs and a green CI; 0.x tags per slice after their audit, **1.0.0** afte
 
 | Slice | Version | Content | Status |
 | --- | --- | --- | --- |
-| **S0** scaffold | `main`, no tag | Composer, Docker (MySQL 8.4, MariaDB 11.4, PostgreSQL 16, SQLite), Makefile + `release-check`, CI, PHPStan + phpstan-frankenphp, Igor, Rector, CS, coverage gate, Spec Kit baseline, docs set, Flex recipe (private entity manager), demo skeleton, strict configuration tree | Merged |
-| **S1** register | 0.1.0 | Register domain and persistence, triggers on four platforms, hash chain, corrections, exports, UI | Released (0.1.0 – 0.1.2) |
-| **S2** holidays + leave foundations | 0.2.0 | Holiday component (calendars, work centres, festivos.io / OpenHolidays / file imports, reader, UI), leave types + seeding, allowance policies and lines, pro-rata, carry-over (protected, expiry job), day counter, balances, register day annotations | In review |
-| **S3** leave workflow | 1.0.0 | Requests with the per-worker lock, approval chain, calendar, payroll CSV | |
+| **S0** scaffold | `main`, no tag | Composer, Docker (MySQL 8.4, MariaDB 11.4, PostgreSQL 16, SQLite), Makefile + `release-check`, CI, PHPStan + phpstan-frankenphp, Igor, Rector, CS, coverage gate, Spec Kit baseline, docs set, Flex recipe (private entity manager), demo skeleton, strict configuration tree | Merged (on `main`, no own tag; its content ships with 0.1.0) |
+| **S1** register | 0.1.0 | Register domain and persistence, triggers on four platforms, hash chain, corrections, exports, UI | Released (v0.1.0 to v0.1.2) |
+| **S2** holidays + leave foundations | 0.2.0 | Holiday component (calendars, work centres, festivos.io / OpenHolidays / file imports, reader, UI), leave types + seeding, allowance policies and lines, pro-rata, carry-over (protected, expiry job), day counter, balances, register day annotations | Released (v0.2.0) |
+| **S3** leave workflow | 1.0.0 | Requests with the per-worker lock, approval chain, calendar, payroll CSV | Not started |
+
+Status as of 2026-11-23 (latest tag v0.3.1). S2 was in review when this table was last edited; it was released as
+0.2.0. Tag v0.3.0 is **not** S3: it is the REQ-RUNTIME-003 hardening release (conflict codes, transaction-doctrine
+`^1.8.1`, write units scoped to the private entity manager, host writes never replayed), and v0.3.1 moved the export
+handler to `#[AsMessageHandler]`, put the Twig namespace at `@NowoWorkingTimeBundle` and moved the demo into UiKit's
+shell. So the version number planned for S3 is taken; S3 has no code on `main` (the leave request workflow, the
+approval chain and the per-worker lock are not built) and no open pull request.
+
+## Road to 1.0.0
+
+1.0.0 is S3, then `bundle-req-audit` at 100 % of the applicable REQs and the REQ-SEC-004 batch audit
+([CONTRACT.md](CONTRACT.md) section 19, owner answer Q-O14). Status as of 2026-11-23, latest tag v0.3.1.
+
+- **Slices left:** S3 only (see its content in the contract, section 19). The items under "After 1.0" are not
+  needed for 1.0.0; the owner placed shared-terminal clock-in, allowed networks and shift planning after it.
+  This is a medium distance: one large slice.
+- **Open REQ gaps** (re-audit 2026-11-22, graded at v0.3.0): REQ-DEMO-013 (embed the committed WebP screenshots in
+  the README), REQ-SPECKIT-001 / 003 (code inventory misses `HostWriteProbe.php`), REQ-SF-004 (routes built by
+  `UiRouteLoader`, no `#[Route]` attributes; needs attribute routes or an owner exemption), REQ-MSG-001
+  (the `#[AsMessageHandler]` part shipped in 0.3.1; the retry and failure-transport docs are still missing on `main`).
+- **Already in an open pull request:** #13 (`fix/req-gaps`) closes REQ-DEMO-013, REQ-MSG-001 (the retry docs) and the
+  REQ-SF-004 rule 8 exception.
+- **REQ-SEC-004:** appendices UZ to UZ10 cover 0.3.0 (PR #7, release OK). No appendix covers v0.3.1 (a small
+  change). S3 is an immediate audit by the contract (permissions, health data, leave race), then the batch audit
+  before 1.0.0.
+- **Owner decisions still open:** none recorded for S3; the compliance items under "Next" are decided in principle
+  (2026-11-18) but unscheduled.
 
 ## After 1.0: feature gap review (2026-11-18)
 
 A review of what a working-time and leave product is usually expected to offer, measured against what the bundle has
-(0.1.x on `main`) and what the slices above already plan (S2, S3). Items already in S1–S3 are not repeated here. Each
+(0.1.x at the time; 0.3.1 now) and what the slices above already plan (S2, S3). Items already in S1–S3 are not repeated here. Each
 item below becomes a Spec Kit feature with its own spec, tests and audit before it is built; the order is the
 priority, and versions are not fixed yet.
 

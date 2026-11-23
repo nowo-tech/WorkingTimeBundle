@@ -1,5 +1,8 @@
 # Working-time bundle (WorkingTimeBundle). Contract v0.1 for symfony-beacon KIT-77 / KIT-78
 
+Status 2026-11-23: **released through v0.3.1**: S1 (0.1.0 to 0.1.2) and S2 (0.2.0) are built; 0.3.0 is the REQ-RUNTIME-003
+hardening release and 0.3.1 a docs / demo / Twig-namespace patch, so S3 (leave workflow, the road to 1.0.0) is not
+started and its planned number 0.3.0 is taken (see [ROADMAP.md](ROADMAP.md)). The text below is the original design.
 Status 2026-11-17: **v0.1, design only, awaiting the owner (Q-O, §21) and Symfony Beacon (Q-B, §21).** No code, no
 PR, no tag. The repository `nowo-tech/WorkingTimeBundle` exists and stays empty until the answers are recorded (§22).
 
