@@ -20,6 +20,19 @@ id, and the bundle never flushes your EntityManager.
 
 This bundle is **FrankenPHP worker mode friendly** (kernel kept alive and not reset).
 
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/demo/working-time-today.webp" alt="Working Time register page for today: status, worked and break time, the clock-in button and today's segments" />
+      <br /><sub>The register: clock in and out, today's worked time and segments</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/demo/working-time-team.webp" alt="Team view of the working-time register for a manager: each worker's status, worked time and flags, and the correction requests" />
+      <br /><sub>Team view for managers: status, worked time and flags per worker</sub>
+    </td>
+  </tr>
+</table>
+
 ## Features
 
 Three parts, switched separately (`register.enabled` on, `holidays.enabled` on, `leave.enabled` off):
@@ -69,9 +82,7 @@ Every key of the contract is already accepted (strict tree): [docs/CONFIGURATION
 FrankenPHP worker mode, MySQL, UiKit + FormKit, the register with in-memory users `ana` (worker), `mia` (manager) and
 `admin` (password `demo`); `make -C demo up-symfony8`, then `make test-e2e` for the Playwright run. See [docs/DEMO-FRANKENPHP.md](docs/DEMO-FRANKENPHP.md).
 
-![Working-time register: today](docs/images/demo/working-time-today.webp)
-
-![Working-time register: team view](docs/images/demo/working-time-team.webp)
+The screenshots at the top come from the Playwright run: `make demo-screenshots` refreshes `docs/images/demo/*.webp`.
 
 ## Documentation
 
