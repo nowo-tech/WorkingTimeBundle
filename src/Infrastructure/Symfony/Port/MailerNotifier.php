@@ -9,7 +9,7 @@ use Nowo\WorkingTimeBundle\Domain\Port\WorkerDirectoryInterface;
 use Nowo\WorkingTimeBundle\Domain\Port\WorkingTimeNotifierInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\NoticeMessage;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
-use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
@@ -51,7 +51,7 @@ final readonly class MailerNotifier implements WorkingTimeNotifierInterface
         foreach ($message->params as $name => $value) {
             $params['%' . $name . '%'] = (string) $value;
         }
-        $subject = $this->translator->trans($key . '.subject', $params, NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $message->locale);
+        $subject = $this->translator->trans($key . '.subject', $params, TranslationDomain::NAME, $message->locale);
         $email   = (new Email())
             ->from(new Address($this->from, $this->brand->getBrand()->name))
             ->to(new Address($profile->email, $profile->displayName))
@@ -59,7 +59,7 @@ final readonly class MailerNotifier implements WorkingTimeNotifierInterface
             ->html($this->twig->render('@NowoWorkingTimeBundle/email/notice.html.twig', [
                 'brand'   => $this->brand->getBrand(),
                 'subject' => $subject,
-                'body'    => $this->translator->trans($key . '.body', $params, NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $message->locale),
+                'body'    => $this->translator->trans($key . '.body', $params, TranslationDomain::NAME, $message->locale),
                 'action'  => $message->actionPath,
                 'locale'  => $message->locale,
             ]));

@@ -6,7 +6,7 @@ namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form;
 
 use Nowo\FormKitBundle\Attribute\FormKitConfig;
 use Nowo\FormKitBundle\Form\FormOptionsTrait;
-use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -21,7 +21,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * @extends AbstractType<mixed>
  */
-#[FormKitConfig(NowoWorkingTimeBundle::FORM_PROFILE)]
+#[FormKitConfig(FormProfile::NAME)]
 final class SettingsType extends AbstractType
 {
     use FormOptionsTrait;
@@ -63,7 +63,7 @@ final class SettingsType extends AbstractType
             'csrf_protection'     => true,
             'csrf_token_id'       => 'nowo_working_time_settings',
             'allow_extra_fields'  => false,
-            'translation_domain'  => NowoWorkingTimeBundle::TRANSLATION_DOMAIN,
+            'translation_domain'  => TranslationDomain::NAME,
             'ip_evidence_offered' => true,
         ]);
     }

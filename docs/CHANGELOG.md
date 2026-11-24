@@ -26,6 +26,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `GenerateRegisterExportHandler`: a redelivered export is a no-op and an infrastructure error propagates so the transport retries (REQ-MSG-001).
 - `UiRouteLoader`: the full generated route list (names, paths, methods) and no bundle controller carries `#[Route]`, so the host's `routing.controllers` import cannot load them (REQ-SF-004 rule 8).
 
+### Internal
+
+- **Deptrac layer check** (REQ-ARCH-002): `deptrac.yaml` with a strict ruleset (Domain / Application framework-free,
+  uncovered dependencies and unassigned classes fail; skipped entries only for the five conflict exceptions built on
+  transaction-doctrine), `composer deptrac`, `make deptrac`, part of `make release-check` and of the PHPStan CI job.
+- Layer fixes, behaviour unchanged: the trigger commands use the new `Application\Register\Port\RegisterTriggersInterface`
+  (`TriggerInstallException` extends the new `TriggerInstallRefusedException`), `Domain\Shared\LocalTime` formats local
+  times (`RegisterCsv::local()` delegates), `Domain\TranslationDomain` and `Infrastructure\Symfony\Form\FormProfile`
+  hold the constants the bundle class re-exports.
+
 ## [0.3.1] - 2026-11-22
 
 Messenger handler registered with #[AsMessageHandler] (REQ-MSG-001); docs and demo updates

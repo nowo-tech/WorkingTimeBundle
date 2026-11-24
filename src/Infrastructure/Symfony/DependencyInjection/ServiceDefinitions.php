@@ -31,6 +31,7 @@ use Nowo\WorkingTimeBundle\Application\Register\Port\ExportDispatcherInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\ExportGeneratorInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterPurgeStoreInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterStoreInterface;
+use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterTriggersInterface;
 use Nowo\WorkingTimeBundle\Application\Register\Port\TriggerInspectorInterface;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
 use Nowo\WorkingTimeBundle\Application\Register\RegisterAnnotations;
@@ -81,6 +82,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineLeaveStore;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineRegisterStore;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\RegisterMetadataListener;
+use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\DoctrineRegisterTriggers;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\DoctrineTriggerInspector;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\RegisterTriggerInstaller;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command\LeaveDailyCommand;
@@ -392,9 +394,11 @@ final class ServiceDefinitions
 
         // Console.
         $s->set(VerifyRegisterCommand::class)->args([service(ChainVerifierInterface::class)])->tag('console.command');
+        $s->set(DoctrineRegisterTriggers::class)->args([service(DoctrineTransactionRunner::class), service(RegisterTriggerInstaller::class)]);
+        $s->alias(RegisterTriggersInterface::class, DoctrineRegisterTriggers::class);
         foreach ([TriggersCommand::INSTALL, TriggersCommand::CHECK, TriggersCommand::UNINSTALL] as $name) {
             $s->set($p . 'command.' . $name, TriggersCommand::class)
-                ->args([$name, service(DoctrineTransactionRunner::class), service(RegisterTriggerInstaller::class)])
+                ->args([$name, service(RegisterTriggersInterface::class)])
                 ->tag('console.command', ['command' => $name]);
         }
         $s->set(PurgeRegisterCommand::class)->args([service(RegisterPurger::class), service(RegisterExportService::class)])->tag('console.command');

@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Command;
 
-use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\DoctrineTransactionRunner;
-use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\RegisterTriggerInstaller;
-use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger\TriggerInstallException;
+use Nowo\WorkingTimeBundle\Application\Register\Port\RegisterTriggersInterface;
+use Nowo\WorkingTimeBundle\Application\Register\Port\TriggerInstallRefusedException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-use function count;
 use function implode;
 use function sprintf;
 
@@ -32,8 +30,7 @@ final class TriggersCommand extends Command
      */
     public function __construct(
         private readonly string $mode,
-        private readonly DoctrineTransactionRunner $runner,
-        private readonly RegisterTriggerInstaller $installer,
+        private readonly RegisterTriggersInterface $triggers,
     ) {
         parent::__construct($mode);
     }
@@ -49,27 +46,26 @@ final class TriggersCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io         = new SymfonyStyle($input, $output);
-        $connection = $this->runner->manager()->getConnection();
+        $io = new SymfonyStyle($input, $output);
         if ($this->mode === self::INSTALL) {
             try {
-                $this->installer->install($connection);
-            } catch (TriggerInstallException $e) {
+                $installed = $this->triggers->install();
+            } catch (TriggerInstallRefusedException $e) {
                 $io->error($e->getMessage());
 
                 return Command::INVALID;
             }
-            $io->success(sprintf('%d trigger(s) installed.', count($this->installer->names($connection->getDatabasePlatform()))));
+            $io->success(sprintf('%d trigger(s) installed.', $installed));
 
             return Command::SUCCESS;
         }
         if ($this->mode === self::UNINSTALL) {
-            $this->installer->uninstall($connection);
+            $this->triggers->uninstall();
             $io->success('Triggers removed.');
 
             return Command::SUCCESS;
         }
-        $missing = $this->installer->missing($connection);
+        $missing = $this->triggers->missing();
         if ($missing !== []) {
             $io->error('Missing triggers: ' . implode(', ', $missing));
 

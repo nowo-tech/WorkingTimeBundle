@@ -251,7 +251,7 @@ with a repository variable of the same name (`gh variable set NOWO_CI_PR_MODE -R
 
 - The newest PHP × newest Symfony cell of the test matrix (SQLite): `composer validate --strict`, install, `composer
   audit`, the whole PHPUnit suite.
-- PHPStan, Code Style Check, Dependency floor (where the repo has it), Git history and the semantic PR title.
+- PHPStan (with the Deptrac layer check, REQ-ARCH-002), Code Style Check, Dependency floor (where the repo has it), Git history and the semantic PR title.
 
 Skipped in light mode in this repo: Databases, Code Coverage, Demo smoke, the Playwright demo e2e and the non-representative PHP cells.
 

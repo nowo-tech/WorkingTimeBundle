@@ -25,7 +25,7 @@ use Nowo\WorkingTimeBundle\Domain\Shared\GroupRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
 use Nowo\WorkingTimeBundle\Domain\Shared\TenantRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
-use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Psr\Clock\ClockInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
@@ -128,7 +128,7 @@ final readonly class RegisterExportGenerator implements ExportGeneratorInterface
             if ($this->verifyFirst) {
                 $report = $this->verifier->verify($tenant, $ref);
                 if (!$report->isIntact()) {
-                    $integrity = $this->translator->trans('export.integrity_broken', ['%seq%' => $report->broken[0]['seq'], '%reason%' => $report->broken[0]['reason']], NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $locale);
+                    $integrity = $this->translator->trans('export.integrity_broken', ['%seq%' => $report->broken[0]['seq'], '%reason%' => $report->broken[0]['reason']], TranslationDomain::NAME, $locale);
                 }
             }
             $tip            = $this->runner->read(fn (): ?array => ($link = $this->store->chainHead($tenant, $ref)) instanceof WorkdayRevision ? ['hash' => $link->getHash(), 'seq' => $link->getSeq(), 'at' => WorkdayRevision::iso($link->getCreatedAt()), 'day' => $this->store->workday($link->getWorkdayId())?->date()->value] : null); // @igor-ignore - the runner calls this closure at once and keeps nothing

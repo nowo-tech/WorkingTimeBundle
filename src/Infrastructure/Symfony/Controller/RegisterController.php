@@ -34,10 +34,10 @@ use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\CorrectionServiceInterface;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\RegisterClockInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
+use Nowo\WorkingTimeBundle\Domain\Shared\LocalTime;
 use Nowo\WorkingTimeBundle\Domain\Shared\RequestKey;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
-use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterCsv;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\AnswerType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\ClockType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\CorrectionType;
@@ -142,8 +142,8 @@ final readonly class RegisterController
                 $zone        = $record->workday->schedule()->zone();
                 $rows[$date] = [
                     'date'     => (string) $date,
-                    'start'    => RegisterCsv::local($record->firstStart(), $zone),
-                    'end'      => RegisterCsv::local($record->lastEnd(), $zone),
+                    'start'    => LocalTime::format($record->firstStart(), $zone),
+                    'end'      => LocalTime::format($record->lastEnd(), $zone),
                     'worked'   => MonthSummary::hours($record->workedSeconds),
                     'expected' => MonthSummary::hours($record->workday->schedule()->expectedSeconds),
                     'flags'    => $record->flagValues() === [] ? '' : (string) count($record->flags),
@@ -321,8 +321,8 @@ final readonly class RegisterController
         $zone     = new DateTimeZone($state->timezone);
         $segments = array_map(static fn (EffectiveSegment $segment): array => [
             'type'  => $segment->type->value,
-            'start' => RegisterCsv::local($segment->start, $zone),
-            'end'   => RegisterCsv::local($segment->end, $zone),
+            'start' => LocalTime::format($segment->start, $zone),
+            'end'   => LocalTime::format($segment->end, $zone),
         ], $state->record->segments ?? []);
 
         return $this->ui->render('@NowoWorkingTimeBundle/register/today.html.twig', [

@@ -14,7 +14,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Model\CorrectionInput;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
-use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterCsv;
+use Nowo\WorkingTimeBundle\Domain\Shared\LocalTime;
 
 use function array_filter;
 use function implode;
@@ -50,7 +50,7 @@ final class DayView
         }
         $segments = [];
         foreach ($record->segments ?? [] as $segment) {
-            $text = RegisterCsv::local($segment->start, $zone) . ' – ' . RegisterCsv::local($segment->end, $zone);
+            $text = LocalTime::format($segment->start, $zone) . ' – ' . LocalTime::format($segment->end, $zone);
             if ($showIp && ($segment->startIpPrefix !== null || $segment->endIpPrefix !== null)) {
                 $text .= sprintf(' (%s)', implode(' ', array_filter([$segment->startIpPrefix, $segment->endIpPrefix])));
             }
@@ -96,7 +96,7 @@ final class DayView
         $choices = [];
         foreach ($record->segments ?? [] as $segment) {
             if (!$segment->voided) {
-                $choices[($segment->type === SegmentType::Break ? '(b) ' : '') . RegisterCsv::local($segment->start, $zone) . '–' . RegisterCsv::local($segment->end, $zone)] = $segment->id;
+                $choices[($segment->type === SegmentType::Break ? '(b) ' : '') . LocalTime::format($segment->start, $zone) . '–' . LocalTime::format($segment->end, $zone)] = $segment->id;
             }
         }
 

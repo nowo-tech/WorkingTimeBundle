@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Nowo\WorkingTimeBundle\Infrastructure\Symfony\Leave;
 
 use Nowo\WorkingTimeBundle\Application\Leave\Port\LeaveSeedNamesInterface;
-use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -32,7 +32,7 @@ final readonly class TranslatedLeaveSeedNames implements LeaveSeedNamesInterface
     {
         $names = [];
         foreach (self::LOCALES as $locale) {
-            $names[$locale] = $this->translator->trans('leave.seed.' . $seedCode, [], NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $locale);
+            $names[$locale] = $this->translator->trans('leave.seed.' . $seedCode, [], TranslationDomain::NAME, $locale);
         }
 
         return $names;

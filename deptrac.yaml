@@ -1,0 +1,181 @@
+# REQ-ARCH-002: layer dependencies of src/ checked by Deptrac (strict ruleset; skipped violations only for public API
+# that cannot change before the next major, each with its reason below).
+# Run: composer deptrac / make deptrac. Layers follow REQ-ARCH-001; docs/ARCHITECTURE.md explains them.
+deptrac:
+  paths:
+    - ./src
+  exclude_files:
+    - '#.*/src/Resources/.*#'
+  layers:
+    # --- Bundle layers -------------------------------------------------------------------------------------------
+    - name: Domain
+      collectors:
+        - type: classLike
+          value: '^Nowo\\WorkingTimeBundle\\Domain\\'
+    - name: Application
+      collectors:
+        - type: classLike
+          value: '^Nowo\\WorkingTimeBundle\\Application\\'
+    # UI: the HTTP / console edge inside Infrastructure\Symfony (not re-laid out): controllers, forms, route loader,
+    # console commands, kernel listeners and the Twig extension. EntityManagerHygieneListener (Http) is a Doctrine
+    # adapter on kernel events, so it stays in Infrastructure.
+    - name: UI
+      collectors:
+        - type: bool
+          must:
+            - type: classLike
+              value: '^Nowo\\WorkingTimeBundle\\Infrastructure\\Symfony\\(Controller|Form|Routing|Command|Http|Twig)\\'
+          must_not:
+            - type: classLike
+              value: '^Nowo\\WorkingTimeBundle\\Infrastructure\\Symfony\\Http\\EntityManagerHygieneListener$'
+    # DependencyInjection: the composition root (bundle class, extension, compiler passes). It wires every layer.
+    - name: DependencyInjection
+      collectors:
+        - type: classLike
+          value: '^Nowo\\WorkingTimeBundle\\(Infrastructure\\Symfony\\DependencyInjection\\|NowoWorkingTimeBundle$)'
+    # Infrastructure: Doctrine / DBAL stores and triggers, holiday providers, exports, Messenger and the Symfony
+    # adapters of the ports.
+    - name: Infrastructure
+      collectors:
+        - type: bool
+          must:
+            - type: classLike
+              value: '^Nowo\\WorkingTimeBundle\\Infrastructure\\'
+          must_not:
+            - type: classLike
+              value: '^Nowo\\WorkingTimeBundle\\Infrastructure\\Symfony\\(Controller|Form|Routing|Command|Http|Twig|DependencyInjection)\\'
+        - type: classLike
+          value: '^Nowo\\WorkingTimeBundle\\Infrastructure\\Symfony\\Http\\EntityManagerHygieneListener$'
+    - name: Bridge
+      collectors:
+        - type: classLike
+          value: '^Nowo\\WorkingTimeBundle\\Bridge\\'
+    # --- Vendor layers -------------------------------------------------------------------------------------------
+    # Framework-free contract packages, listed by name (Domain and Application may use them).
+    - name: Psr
+      collectors:
+        - type: classLike
+          value: '^Psr\\(Clock|Log|EventDispatcher)\\'
+    - name: TransactionContract
+      collectors:
+        - type: classLike
+          value: '^Nowo\\TransactionContract\\'
+    - name: BrandContracts
+      collectors:
+        - type: classLike
+          value: '^Nowo\\Brand\\Contract\\'
+    # Framework and library code: Infrastructure, UI, Bridge and DependencyInjection only.
+    - name: PsrCache
+      collectors:
+        - type: classLike
+          value: '^Psr\\Cache\\'
+    - name: SymfonyContracts
+      collectors:
+        - type: classLike
+          value: '^Symfony\\Contracts\\'
+    - name: Symfony
+      collectors:
+        - type: classLike
+          value: '^Symfony\\(Component|Bundle|Bridge)\\'
+    - name: Doctrine
+      collectors:
+        - type: classLike
+          value: '^Doctrine\\'
+    - name: Twig
+      collectors:
+        - type: classLike
+          value: '^Twig\\'
+    - name: TransactionDoctrine          # NOT framework-free (ConflictCode imports HttpFoundation / Messenger)
+      collectors:
+        - type: classLike
+          value: '^Nowo\\TransactionDoctrine\\'
+    - name: NowoBundles
+      collectors:
+        - type: classLike
+          value: '^Nowo\\(UiKitBundle|FormKitBundle|OutboundUrlGuardBundle)\\'
+    # Bridged packages (optional): Dompdf, TimeTrack, UserKit.
+    - name: BridgedPackages
+      collectors:
+        - type: classLike
+          value: '^(Dompdf\\|Nowo\\(TimeTrackBundle|UserKitBundle)\\)'
+  ruleset:
+    Domain:
+      - Psr
+      - TransactionContract
+      - BrandContracts
+    Application:
+      - Domain
+      - Psr
+      - TransactionContract
+      - BrandContracts
+    Infrastructure:
+      - Domain
+      - Application
+      - Psr
+      - PsrCache
+      - TransactionContract
+      - BrandContracts
+      - SymfonyContracts
+      - Symfony
+      - Doctrine
+      - Twig
+      - TransactionDoctrine
+      - NowoBundles
+    UI:
+      - Domain
+      - Application
+      - Psr
+      - TransactionContract
+      - BrandContracts
+      - SymfonyContracts
+      - Symfony
+      - Twig
+      - TransactionDoctrine
+      - NowoBundles
+    Bridge:
+      - Domain
+      - Application
+      - Infrastructure
+      - Psr
+      - TransactionContract
+      - BrandContracts
+      - SymfonyContracts
+      - Symfony
+      - Doctrine
+      - Twig                             # the Dompdf bridge renders the register report template
+      - TransactionDoctrine
+      - BridgedPackages
+    DependencyInjection:
+      - Domain
+      - Application
+      - Infrastructure
+      - UI
+      - Bridge
+      - Psr
+      - PsrCache
+      - TransactionContract
+      - BrandContracts
+      - SymfonyContracts
+      - Symfony
+      - Doctrine
+      - Twig
+      - TransactionDoctrine
+      - NowoBundles
+      - BridgedPackages
+  # Legacy public API that cannot change before the next major (REQ-ARCH-002 rules 3 and 8). This list must shrink,
+  # never grow.
+  skip_violations:
+    # Conflict exceptions of the write units (REQ-RUNTIME-003 rule 6) implement transaction-doctrine's
+    # LockConflictExceptionInterface, so its kernel listener answers 409 + Retry-After. Removed once
+    # nowo-tech/transaction-contract ships the framework-free conflict types (REQ-ARCH-002 rule 8), in 1.0.0 at the
+    # latest.
+    Nowo\WorkingTimeBundle\Application\Shared\WriteConflictException:
+      - Nowo\TransactionDoctrine\WriteUnit\LockConflictExceptionInterface
+    Nowo\WorkingTimeBundle\Application\Register\Exception\ChainBusyException:
+      - Nowo\TransactionDoctrine\WriteUnit\LockConflictExceptionInterface
+    Nowo\WorkingTimeBundle\Application\Register\Exception\StaleCorrectionDecisionException:
+      - Nowo\TransactionDoctrine\WriteUnit\LockConflictExceptionInterface
+    Nowo\WorkingTimeBundle\Application\Register\Exception\StaleSettingsException:
+      - Nowo\TransactionDoctrine\WriteUnit\LockConflictExceptionInterface
+    Nowo\WorkingTimeBundle\Application\Leave\StaleLeaveSettingsException:
+      - Nowo\TransactionDoctrine\WriteUnit\LockConflictExceptionInterface
