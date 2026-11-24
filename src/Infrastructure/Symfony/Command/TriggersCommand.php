@@ -17,6 +17,8 @@ use function sprintf;
 /**
  * `nowo:working-time:triggers:install|check|uninstall` (contract section 6.4). install: exit 2 (nothing half-created)
  * when the database user may not create triggers; check: exit 1 while triggers are missing.
+ *
+ * @internal wired by the bundle's DI; hosts run the command, they do not construct it (its constructor may change in any release)
  */
 final class TriggersCommand extends Command
 {

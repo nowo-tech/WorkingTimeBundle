@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- `TriggersCommand` is now `@internal` (REQ-ARCH-002): its constructor takes `(string $mode, RegisterTriggersInterface)`. Hosts run `nowo:working-time:triggers:*`; they do not construct the command.
+
 ### Documentation
 
 - README: the two demo screenshots sit near the top in a captioned table (REQ-DEMO-013); CONTRIBUTING documents `make test-e2e` and `make demo-screenshots`.
