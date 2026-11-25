@@ -31,10 +31,10 @@ use Nowo\WorkingTimeBundle\Domain\Register\Read\EffectiveSegment;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Register\Service\CorrectionServiceInterface;
 use Nowo\WorkingTimeBundle\Domain\Shared\LocalDate;
+use Nowo\WorkingTimeBundle\Domain\Shared\LocalTime;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerProfile;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkerRef;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
-use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Export\RegisterCsv;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\CorrectionType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\DecisionType;
 use Psr\Clock\ClockInterface;
@@ -323,6 +323,6 @@ final readonly class TeamController
     {
         $zone = new DateTimeZone('UTC');
 
-        return $correction->getOperation()->value . ($correction->getNewStart() instanceof DateTimeImmutable ? ' ' . RegisterCsv::local($correction->getNewStart(), $zone, 'Y-m-d H:i') . ' UTC' : '') . ($correction->getNewEnd() instanceof DateTimeImmutable ? ' – ' . RegisterCsv::local($correction->getNewEnd(), $zone, 'Y-m-d H:i') . ' UTC' : '');
+        return $correction->getOperation()->value . ($correction->getNewStart() instanceof DateTimeImmutable ? ' ' . LocalTime::format($correction->getNewStart(), $zone, 'Y-m-d H:i') . ' UTC' : '') . ($correction->getNewEnd() instanceof DateTimeImmutable ? ' – ' . LocalTime::format($correction->getNewEnd(), $zone, 'Y-m-d H:i') . ' UTC' : '');
     }
 }

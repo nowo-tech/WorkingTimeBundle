@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Trigger;
 
-use RuntimeException;
+use Nowo\WorkingTimeBundle\Application\Register\Port\TriggerInstallRefusedException;
 use Throwable;
 
 /**
  * The database user may not create the triggers (contract section 6.4): nothing half-created is left. On MySQL /
  * MariaDB with binary logging the user also needs `SUPER` or `log_bin_trust_function_creators = 1`.
  */
-final class TriggerInstallException extends RuntimeException
+final class TriggerInstallException extends TriggerInstallRefusedException
 {
     /**
      * @param bool $mysql whether the platform is MySQL / MariaDB (the hint names the binlog privilege)

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Nowo\WorkingTimeBundle\Domain\Register\Enum\SegmentType;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
+use Nowo\WorkingTimeBundle\Domain\Shared\LocalTime;
 use RuntimeException;
 
 use function array_keys;
@@ -143,6 +144,6 @@ final class RegisterCsv
      */
     public static function local(?DateTimeImmutable $at, DateTimeZone $zone, string $format = 'H:i'): string
     {
-        return $at?->setTimezone($zone)->format($format) ?? '';
+        return LocalTime::format($at, $zone, $format);
     }
 }

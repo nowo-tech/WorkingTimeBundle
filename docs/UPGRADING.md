@@ -12,6 +12,10 @@
 
 ## Unreleased
 
+Nothing to change for hosts. `TriggersCommand` is now `@internal` and its constructor takes
+`(string $mode, RegisterTriggersInterface)`: hosts that constructed it by hand (not supported) wire it through the
+bundle's DI instead.
+
 ## To 0.3.1
 
 From **0.3.0**:

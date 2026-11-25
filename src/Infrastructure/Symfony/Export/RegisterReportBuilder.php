@@ -14,7 +14,7 @@ use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecord;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\DayRecordBuilder;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\MonthSummary;
 use Nowo\WorkingTimeBundle\Domain\Register\Read\RegisterReport;
-use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 use function array_map;
@@ -44,7 +44,7 @@ final readonly class RegisterReportBuilder
      */
     public function build(array $days, string $organization, string $worker, string $period, string $generatedBy, ?string $chainHead, ?string $integrity, bool $ip, DateTimeImmutable $now, string $locale): RegisterReport
     {
-        $t       = fn (string $key, array $params = []): string => $this->translator->trans($key, $params, NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $locale);
+        $t       = fn (string $key, array $params = []): string => $this->translator->trans($key, $params, TranslationDomain::NAME, $locale);
         $summary = MonthSummary::of($days);
         $head    = $chainHead ?? '—';
         $rows    = [];

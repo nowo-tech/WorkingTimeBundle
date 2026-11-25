@@ -13,7 +13,7 @@ use Nowo\WorkingTimeBundle\Application\Register\RegisterAccess;
 use Nowo\WorkingTimeBundle\Domain\Shared\Exception\AccessDeniedException;
 use Nowo\WorkingTimeBundle\Domain\Shared\Exception\NotAvailableException;
 use Nowo\WorkingTimeBundle\Domain\Shared\WorkingTimePermission;
-use Nowo\WorkingTimeBundle\NowoWorkingTimeBundle;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormTypeInterface;
@@ -61,7 +61,7 @@ final readonly class UiSupport
      */
     public static function label(string $key, array $params = []): Label
     {
-        return new Label($key, NowoWorkingTimeBundle::TRANSLATION_DOMAIN, $params);
+        return new Label($key, TranslationDomain::NAME, $params);
     }
 
     /**
@@ -71,7 +71,7 @@ final readonly class UiSupport
      */
     public function trans(string $key, array $params = []): string
     {
-        return $this->translator->trans($key, $params, NowoWorkingTimeBundle::TRANSLATION_DOMAIN);
+        return $this->translator->trans($key, $params, TranslationDomain::NAME);
     }
 
     /**

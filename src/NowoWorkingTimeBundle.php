@@ -6,6 +6,7 @@ namespace Nowo\WorkingTimeBundle;
 
 use InvalidArgumentException;
 use Nowo\WorkingTimeBundle\Domain\Register\Model\ScheduleDefinition;
+use Nowo\WorkingTimeBundle\Domain\TranslationDomain;
 use Nowo\WorkingTimeBundle\Infrastructure\Doctrine\Type\UtcDateTimeImmutableType;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\PrivateEntityManagerPass;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\TwigPathsPass;
@@ -13,6 +14,7 @@ use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\Compiler\W
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ConfigurationTree;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ParameterFlattener;
 use Nowo\WorkingTimeBundle\Infrastructure\Symfony\DependencyInjection\ServiceDefinitions;
+use Nowo\WorkingTimeBundle\Infrastructure\Symfony\Form\FormProfile;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -44,10 +46,10 @@ final class NowoWorkingTimeBundle extends AbstractBundle
     public const ALIAS = 'nowo_working_time';
 
     /** Translation domain of the bundle UI copy (REQ-I18N-003) and Twig namespace (REQ-TWIG-002). */
-    public const TRANSLATION_DOMAIN = 'NowoWorkingTimeBundle';
+    public const TRANSLATION_DOMAIN = TranslationDomain::NAME;
 
     /** FormKit profile of the bundle's forms (REQ-TWIG-005 rule 11). */
-    public const FORM_PROFILE = 'working_time';
+    public const FORM_PROFILE = FormProfile::NAME;
 
     /** Doctrine mapping name (the register's; the holiday and leave mappings add a suffix). */
     public const MAPPING_NAME = 'NowoWorkingTimeBundle';
