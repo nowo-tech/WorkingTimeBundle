@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## Table of contents
 
 - [[Unreleased]](#unreleased)
+- [[0.4.0] - 2026-11-25](#040---2026-11-25)
 - [[0.3.1] - 2026-11-22](#031---2026-11-22)
 - [[0.3.0] - 2026-11-20](#030---2026-11-20)
 - [[0.2.0] - 2026-11-18](#020---2026-11-18)
@@ -16,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - [[0.1.0] - 2026-11-17](#010---2026-11-17)
 
 ## [Unreleased]
+
+## [0.4.0] - 2026-11-25
 
 ### Changed
 

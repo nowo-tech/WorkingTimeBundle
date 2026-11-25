@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Unreleased](#unreleased)
+- [To 0.4.0](#to-040)
 - [To 0.3.1](#to-031)
 - [To 0.3.0](#to-030)
 - [To 0.2.0](#to-020)
@@ -11,6 +12,14 @@
 - [To 0.1.0](#to-010)
 
 ## Unreleased
+
+## To 0.4.0
+
+From **0.3.1**:
+
+```bash
+composer update nowo-tech/working-time-bundle
+```
 
 Nothing to change for hosts. `TriggersCommand` is now `@internal` and its constructor takes
 `(string $mode, RegisterTriggersInterface)`: hosts that constructed it by hand (not supported) wire it through the
