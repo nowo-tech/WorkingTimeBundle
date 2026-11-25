@@ -6,7 +6,7 @@ namespace Nowo\WorkingTimeBundle\Domain;
 
 /**
  * Translation domain of the bundle UI copy (REQ-I18N-003). Every layer reads it from here; the bundle class re-exports
- * it as `TranslationDomain::NAME` with the same value (REQ-ARCH-002: no layer depends on the
+ * it as `NowoWorkingTimeBundle::TRANSLATION_DOMAIN` with the same value (REQ-ARCH-002: no layer depends on the
  * composition root).
  */
 final class TranslationDomain
