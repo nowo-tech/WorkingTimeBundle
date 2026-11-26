@@ -40,12 +40,13 @@ Three parts, switched separately (`register.enabled` on, `holidays.enabled` on, 
 - **Register**: workdays and segments, clock state machine, schedules, corrections with approval, append-only revisions
   with a SHA-256 hash chain and database triggers, verifier, inspection export (PDF / CSV / ZIP), retention purge.
 - **Holidays** (stand-alone): holiday calendars, work centres, providers (festivos.io, OpenHolidays, CSV / ICS import).
-- **Leave**: leave types, allowances, requests with a per-worker lock, approval chain, team calendar, iCal, payroll CSV.
+- **Leave**: leave types, allowance policies and lines, carry-over and balances (foundations, 0.2); requests with a
+  per-worker lock, approval chain, team calendar, iCal and payroll CSV arrive with S3.
 - **Private entity manager** `nowo_working_time`, declared by the Flex recipe, so the bundle never flushes the host's
   unit of work.
 - **Closed PDF rendering**: no remote resources, no JavaScript, no PHP.
 
-Built slice by slice: S0 scaffold → S1 register (0.1) → **S2 holidays + leave foundations (0.2)** → S3 leave workflow.
+Built slice by slice: S0 scaffold → S1 register (0.1) → **S2 holidays + leave foundations (0.2; hardening in 0.3–0.4)** → S3 leave workflow (requests, approval chain, team calendar, iCal, payroll CSV).
 
 ## Installation
 

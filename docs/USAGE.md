@@ -1,9 +1,24 @@
 # Usage
 
 0.1 ships the **register** (contract S1): the working-hours record of art. 34.9 ET with a tamper-evident hash chain,
-clocking, schedules, corrections, exports, notices, the retention purge and the GDPR register half. Holidays and leave
-arrive with S2 / S3 ([ROADMAP.md](ROADMAP.md)). The bundle is **not legal advice**: the employer decides to use it as
+clocking, schedules, corrections, exports, notices, the retention purge and the GDPR register half. 0.2 adds the
+**holiday** component and the **leave foundations** (types, allowances, balances); the leave request workflow arrives
+with S3 ([ROADMAP.md](ROADMAP.md)). The bundle is **not legal advice**: the employer decides to use it as
 their register.
+
+## Table of contents
+
+- [1. Set it up](#1-set-it-up)
+- [2. Permissions (deny by default)](#2-permissions-deny-by-default)
+- [3. Services](#3-services)
+  - [Holidays (stand-alone) and leave foundations (0.2)](#holidays-stand-alone-and-leave-foundations-02)
+- [4. Jobs (scheduler or cron)](#4-jobs-scheduler-or-cron)
+  - [Register exports through Messenger (retry and failure transport)](#register-exports-through-messenger-retry-and-failure-transport)
+- [5. Integrity](#5-integrity)
+- [6. Bridges](#6-bridges)
+- [7. Overriding templates and translations](#7-overriding-templates-and-translations)
+  - [Templates](#templates)
+  - [Translations](#translations)
 
 ## 1. Set it up
 

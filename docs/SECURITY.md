@@ -1,5 +1,12 @@
 # Security
 
+## Table of contents
+
+- [Status and scope](#status-and-scope)
+- [Integrity: what the bundle guarantees and what it cannot](#integrity-what-the-bundle-guarantees-and-what-it-cannot)
+- [Shared entity manager (`doctrine.entity_manager: null`)](#shared-entity-manager-doctrineentity_manager-null)
+- [Reporting](#reporting)
+
 ## Status and scope
 
 0.1 ships the working-hours register; 0.2 adds the holiday component and the leave foundations (types, allowances, balances). The security model is contract sections 6 (integrity: hash chain, triggers,

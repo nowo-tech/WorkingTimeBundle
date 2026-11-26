@@ -54,7 +54,7 @@ help:
 	@echo "  test-with-db           Database suite on MySQL 8.4, MariaDB 11.4 and PostgreSQL 16 (REQ-TEST-005)"
 	@echo "  test-coverage-with-db  Database suite on MySQL with text coverage (REQ-TEST-005)"
 	@echo "  validate-phpdoc        Fail when a class or public method in src/ has no PHPDoc (REQ-CS-001)"
-	@echo "  validate-translations  YAML syntax + key parity of the 7 locales (REQ-MAKE-004 / REQ-I18N-002)"
+	@echo "  validate-translations  YAML syntax + key parity of the 10 locales (REQ-MAKE-004 / REQ-I18N-002)"
 	@echo "  check-no-raw-html-form No raw form tags in bundle or demo Twig (REQ-TWIG-005)"
 	@echo "  check-twig-extra       twig/extra-bundle in the package and every Twig demo (REQ-TWIG-004)"
 	@echo "  check-open-prs         Fail if unresolved open GitHub PRs remain (REQ-REL-003)"
