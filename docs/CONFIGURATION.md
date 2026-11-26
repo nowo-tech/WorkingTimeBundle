@@ -4,6 +4,14 @@ The tree is strict: unknown keys fail the container build. Every key of contract
 ports, `permissions`, `doctrine`, `integrity`, `register` and `ui` (holidays and leave keys are read from S2 / S3).
 Values are published as container parameters `nowo_working_time.<path>`.
 
+## Table of contents
+
+- [Register (0.1)](#register-01)
+- [Holidays and leave (0.2)](#holidays-and-leave-02)
+- [Whole tree](#whole-tree)
+- [Part toggles](#part-toggles)
+- [Validation (container build)](#validation-container-build)
+
 ## Register (0.1)
 
 ```yaml

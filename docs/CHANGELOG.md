@@ -18,6 +18,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Documentation
+
+- Spec Kit baseline re-audited by hand (REQ-SPECKIT-001 / 003): `specs/001-baseline/code-inventory.md` maps all 339
+  files of `src/` (was 333; the six 0.4.0 files were missing) in 22 categories, each row saying what the file does and
+  its `FR-*` IDs; `spec.md` describes v0.4.0 (summary, user scenarios US-01 to US-09, key entities, non-goals, SC
+  with the 339 count) instead of the S0 scaffold.
+- `SPEC-DRIVEN-DEVELOPMENT.md` gets the missing `Bundle functional scope` section (S1 and S2 shipped, S3 pending) and
+  the S1 / S2 user stories; `SPEC-KIT.md` states the real inventory count; README and USAGE no longer describe leave
+  requests or holidays as shipped / pending in the wrong slice; ten locales, not seven.
+- Tables of contents in CONCURRENCY, CONFIGURATION, CONTRACT, ROADMAP, SECURITY and USAGE (REQ-DOCS-005).
+
 ## [0.4.0] - 2026-11-25
 
 ### Changed

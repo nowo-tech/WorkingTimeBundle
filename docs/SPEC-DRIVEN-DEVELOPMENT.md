@@ -35,13 +35,33 @@ Every slice updates the baseline spec, the code inventory and the integrator doc
 | US-S0-01 | **As an** integrator, **I want** to install the package and write the final configuration now **so that** later slices only switch features on. | Strict config tree, parameters | [CONFIGURATION.md](CONFIGURATION.md) |
 | US-S0-02 | **As an** integrator, **I want** to switch the register, holidays and leave parts on or off separately **so that** I load only what I use. | `register.enabled`, `holidays.enabled`, `leave.enabled` | [CONFIGURATION.md](CONFIGURATION.md) |
 | US-S0-03 | **As an** integrator, **I want** the bundle to keep its data on its own entity manager **so that** it never flushes my unit of work. | `doctrine.entity_manager`, Flex recipe | [INSTALLATION.md](INSTALLATION.md) |
+| US-S1-01 | **As a** worker, **I want** to clock in, pause, resume and clock out **so that** my working hours are registered (art. 34.9 ET). | `RegisterClockInterface`, today / month / day pages | [USAGE.md](USAGE.md) |
+| US-S1-02 | **As a** manager, **I want** to decide correction requests on the version I saw **so that** the register is fixed without editing history. | `CorrectionServiceInterface`, team page | [USAGE.md](USAGE.md) |
+| US-S1-03 | **As an** inspector or worker, **I want** CSV / PDF / ZIP exports with a verified chain **so that** the register is evidence. | Exports, `nowo:working-time:verify`, triggers | [USAGE.md](USAGE.md), [SECURITY.md](SECURITY.md) |
+| US-S2-01 | **As an** admin, **I want** holiday calendars and imports (CSV, ICS, festivos.io, OpenHolidays) **so that** agendas and leave know the days off. | `HolidayCalendarReaderInterface`, holiday pages | [USAGE.md](USAGE.md) |
+| US-S2-02 | **As an** HR admin, **I want** leave types, allowances, carry-over and balances **so that** workers see what they have left. | `LeaveBalanceReaderInterface`, leave pages, `leave:daily` | [USAGE.md](USAGE.md) |
 
 **Goal:** a working-hours register (art. 34.9 ET), public holidays and leave for Symfony applications, in one bundle with
 three parts that can be enabled separately (register, holidays, leave), a private entity manager, a UiKit + FormKit UI
 and bridges to the Nowo bundles. The full design is [CONTRACT.md](CONTRACT.md).
 
-**S0 scope:** the scaffold only (bundle class, strict configuration tree, part toggles, private entity manager wiring,
-tooling, docs, demo skeleton). No domain code yet.
+## Bundle functional scope
+
+As of v0.4.0 the bundle ships S0 (scaffold), S1 (the register, 0.1) and S2 (holidays and leave foundations, 0.2), with
+the concurrency (0.3) and layer (0.4) hardening:
+
+- **Register:** clocking with request keys, dated schedules, corrections decided by a manager, register settings and
+  worker preferences, the append-only revision chain (database triggers, SHA-256 hash chain, verifier, purge anchors),
+  CSV / PDF / ZIP exports (Messenger or in line), notices through an outbox, the retention purge.
+- **Holidays** (usable alone): calendars, days, work centres, CSV / ICS and provider imports, the reader for agendas.
+- **Leave foundations:** types, allowance policies and lines, carry-over, balances, the day counter and the daily
+  carry-over command. The request workflow, approvals, team calendar, iCal and payroll CSV are S3 (not shipped yet).
+- **Cross-cutting:** private entity manager, transaction-doctrine write units with 409 + `Retry-After` and conflict
+  codes, deny-by-default permissions, worker mode without kernel reset, opt-in UiKit + FormKit UI behind one route
+  loader, TimeTrack / Dompdf / UserKit bridges, translations in ten locales.
+
+The baseline spec ([`specs/001-baseline/spec.md`](../specs/001-baseline/spec.md)) holds the `US-*`, `FR-*` and `SC-*`
+of this scope.
 
 **Explicit non-goals (v1):** GPS, biometric clocking, kiosks, payroll calculation, collective-agreement engines, shift
 planning, any health data, activity monitoring (TimeTrackBundle), a clock API of its own. Not legal advice.
@@ -67,7 +87,7 @@ Coverage floor: **100 %** of `src/` (statements and elements; CI gate). Any beha
 | REQ-MAKE-003 | `demo/symfony8/Makefile` | Demo targets incl. `test-coverage`, `verify` |
 | REQ-MAKE-007 | `Makefile` `down-dev` | Stop without removing volumes |
 | REQ-MAKE-008 | `Makefile`, `demo/Makefile`, `demo/symfony8/Makefile` (soft includes) | `update-deps`, `update-deps-all` |
-| REQ-MAKE-004 / REQ-I18N-002 | `Makefile` `validate-translations` | YAML syntax + key parity of the 7 locales |
+| REQ-MAKE-004 / REQ-I18N-002 | `Makefile` `validate-translations` | YAML syntax + key parity of the 10 locales |
 | REQ-TEST-003 / 006 | `Makefile` `test-coverage-100`, `coverage-check` | 100 % gate |
 | REQ-TEST-005 | `Makefile` `test-with-db`, `test-coverage-with-db`; `docker-compose.yml` services `database`, `mariadb`, `postgres` (profile `db`) | Database suite on MySQL, MariaDB and PostgreSQL |
 | REQ-TEST-011 | `Makefile` / `demo/Makefile` `demo-smoke`, `.github/workflows/demo-smoke.yml` | Demo boots, HTTP 200 |

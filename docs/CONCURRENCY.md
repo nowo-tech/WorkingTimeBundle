@@ -8,6 +8,14 @@ three attempts), the entity manager cleared afterwards. A conflict that a replay
 without `Retry-After` when part of the request was already committed (see [Conflict answer](#conflict-answer)). Audit
 rows, events and notices go out after the commit, so a replayed or refused attempt records nothing twice.
 
+## Table of contents
+
+- [Write paths](#write-paths)
+- [Isolation and locks](#isolation-and-locks)
+- [Conflict answer](#conflict-answer)
+- [Replays and the host's entity manager](#replays-and-the-hosts-entity-manager)
+- [Residual risks](#residual-risks)
+
 ## Write paths
 
 | Write | Protection | Under contention | Code (JSON) | Test |

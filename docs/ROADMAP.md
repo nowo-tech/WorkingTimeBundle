@@ -4,6 +4,17 @@ The bundle is built slice by slice from [CONTRACT.md](CONTRACT.md) (section 19).
 tests, docs and a green CI; 0.x tags per slice after their audit, **1.0.0** after the REQ-SEC-004 audits and the
 `bundle-req-audit` at 100 % of the applicable REQs.
 
+## Table of contents
+
+- [Slices](#slices)
+- [Road to 1.0.0](#road-to-100)
+- [After 1.0: feature gap review (2026-11-18)](#after-10-feature-gap-review-2026-11-18)
+  - [Next](#next)
+  - [Later](#later)
+  - [Considering](#considering)
+  - [Not planned (decided)](#not-planned-decided)
+- [Requested for CrmKit (Beacon spec 254, 2026-11-23)](#requested-for-crmkit-beacon-spec-254-2026-11-23)
+
 ## Slices
 
 | Slice | Version | Content | Status |

@@ -201,12 +201,12 @@ Every Nowo bundle with Spec Kit must ship:
 **Audit command (maintainers):**
 
 ```bash
-find src config -type f | wc -l
+find src -type f | wc -l
 ```
 
-The **Total production sources** row in `code-inventory.md` must match this count.
+The **Total mapped** row of the coverage summary in `code-inventory.md` must match this count.
 
-In **WorkingTimeBundle**, the baseline inventory covers **12/12** files under `src/` (4 PHP, 7 translation catalogues, the XML mapping folder README; no `config/` files) — see [`specs/001-baseline/code-inventory.md`](../specs/001-baseline/code-inventory.md).
+In **WorkingTimeBundle**, the baseline inventory covers **339/339** files under `src/` (PHP, 18 Doctrine XML mappings, 24 Twig views, 10 translation catalogues; no `config/` directory), in 22 categories with one "What it does" sentence per file — see [`specs/001-baseline/code-inventory.md`](../specs/001-baseline/code-inventory.md).
 
 ---
 
